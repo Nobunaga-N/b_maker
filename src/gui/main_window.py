@@ -1,3 +1,4 @@
+# src/gui/main_window.py
 import sys
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
@@ -6,6 +7,10 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QFont, QIcon, QBrush, QColor, QKeyEvent
+from src.gui.sidebar import SideBar
+from src.gui.page_container import PageContainer
+from src.gui.editor import BotEditor
+import logging
 
 
 # ------------------ КАСТОМНЫЙ QWIDGET ДЛЯ БОТА (КНОПКА START) ------------------ #
@@ -13,6 +18,7 @@ class BotWidget(QWidget):
     """
     Небольшой виджет с кнопкой "Start" для бота.
     """
+
     def __init__(self, bot_id: str, parent=None):
         super().__init__(parent)
         self.bot_id = bot_id  # можно использовать для логики
@@ -46,6 +52,7 @@ class EmulatorWidget(QWidget):
     """
     Небольшой виджет с кнопками "Console" и "Stop" для эмулятора.
     """
+
     def __init__(self, emulator_id: int, parent=None):
         super().__init__(parent)
         self.emulator_id = emulator_id
@@ -102,6 +109,7 @@ class ManagerQueueWidget(QTreeWidget):
     - Запрещаем вложение одного бота в другого (flatten после dropEvent).
     - Удаляем бота по клавише Delete и контекстному меню.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setColumnCount(8)
@@ -217,6 +225,7 @@ class CreateBotWindow(QMainWindow):
     """
     Окно для создания или редактирования бота (без изменений).
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Create or Edit Bot")
@@ -236,15 +245,14 @@ class CreateBotWindow(QMainWindow):
 class MainWindow(QMainWindow):
     """
     Главное окно приложения:
-    1) Без кнопки "Удалить" в столбце очереди — удаляем ботов по Delete/контекстному меню.
-    2) Цвет/шрифт ботов и эмуляторов (белый, крупнее).
-    3) Столбцы: №, Бот, Игра, Потоки, Отл. старт, Циклы, Время раб., (Кнопки).
-    4) У бота — кнопка "Start" (в 8-м столбце).
-    5) У эмуляторов — кнопки "Console" и "Stop" (в 8-м столбце).
-    6) Исправлен баг с вложением ботов (ManagerQueueWidget).
+    - Использует боковую панель SideBar
+    - Использует PageContainer для анимированного перехода между страницами
+    - Страницы: Менеджер ботов, Создать бота, Настройки
     """
-    def __init__(self, parent=None):
+
+    def __init__(self, logger=None, parent=None):
         super().__init__(parent)
+        self.logger = logger
         self.setWindowTitle("BOT Maker")
         self.setGeometry(100, 100, 1200, 800)
 
@@ -255,63 +263,73 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # === Левая боковая панель (Оранжевая) ===
-        self.sidebar = QFrame()
-        self.sidebar.setFixedWidth(200)
-        self.sidebar.setStyleSheet("background-color: #FF5722;")
-        sidebar_layout = QVBoxLayout(self.sidebar)
-        sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        sidebar_layout.setContentsMargins(20, 20, 20, 20)
-        sidebar_layout.setSpacing(20)
-
-        # Заголовок
-        title_label = QLabel("BOT Maker")
-        title_font = QFont("Segoe UI", 14, QFont.Weight.Bold)
-        title_label.setFont(title_font)
-        title_label.setStyleSheet("color: white;")
-        sidebar_layout.addWidget(title_label)
-
-        # Кнопка "Создать бота"
-        self.btn_create_bot = QPushButton("Создать бота")
-        self.btn_create_bot.setFont(QFont("Segoe UI", 12))
-        self.btn_create_bot.setIcon(QIcon("assets/icons/create.svg"))
-        sidebar_layout.addWidget(self.btn_create_bot)
-
-        # Кнопка "Настройки"
-        self.btn_settings = QPushButton("Настройки")
-        self.btn_settings.setFont(QFont("Segoe UI", 12))
-        self.btn_settings.setIcon(QIcon("assets/icons/settings.svg"))
-        sidebar_layout.addWidget(self.btn_settings)
-
-        # Стили кнопок в боковой панели (hover-эффект)
-        self.sidebar.setStyleSheet("""
-            QPushButton {
-                color: white;
-                background: transparent;
-                border: none;
-                text-align: left;
-                padding: 5px;
-            }
-            QPushButton:hover {
-                background-color: rgba(255, 255, 255, 0.2);
-            }
-        """)
-
-        # --- Правая часть (чёрный фон) ---
-        self.main_frame = QFrame()
-        self.main_frame.setStyleSheet("background-color: #000000;")
+        # === Боковая панель (новая реализация) ===
+        self.sidebar = SideBar()
         main_layout.addWidget(self.sidebar)
-        main_layout.addWidget(self.main_frame, stretch=1)
 
-        # --- Разделяем правую часть на две области: Manager и BotsList ---
-        right_layout = QHBoxLayout(self.main_frame)
-        right_layout.setContentsMargins(20, 20, 20, 20)
-        right_layout.setSpacing(15)
+        # === Контейнер для страниц с анимацией ===
+        self.page_container = PageContainer()
+        main_layout.addWidget(self.page_container, stretch=1)
 
-        # === (1) Менеджер ботов (основная часть) ===
-        self.manager_frame = QFrame()
-        self.manager_frame.setStyleSheet("background-color: #1E1E1E; border: 1px solid #333;")
-        manager_layout = QVBoxLayout(self.manager_frame)
+        # === Создаем страницы ===
+        # 1. Страница менеджера ботов
+        self.manager_page = QWidget()
+        self.manager_page.setStyleSheet("background-color: #000000;")
+        manager_layout = QHBoxLayout(self.manager_page)
+        manager_layout.setContentsMargins(20, 20, 20, 20)
+        manager_layout.setSpacing(15)
+
+        # Добавляем менеджер и список ботов на страницу менеджера
+        self.manager_frame = self._create_manager_frame()
+        self.bots_frame = self._create_bots_frame()
+        manager_layout.addWidget(self.manager_frame, stretch=3)
+        manager_layout.addWidget(self.bots_frame, stretch=1)
+
+        # 2. Страница создания бота (используем заглушку)
+        self.create_page = QWidget()
+        self.create_page.setStyleSheet("background-color: #000000;")
+        create_layout = QVBoxLayout(self.create_page)
+        create_label = QLabel("Редактор ботов")
+        create_label.setStyleSheet("color: #FFA500; font-size: 18pt;")
+        create_layout.addWidget(create_label)
+
+        # В будущем здесь будет полноценный редактор ботов
+        # self.create_page = BotEditor(self.logger)
+
+        # 3. Страница настроек
+        self.settings_page = QWidget()
+        self.settings_page.setStyleSheet("background-color: #000000;")
+        settings_layout = QVBoxLayout(self.settings_page)
+        settings_label = QLabel("Настройки приложения")
+        settings_label.setStyleSheet("color: #FFA500; font-size: 18pt;")
+        settings_layout.addWidget(settings_label)
+        settings_layout.addStretch()
+
+        # Добавляем страницы в контейнер
+        self.page_container.addWidget(self.manager_page)
+        self.page_container.addWidget(self.create_page)
+        self.page_container.addWidget(self.settings_page)
+
+        # Подключаем сигнал изменения страницы от бокового меню
+        self.sidebar.pageChanged.connect(self._handle_page_change)
+
+        # Инициализируем данные (список ботов)
+        self.load_bots()
+
+    def _handle_page_change(self, page_name):
+        """Обрабатывает сигнал изменения страницы от бокового меню"""
+        if page_name == "manager":
+            self.page_container.slide_to_index(0)
+        elif page_name == "create":
+            self.page_container.slide_to_index(1)
+        elif page_name == "settings":
+            self.page_container.slide_to_index(2)
+
+    def _create_manager_frame(self):
+        """Создает фрейм с менеджером ботов"""
+        manager_frame = QFrame()
+        manager_frame.setStyleSheet("background-color: #1E1E1E; border: 1px solid #333;")
+        manager_layout = QVBoxLayout(manager_frame)
         manager_layout.setContentsMargins(15, 15, 15, 15)
         manager_layout.setSpacing(10)
 
@@ -418,13 +436,19 @@ class MainWindow(QMainWindow):
         # Используем наш кастомный QTreeWidget (8 столбцов)
         self.queue_tree = ManagerQueueWidget()
         manager_layout.addWidget(self.queue_tree)
-        self.manager_frame.setLayout(manager_layout)
-        right_layout.addWidget(self.manager_frame, stretch=3)
 
-        # === (2) Список ботов (меньшая часть справа) ===
-        self.bots_frame = QFrame()
-        self.bots_frame.setStyleSheet("background-color: #1E1E1E; border: 1px solid #333;")
-        bots_layout = QVBoxLayout(self.bots_frame)
+        # Подключаем сигналы
+        self.btn_apply_params.clicked.connect(self.apply_params_to_selected)
+        self.btn_start_queue.clicked.connect(self.start_queue)
+        self.btn_clear_queue.clicked.connect(self.clear_queue)
+
+        return manager_frame
+
+    def _create_bots_frame(self):
+        """Создает фрейм со списком ботов"""
+        bots_frame = QFrame()
+        bots_frame.setStyleSheet("background-color: #1E1E1E; border: 1px solid #333;")
+        bots_layout = QVBoxLayout(bots_frame)
         bots_layout.setContentsMargins(15, 15, 15, 15)
         bots_layout.setSpacing(10)
 
@@ -468,22 +492,14 @@ class MainWindow(QMainWindow):
             """)
             bots_layout.addWidget(btn)
 
-        self.bots_frame.setLayout(bots_layout)
-        right_layout.addWidget(self.bots_frame, stretch=1)
-
-        # --- Подключаем сигналы ---
-        self.btn_create_bot.clicked.connect(self.open_create_bot_window)
-        self.btn_settings.clicked.connect(self.open_settings)
+        # Подключаем сигналы
         self.btn_edit_bot.clicked.connect(self.edit_selected_bot)
         self.btn_add_to_manager.clicked.connect(self.add_selected_bot_to_manager)
         self.btn_delete_bot.clicked.connect(self.delete_selected_bot)
         self.btn_export_bot.clicked.connect(self.export_selected_bot)
         self.btn_import_bot.clicked.connect(self.import_bot)
-        self.btn_start_queue.clicked.connect(self.start_queue)
-        self.btn_clear_queue.clicked.connect(self.clear_queue)
-        self.btn_apply_params.clicked.connect(self.apply_params_to_selected)
 
-        self.load_bots()
+        return bots_frame
 
     # ---------------- Методы загрузки/управления списком ботов ----------------
     def load_bots(self) -> None:
@@ -524,7 +540,7 @@ class MainWindow(QMainWindow):
         # [0=№, 1=Бот, 2=Игра, 3=Потоки, 4=Отл. старт, 5=Циклы, 6=Время раб., 7=кнопки]
         queue_item = QTreeWidgetItem([
             str(index), bot_name, game_name, "",  # первые 4
-            "", "", "", ""                       # ещё 4
+            "", "", "", ""  # ещё 4
         ])
 
         # Устанавливаем белый цвет и увеличенный шрифт
@@ -537,10 +553,6 @@ class MainWindow(QMainWindow):
         print(f"Бот {bot_name} добавлен в очередь.")
 
         # Добавляем кнопку "Start" в последний столбец (7)
-        from PyQt6.QtWidgets import QWidget, QHBoxLayout
-        from functools import partial
-
-        # Создаём виджет с кнопкой "Start"
         widget = BotWidget(bot_name, parent=self.queue_tree)
         self.queue_tree.setItemWidget(queue_item, 7, widget)
 
@@ -655,16 +667,8 @@ class MainWindow(QMainWindow):
             # Добавляем виджет с кнопками "Console" и "Stop" в столбец 7
             widget = EmulatorWidget(emulator_id=emu_id, parent=self.queue_tree)
             self.queue_tree.setItemWidget(child, 7, widget)
-
         print(f"Параметры применены к боту №{item.text(0)} ({item.text(1)}): "
               f"delay={delay_start}, cycles={cycles}, work_time={work_time}, threads={threads}, emulators={emu_list}")
-
-    def open_create_bot_window(self):
-        self.create_bot_window = CreateBotWindow(self)
-        self.create_bot_window.show()
-
-    def open_settings(self):
-        print("Открыть настройки (заглушка).")
 
 
 if __name__ == "__main__":
