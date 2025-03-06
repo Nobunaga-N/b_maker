@@ -9,6 +9,7 @@ from PyQt6.QtCore import Qt, QPoint
 from PyQt6.QtGui import QFont, QIcon, QBrush, QColor, QKeyEvent
 from src.gui.sidebar import SideBar
 from src.gui.page_container import PageContainer
+from src.gui.settings_page import SettingsPage
 from src.gui.editor import BotEditor
 import logging
 
@@ -297,13 +298,7 @@ class MainWindow(QMainWindow):
         # self.create_page = BotEditor(self.logger)
 
         # 3. Страница настроек
-        self.settings_page = QWidget()
-        self.settings_page.setStyleSheet("background-color: #000000;")
-        settings_layout = QVBoxLayout(self.settings_page)
-        settings_label = QLabel("Настройки приложения")
-        settings_label.setStyleSheet("color: #FFA500; font-size: 18pt;")
-        settings_layout.addWidget(settings_label)
-        settings_layout.addStretch()
+        self.settings_page = SettingsPage()
 
         # Добавляем страницы в контейнер
         self.page_container.addWidget(self.manager_page)
