@@ -1,0 +1,64 @@
+                             /* assets/styles/dark_orange.qss */
+
+/* Общие стили для всего приложения */
+QMainWindow {
+    background-color: #121212; /* Тёмно-серый фон */
+    color: #FFFFFF;            /* Белый цвет текста по умолчанию */
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 12pt;
+}
+
+/* Стили для QPushButton */
+QPushButton {
+    background-color: #FF5722; /* Оранжевый цвет кнопки */
+    color: #FFFFFF;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-weight: 500;
+}
+QPushButton:hover {
+    background-color: #E64A19; /* Более тёмный оранжевый при наведении */
+}
+QPushButton:pressed {
+    background-color: #BF360C; /* Ещё более тёмный оранжевый при клике */
+}
+
+/* Стили для QLineEdit, QComboBox и т.п. */
+QLineEdit, QComboBox {
+    background-color: #1E1E1E;
+    color: #FFFFFF;
+    border: 1px solid #FF5722;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+/* Стили для QLabel */
+QLabel {
+    color: #FFA500; /* Тёплый оранжевый цвет для текста */
+    font-weight: 600;
+}
+
+/* Стили для QListWidget */
+QListWidget {
+    background-color: #1E1E1E;
+    color: #FFFFFF;
+    border: 1px solid #333333;
+    border-radius: 4px;
+}
+
+/* Пример стиля для QScrollBar (по желанию) */
+QScrollBar:vertical {
+    background-color: #1E1E1E;
+    width: 10px;
+    margin: 22px 0 22px 0;
+}
+QScrollBar::handle:vertical {
+    background-color: #FF5722;
+    min-height: 20px;
+    border-radius: 4px;
+}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    background: none;
+    border: none;
+}
