@@ -1,12 +1,12 @@
 # src/gui/sidebar.py
 from PyQt6.QtWidgets import QFrame, QVBoxLayout, QPushButton, QSizePolicy
-from PyQt6.QtCore import QPropertyAnimation, QEasingCurve, pyqtSignal, QRect
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QIcon, QFont
 
 
 class SideBar(QFrame):
     """
-    Боковое меню с анимацией и подсветкой активной страницы.
+    Боковое меню с подсветкой активной страницы.
     Содержит кнопки для навигации между основными разделами приложения.
     """
     # Сигналы для переключения между страницами

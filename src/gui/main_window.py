@@ -290,9 +290,12 @@ class MainWindow(QMainWindow):
         self.create_page = QWidget()
         self.create_page.setStyleSheet("background-color: #000000;")
         create_layout = QVBoxLayout(self.create_page)
+        create_layout.setContentsMargins(20, 20, 20, 20)
+        create_layout.setSpacing(15)
         create_label = QLabel("Редактор ботов")
         create_label.setStyleSheet("color: #FFA500; font-size: 18pt;")
         create_layout.addWidget(create_label)
+        create_layout.addStretch()
 
         # В будущем здесь будет полноценный редактор ботов
         # self.create_page = BotEditor(self.logger)
@@ -314,11 +317,11 @@ class MainWindow(QMainWindow):
     def _handle_page_change(self, page_name):
         """Обрабатывает сигнал изменения страницы от бокового меню"""
         if page_name == "manager":
-            self.page_container.slide_to_index(0)
+            self.page_container.change_page(0)
         elif page_name == "create":
-            self.page_container.slide_to_index(1)
+            self.page_container.change_page(1)
         elif page_name == "settings":
-            self.page_container.slide_to_index(2)
+            self.page_container.change_page(2)
 
     def _create_manager_frame(self):
         """Создает фрейм с менеджером ботов"""
