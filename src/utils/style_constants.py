@@ -160,20 +160,6 @@ COMBOBOX_STYLE = """
     }
 """
 
-# Стиль для акцентных кнопок
-ACCENT_BUTTON_STYLE = """
-    QPushButton {
-        background-color: #FFA500;
-        color: #000;
-        border-radius: 5px;
-        margin-bottom: 5px;
-        font-weight: bold;
-    }
-    QPushButton:hover {
-        background-color: #FFB347;
-    }
-"""
-
 # Стиль для кнопки удаления
 DELETE_BUTTON_STYLE = """
     QPushButton {
@@ -198,6 +184,80 @@ MAIN_FRAME_STYLE = """
     background-color: #1E1E1E; 
     border-radius: 8px;
     border: 1px solid #444;
+"""
+
+# В файле src/utils/style_constants.py добавьте или измените эти константы
+
+
+
+# Цвет акцентов (вместо оранжевого)
+ACCENT_COLOR = "#3498DB"  # Синий
+ACCENT_COLOR_HOVER = "#2980B9"  # Темно-синий для hover
+
+# Обновленный стиль акцентных кнопок
+ACCENT_BUTTON_STYLE = f"""
+    QPushButton {{
+        background-color: {ACCENT_COLOR};
+        color: white;
+        border-radius: 5px;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }}
+    QPushButton:hover {{
+        background-color: {ACCENT_COLOR_HOVER};
+    }}
+"""
+# Цвет фона для бокового меню (темный, почти черный)
+SIDEBAR_COLOR = "#121212"  # Глубокий черный
+
+# Стили для бокового меню с окантовкой
+SIDEBAR_STYLE = f"""
+    background-color: {SIDEBAR_COLOR};
+    border-right: 2px solid #333333;
+"""
+
+# Стиль кнопок бокового меню (белый текст)
+SIDEBAR_BUTTON_STYLE = """
+    QPushButton {
+        color: white;
+        background: transparent;
+        border: none;
+        text-align: left;
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+    QPushButton:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+    }
+"""
+
+# Стиль активной кнопки бокового меню
+SIDEBAR_ACTIVE_BUTTON_STYLE = """
+    QPushButton {
+        color: white;
+        background-color: rgba(255, 255, 255, 0.15);
+        border: none;
+        text-align: left;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: rgba(255, 255, 255, 0.25);
+    }
+"""
+
+# Стиль иконки бургера и других иконок в меню
+SIDEBAR_ICON_STYLE = """
+    QToolButton {
+        background: transparent;
+        border: none;
+        color: white;
+    }
+    QToolButton:hover {
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+    }
 """
 
 # Полный стиль для диалогов (комбинация стилей)

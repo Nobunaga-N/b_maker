@@ -12,6 +12,7 @@ from src.gui.sidebar import SideBar
 from src.gui.page_container import PageContainer
 from src.gui.settings_page import SettingsPage
 from src.gui.create_bot_page import CreateBotPage
+from src.utils.style_constants import ACCENT_BUTTON_STYLE, ACCENT_COLOR
 from src.gui.editor import BotEditor
 import logging
 
