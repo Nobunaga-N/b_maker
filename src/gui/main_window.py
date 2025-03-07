@@ -1,5 +1,6 @@
 # src/gui/main_window.py
 import sys
+import os
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
     QLabel, QPushButton, QFrame, QLineEdit, QSpinBox, QMessageBox,
@@ -10,6 +11,7 @@ from PyQt6.QtGui import QFont, QIcon, QBrush, QColor, QKeyEvent
 from src.gui.sidebar import SideBar
 from src.gui.page_container import PageContainer
 from src.gui.settings_page import SettingsPage
+from src.gui.create_bot_page import CreateBotPage
 from src.gui.editor import BotEditor
 import logging
 
@@ -287,15 +289,8 @@ class MainWindow(QMainWindow):
         manager_layout.addWidget(self.bots_frame, stretch=1)
 
         # 2. Страница создания бота (используем заглушку)
-        self.create_page = QWidget()
-        self.create_page.setStyleSheet("background-color: #000000;")
-        create_layout = QVBoxLayout(self.create_page)
-        create_layout.setContentsMargins(20, 20, 20, 20)
-        create_layout.setSpacing(15)
-        create_label = QLabel("Редактор ботов")
-        create_label.setStyleSheet("color: #FFA500; font-size: 18pt;")
-        create_layout.addWidget(create_label)
-        create_layout.addStretch()
+        self.create_page = CreateBotPage()
+        self.create_page.botCreated.connect(self.on_bot_created)
 
         # В будущем здесь будет полноценный редактор ботов
         # self.create_page = BotEditor(self.logger)
@@ -512,15 +507,36 @@ class MainWindow(QMainWindow):
             self.bot_list.addTopLevelItem(item)
 
     def edit_selected_bot(self):
+        """
+        Редактирует выбранного бота.
+        Открывает выбранного бота в редакторе.
+        """
         item = self.bot_list.currentItem()
         if not item:
             QMessageBox.warning(self, "Внимание", "Выберите бота для редактирования.")
             return
+
         bot_name = item.text(0)
-        print(f"Редактируем бота: {bot_name}")
-        self.edit_window = CreateBotWindow(self)
-        self.edit_window.setWindowTitle(f"Редактирование бота: {bot_name}")
-        self.edit_window.show()
+        bot_path = os.path.join("bots", bot_name)
+
+        # Проверяем существование папки бота
+        if not os.path.exists(bot_path):
+            QMessageBox.warning(self, "Ошибка", f"Папка бота '{bot_name}' не найдена.")
+            return
+
+        # Переключаемся на страницу создания/редактирования бота
+        self.page_container.change_page(1)
+        self.sidebar.set_active_page("create")
+
+        # Загружаем бота в редактор
+        if hasattr(self.create_page, 'load_bot'):
+            success = self.create_page.load_bot(bot_path)
+            if success:
+                print(f"Бот {bot_name} загружен для редактирования")
+            else:
+                print(f"Не удалось загрузить бота {bot_name}")
+        else:
+            print("Метод load_bot не найден в create_page")
 
     def add_selected_bot_to_manager(self):
         """
@@ -668,6 +684,27 @@ class MainWindow(QMainWindow):
         print(f"Параметры применены к боту №{item.text(0)} ({item.text(1)}): "
               f"delay={delay_start}, cycles={cycles}, work_time={work_time}, threads={threads}, emulators={emu_list}")
 
+    def on_bot_created(self, bot_name, game_name):
+        """
+        Обрабатывает сигнал о создании бота.
+        Добавляет нового бота в список ботов.
+        """
+        # Добавляем бота в список ботов
+        item = QTreeWidgetItem([bot_name, game_name])
+        self.bot_list.addTopLevelItem(item)
+
+        # Переключаемся на страницу менеджера
+        self.page_container.change_page(0)
+        self.sidebar.set_active_page("manager")
+
+        # Выделяем нового бота в списке
+        for i in range(self.bot_list.topLevelItemCount()):
+            if self.bot_list.topLevelItem(i).text(0) == bot_name:
+                self.bot_list.setCurrentItem(self.bot_list.topLevelItem(i))
+                break
+
+        # Показываем сообщение об успешном создании бота
+        QMessageBox.information(self, "Успех", f"Бот '{bot_name}' успешно создан и добавлен в список!")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
