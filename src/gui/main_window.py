@@ -466,8 +466,8 @@ class MainWindow(QMainWindow):
         self.btn_import_bot = QPushButton("Импорт бота")
 
         self.btn_edit_bot.setIcon(QIcon("assets/icons/edit.svg"))
-        self.btn_add_to_manager.setIcon(QIcon("assets/icons/manager.svg"))
-        self.btn_delete_bot.setIcon(QIcon("assets/icons/delete.svg"))
+        self.btn_add_to_manager.setIcon(QIcon("assets/icons/manager1.svg"))
+        self.btn_delete_bot.setIcon(QIcon("assets/icons/delete1.svg"))
         self.btn_export_bot.setIcon(QIcon("assets/icons/export.svg"))
         self.btn_import_bot.setIcon(QIcon("assets/icons/import.svg"))
 

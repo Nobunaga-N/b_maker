@@ -51,22 +51,12 @@ class SideBar(QFrame):
         self.main_layout.setContentsMargins(10, 20, 10, 20)
         self.main_layout.setSpacing(15)
 
-        # Кнопка сворачивания (бургер)
-        self.burger_button = QToolButton()
-        self.burger_button.setIcon(QIcon(Resources.get_icon_path("burger")))
-        self.burger_button.setIconSize(QSize(24, 24))
-        self.burger_button.setStyleSheet(SIDEBAR_ICON_STYLE)
-        self.burger_button.setToolTip("Свернуть/развернуть меню")
-        self.burger_button.clicked.connect(self.toggle_sidebar)
+        # Создаем кнопку бургера точно так же, как создаем навигационные кнопки
+        # Но используем специальный метод, чтобы подключить другую логику
+        self.create_burger_button()
 
-        # Добавляем кнопку в отдельный layout для выравнивания справа
-        burger_layout = QHBoxLayout()
-        burger_layout.addStretch()
-        burger_layout.addWidget(self.burger_button)
-        self.main_layout.addLayout(burger_layout)
-
-        # Создаем кнопки с иконками в горизонтальных layout'ах
-        self.create_nav_button("manager", "Менеджер ботов", "manager")
+        # Создаем обычные навигационные кнопки
+        self.create_nav_button("manager", "Менеджер Бота", "manager")
         self.create_nav_button("create", "Создать бота", "create")
         self.create_nav_button("settings", "Настройки", "settings")
 
@@ -75,6 +65,35 @@ class SideBar(QFrame):
 
         # Устанавливаем начальное выделение
         self.set_active_page("manager")
+
+    def create_burger_button(self):
+        """Создает кнопку бургера по тому же принципу, что и навигационные кнопки"""
+        # Создаем layout для кнопки
+        button_layout = QHBoxLayout()
+        button_layout.setSpacing(10)
+
+        # Создаем иконку
+        self.burger_button = QToolButton()
+        self.burger_button.setIcon(QIcon(Resources.get_icon_path("burger")))
+        self.burger_button.setIconSize(QSize(24, 24))
+        self.burger_button.setStyleSheet(SIDEBAR_ICON_STYLE)
+        self.burger_button.setToolTip("Свернуть/развернуть меню")
+
+        # Создаем фиктивную текстовую часть кнопки для сохранения структуры
+        self.burger_text = QPushButton("")
+        self.burger_text.setFont(QFont("Segoe UI", 12))
+        self.burger_text.setStyleSheet(SIDEBAR_BUTTON_STYLE)
+
+        # Добавляем кнопки в layout
+        button_layout.addWidget(self.burger_button)
+        button_layout.addWidget(self.burger_text, 1)  # stretch=1
+
+        # Подключаем события клика
+        self.burger_button.clicked.connect(self.toggle_sidebar)
+        self.burger_text.clicked.connect(self.toggle_sidebar)
+
+        # Добавляем layout в основной layout
+        self.main_layout.addLayout(button_layout)
 
     def create_nav_button(self, page_name, text, icon_name):
         """
@@ -87,6 +106,7 @@ class SideBar(QFrame):
         """
         # Создаем layout для кнопки
         button_layout = QHBoxLayout()
+        button_layout.setContentsMargins(0, 0, 0, 0)  # Убираем отступы
         button_layout.setSpacing(10)
 
         # Создаем иконку
@@ -94,6 +114,7 @@ class SideBar(QFrame):
         icon_button.setIcon(QIcon(Resources.get_icon_path(icon_name)))
         icon_button.setIconSize(QSize(24, 24))
         icon_button.setStyleSheet(SIDEBAR_ICON_STYLE)
+        icon_button.setFixedWidth(24)  # Фиксируем ширину кнопки, как у бургера
 
         # Создаем текстовую часть кнопки
         text_button = QPushButton(text)
@@ -164,6 +185,10 @@ class SideBar(QFrame):
 
     def update_button_visibility(self):
         """Обновляет видимость текстовых кнопок в зависимости от состояния сворачивания."""
+        # Обновляем видимость текстовой части кнопки бургера
+        self.burger_text.setVisible(self.expanded)
+
+        # Обновляем видимость текстовых частей навигационных кнопок
         for name in ["manager", "create", "settings"]:
             text_button = getattr(self, f"text_{name}")
             text_button.setVisible(self.expanded)
