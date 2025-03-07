@@ -1,7 +1,14 @@
 # src/gui/sidebar.py
+"""
+Модуль содержит класс боковой панели приложения.
+"""
+
 from PyQt6.QtWidgets import QFrame, QVBoxLayout, QPushButton, QSizePolicy
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, Qt
 from PyQt6.QtGui import QIcon, QFont
+
+from src.utils.resources import Resources
+from src.utils.ui_factory import create_accent_button
 
 
 class SideBar(QFrame):
@@ -13,11 +20,17 @@ class SideBar(QFrame):
     pageChanged = pyqtSignal(str)
 
     def __init__(self, parent=None):
+        """
+        Инициализирует боковую панель.
+
+        Args:
+            parent: Родительский виджет.
+        """
         super().__init__(parent)
         self.setFixedWidth(200)
         self.setStyleSheet("background-color: #FF5722;")
-        self.setup_ui()
         self._current_page = "manager"  # По умолчанию активна страница менеджера
+        self.setup_ui()
 
     def setup_ui(self):
         """Настройка UI компонентов бокового меню"""
@@ -27,9 +40,9 @@ class SideBar(QFrame):
         layout.setSpacing(20)
 
         # Создаем кнопки с иконками
-        self.btn_manager = self._create_sidebar_button("Менеджер ботов", "assets/icons/manager.svg")
-        self.btn_create = self._create_sidebar_button("Создать бота", "assets/icons/create.svg")
-        self.btn_settings = self._create_sidebar_button("Настройки", "assets/icons/settings.svg")
+        self.btn_manager = self._create_sidebar_button("Менеджер ботов", "manager")
+        self.btn_create = self._create_sidebar_button("Создать бота", "create")
+        self.btn_settings = self._create_sidebar_button("Настройки", "settings")
 
         # Добавляем кнопки в layout
         layout.addWidget(self.btn_manager)
@@ -47,10 +60,19 @@ class SideBar(QFrame):
         self.btn_create.clicked.connect(lambda: self.change_page("create"))
         self.btn_settings.clicked.connect(lambda: self.change_page("settings"))
 
-    def _create_sidebar_button(self, text, icon_path):
-        """Создает стилизованную кнопку для бокового меню"""
+    def _create_sidebar_button(self, text, icon_name):
+        """
+        Создает стилизованную кнопку для бокового меню.
+
+        Args:
+            text: Текст кнопки.
+            icon_name: Имя иконки.
+
+        Returns:
+            QPushButton: Созданная кнопка.
+        """
         btn = QPushButton(text)
-        btn.setIcon(QIcon(icon_path))
+        btn.setIcon(QIcon(Resources.get_icon_path(icon_name)))
         btn.setFont(QFont("Segoe UI", 12))
         btn.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         btn.setFixedHeight(40)
@@ -70,7 +92,12 @@ class SideBar(QFrame):
         return btn
 
     def set_active_page(self, page_name):
-        """Устанавливает активную страницу и обновляет стили кнопок"""
+        """
+        Устанавливает активную страницу и обновляет стили кнопок.
+
+        Args:
+            page_name: Имя активной страницы.
+        """
         self._current_page = page_name
 
         # Сброс стилей всех кнопок
@@ -113,7 +140,12 @@ class SideBar(QFrame):
             self.btn_settings.setStyleSheet(active_btn_style)
 
     def change_page(self, page_name):
-        """Меняет активную страницу и испускает сигнал для обновления основного окна"""
+        """
+        Меняет активную страницу и испускает сигнал для обновления основного окна.
+
+        Args:
+            page_name: Имя страницы для активации.
+        """
         if self._current_page != page_name:
             self.set_active_page(page_name)
             self.pageChanged.emit(page_name)

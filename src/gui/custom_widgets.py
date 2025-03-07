@@ -1,5 +1,8 @@
-# b_maker/src/gui/custom_widgets.py
-from PyQt6.QtWidgets import QDialog, QLabel, QVBoxLayout, QLineEdit, QPushButton
+# src/gui/custom_widgets.py
+"""
+Модуль содержит пользовательские виджеты для интерфейса приложения.
+"""
+
 from PyQt6.QtWidgets import (
     QDialog, QLabel, QVBoxLayout, QLineEdit, QPushButton,
     QGroupBox, QHBoxLayout, QSpinBox, QDoubleSpinBox,
@@ -13,7 +16,12 @@ from PyQt6.QtGui import QFont
 import os
 from typing import Dict, List, Any, Optional
 
-# Обновление для класса ClickModuleDialog
+# Импортируем константы стилей
+from src.utils.style_constants import (
+    DIALOG_STYLE, CHECKBOX_STYLE, TAB_AND_TABLE_STYLE,
+    SCROLLBAR_STYLE, COMBOBOX_STYLE, FULL_DIALOG_STYLE
+)
+
 
 class ClickModuleDialog(QDialog):
     """
@@ -29,49 +37,12 @@ class ClickModuleDialog(QDialog):
         self.setup_ui()
 
     def setup_ui(self):
+        """Настраивает интерфейс диалога"""
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
 
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #2C2C2C;
-                color: white;
-            }
-            QLabel {
-                color: white;
-                font-weight: bold;
-            }
-            QLineEdit, QSpinBox, QDoubleSpinBox {
-                background-color: #3A3A3A;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 4px;
-                padding: 5px;
-            }
-            QPushButton {
-                background-color: #FF5722;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                padding: 8px 16px;
-            }
-            QPushButton:hover {
-                background-color: #FF7043;
-            }
-            QGroupBox {
-                color: #FFA500;
-                font-weight: bold;
-                border: 1px solid #555;
-                border-radius: 4px;
-                margin-top: 15px;
-                padding-top: 15px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-            }
-        """)
+        # Используем стиль из констант
+        self.setStyleSheet(DIALOG_STYLE)
 
         coords_group = QGroupBox("Координаты клика")
         coords_layout = QVBoxLayout(coords_group)
@@ -140,7 +111,7 @@ class ClickModuleDialog(QDialog):
 
         layout.addLayout(buttons_layout)
 
-    def get_data(self) -> dict:
+    def get_data(self) -> Dict[str, Any]:
         """
         Возвращает данные, введенные пользователем.
         """
@@ -170,47 +141,8 @@ class SwipeModuleDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
 
-        # Применяем общий стиль к диалогу
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #2C2C2C;
-                color: white;
-            }
-            QLabel {
-                color: white;
-                font-weight: bold;
-            }
-            QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
-                background-color: #3A3A3A;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 4px;
-                padding: 5px;
-            }
-            QPushButton {
-                background-color: #FF5722;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                padding: 8px 16px;
-            }
-            QPushButton:hover {
-                background-color: #FF7043;
-            }
-            QGroupBox {
-                color: #FFA500;
-                font-weight: bold;
-                border: 1px solid #555;
-                border-radius: 4px;
-                margin-top: 15px;
-                padding-top: 15px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-            }
-        """)
+        # Применяем стиль из констант
+        self.setStyleSheet(DIALOG_STYLE)
 
         # Координаты начала свайпа
         start_group = QGroupBox("Начальные координаты")
@@ -330,95 +262,8 @@ class ImageSearchModuleDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
 
-        # Применяем общий стиль к диалогу
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #2C2C2C;
-                color: white;
-            }
-            QLabel {
-                color: white;
-                font-weight: bold;
-            }
-            QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
-                background-color: #3A3A3A;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 4px;
-                padding: 5px;
-            }
-            QPushButton {
-                background-color: #FF5722;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                padding: 8px 16px;
-            }
-            QPushButton:hover {
-                background-color: #FF7043;
-            }
-            QGroupBox {
-                color: #FFA500;
-                font-weight: bold;
-                border: 1px solid #555;
-                border-radius: 4px;
-                margin-top: 15px;
-                padding-top: 15px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-            }
-            QCheckBox {
-                color: white;
-                spacing: 5px;
-            }
-            QCheckBox::indicator {
-                width: 15px;
-                height: 15px;
-            }
-            QCheckBox::indicator:unchecked {
-                border: 1px solid #555;
-                background-color: #2C2C2C;
-            }
-            QCheckBox::indicator:checked {
-                border: 1px solid #555;
-                background-color: #FF5722;
-            }
-            QTabWidget::pane {
-                border: 1px solid #555;
-                border-radius: 4px;
-                background-color: #2C2C2C;
-            }
-            QTabBar::tab {
-                background-color: #3A3A3A;
-                color: white;
-                border: 1px solid #555;
-                border-bottom: none;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-                min-width: 8ex;
-                padding: 6px;
-            }
-            QTabBar::tab:selected {
-                background-color: #FF5722;
-            }
-            QTabBar::tab:!selected {
-                margin-top: 2px;
-            }
-            QTableWidget {
-                background-color: #3A3A3A;
-                color: white;
-                gridline-color: #555;
-            }
-            QHeaderView::section {
-                background-color: #FF5722;
-                color: white;
-                padding: 4px;
-                border: 1px solid #555;
-            }
-        """)
+        # Используем полный стиль для диалога с таблицами и табами
+        self.setStyleSheet(FULL_DIALOG_STYLE)
 
         # Выбор изображения
         image_group = QGroupBox("Выбор изображения")
@@ -576,7 +421,7 @@ class ImageSearchModuleDialog(QDialog):
 
         self.additional_image.clear()
 
-    def remove_image(self, row):
+    def remove_image(self, row: int):
         """Удаляет изображение из списка"""
         self.images_list.removeRow(row)
 
@@ -625,85 +470,8 @@ class ActivityModuleDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
 
-        # Применяем общий стиль к диалогу
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #2C2C2C;
-                color: white;
-            }
-            QLabel {
-                color: white;
-                font-weight: bold;
-            }
-            QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
-                background-color: #3A3A3A;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 4px;
-                padding: 5px;
-            }
-            QPushButton {
-                background-color: #FF5722;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                padding: 8px 16px;
-            }
-            QPushButton:hover {
-                background-color: #FF7043;
-            }
-            QGroupBox {
-                color: #FFA500;
-                font-weight: bold;
-                border: 1px solid #555;
-                border-radius: 4px;
-                margin-top: 15px;
-                padding-top: 15px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 10px;
-                padding: 0 5px;
-            }
-            QCheckBox {
-                color: white;
-                spacing: 5px;
-            }
-            QCheckBox::indicator {
-                width: 15px;
-                height: 15px;
-            }
-            QCheckBox::indicator:unchecked {
-                border: 1px solid #555;
-                background-color: #2C2C2C;
-            }
-            QCheckBox::indicator:checked {
-                border: 1px solid #555;
-                background-color: #FF5722;
-            }
-            QComboBox {
-                background-color: #3A3A3A;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 4px;
-                padding: 5px;
-                min-width: 6em;
-            }
-            QComboBox::drop-down {
-                subcontrol-origin: padding;
-                subcontrol-position: top right;
-                width: 15px;
-                border-left-width: 1px;
-                border-left-color: #555;
-                border-left-style: solid;
-            }
-            QComboBox QAbstractItemView {
-                border: 1px solid #555;
-                selection-background-color: #FF5722;
-                background-color: #2C2C2C;
-                color: white;
-            }
-        """)
+        # Применяем общий стиль из констант
+        self.setStyleSheet(FULL_DIALOG_STYLE)
 
         title_label = QLabel("Настройка проверки активности игры")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -780,8 +548,13 @@ class ActivityModuleDialog(QDialog):
         # Инициализация UI согласно начальному выбору
         self.update_ui_based_on_action(0)
 
-    def update_ui_based_on_action(self, index):
-        """Обновляет UI в зависимости от выбранного действия"""
+    def update_ui_based_on_action(self, index: int):
+        """
+        Обновляет UI в зависимости от выбранного действия.
+
+        Args:
+            index: Индекс выбранного действия.
+        """
         self.continue_options_group.setVisible(index == 0)  # Показываем опции только для continue_bot
 
     def get_data(self) -> Dict[str, Any]:
