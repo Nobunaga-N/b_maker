@@ -8,31 +8,109 @@ from PyQt6.QtWidgets import (
     QGroupBox, QHBoxLayout, QSpinBox, QDoubleSpinBox,
     QComboBox, QCheckBox, QTableWidget, QHeaderView,
     QTableWidgetItem, QFileDialog, QMessageBox, QTabWidget,
-    QWidget, QFrame
+    QWidget, QFrame, QSplitter, QToolButton, QMenu
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont, QIcon, QAction
 
 import os
 from typing import Dict, List, Any, Optional
 
 from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog
-
 from src.utils.style_constants import FULL_DIALOG_STYLE
+
+
+class ScriptItemWidget(QFrame):
+    """
+    Виджет элемента скрипта поиска изображений.
+    Представляет один элемент в холсте скрипта (if, elif, else и др.)
+    """
+    deleteRequested = pyqtSignal(int)  # Сигнал для запроса удаления (с индексом)
+    editRequested = pyqtSignal(int)  # Сигнал для запроса редактирования (с индексом)
+
+    def __init__(self, index: int, item_type: str, description: str, parent=None):
+        super().__init__(parent)
+        self.index = index
+        self.item_type = item_type
+        self.description = description
+        self.data = {}  # Для хранения дополнительных данных
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Настраивает интерфейс элемента скрипта"""
+        # Устанавливаем стиль рамки
+        self.setStyleSheet("""
+            ScriptItemWidget {
+                background-color: #2C2C2C;
+                border: 1px solid #555;
+                border-radius: 4px;
+                margin: 2px;
+            }
+            QLabel {
+                color: white;
+                padding: 5px;
+            }
+            QToolButton {
+                background-color: transparent;
+                border: none;
+                color: white;
+            }
+            QToolButton:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+                border-radius: 4px;
+            }
+        """)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(5, 5, 5, 5)
+
+        # Создаем лейбл с типом элемента (жирный)
+        type_label = QLabel(self.item_type)
+        type_label.setStyleSheet("font-weight: bold; color: #FFA500;")
+
+        # Создаем лейбл с описанием
+        desc_label = QLabel(self.description)
+        desc_label.setWordWrap(True)
+
+        # Создаем кнопки для управления элементом
+        edit_btn = QToolButton()
+        edit_btn.setIcon(QIcon("assets/icons/edit.svg"))
+        edit_btn.setToolTip("Редактировать")
+        edit_btn.clicked.connect(lambda: self.editRequested.emit(self.index))
+
+        delete_btn = QToolButton()
+        delete_btn.setIcon(QIcon("assets/icons/delete.svg"))
+        delete_btn.setToolTip("Удалить")
+        delete_btn.clicked.connect(lambda: self.deleteRequested.emit(self.index))
+
+        # Добавляем элементы в layout
+        layout.addWidget(type_label)
+        layout.addWidget(desc_label, 1)  # Растягиваем описание
+        layout.addWidget(edit_btn)
+        layout.addWidget(delete_btn)
+
+    def set_data(self, data: Dict[str, Any]):
+        """Устанавливает дополнительные данные для элемента"""
+        self.data = data
 
 
 class ImageSearchModuleDialog(QDialog):
     """
     Диалог для настройки модуля поиска изображений.
     Позволяет пользователю настроить поиск одного или нескольких изображений
-    и задать логику обработки результатов поиска.
+    и задать логику обработки результатов поиска с помощью холста.
     """
 
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Настройка модуля поиска изображений")
         self.setModal(True)
-        self.resize(700, 550)
+        self.resize(900, 700)
+
+        # Данные для холста скрипта
+        self.script_items = []  # Элементы скрипта
+
         self.setup_ui()
 
     def setup_ui(self):
@@ -43,8 +121,20 @@ class ImageSearchModuleDialog(QDialog):
         # Используем полный стиль для диалога с таблицами и табами
         self.setStyleSheet(FULL_DIALOG_STYLE)
 
+        # Заголовок
+        title_label = QLabel("Настройка модуля поиска изображений")
+        title_label.setStyleSheet("color: #FFA500; font-size: 18px; font-weight: bold;")
+        layout.addWidget(title_label)
+
+        # Используем сплиттер для разделения настроек изображений и холста
+        splitter = QSplitter(Qt.Orientation.Vertical)
+
+        # === Верхняя часть: Настройки изображений и таймаута ===
+        image_settings_widget = QWidget()
+        image_settings_layout = QVBoxLayout(image_settings_widget)
+
         # Выбор изображения
-        image_group = QGroupBox("Выбор изображения")
+        image_group = QGroupBox("Выбор изображения и настройка таймаута")
         image_layout = QVBoxLayout(image_group)
 
         # Основное изображение
@@ -61,7 +151,7 @@ class ImageSearchModuleDialog(QDialog):
 
         # Настройка таймаута
         hbox2 = QHBoxLayout()
-        timeout_label = QLabel("Таймаут (ожидание появления изображения):")
+        timeout_label = QLabel("Таймаут (ожидание изображения):")
         self.timeout_input = QSpinBox()
         self.timeout_input.setRange(1, 3600)
         self.timeout_input.setValue(120)  # По умолчанию 120 секунд (2 минуты)
@@ -70,20 +160,6 @@ class ImageSearchModuleDialog(QDialog):
         hbox2.addWidget(self.timeout_input)
         hbox2.addStretch(1)
         image_layout.addLayout(hbox2)
-
-        # Настройка time.sleep после нахождения картинки
-        hbox3 = QHBoxLayout()
-        sleep_label = QLabel("Задержка после нахождения (time.sleep):")
-        self.sleep_input = QDoubleSpinBox()
-        self.sleep_input.setRange(0, 60)
-        self.sleep_input.setValue(0.0)  # По умолчанию без задержки
-        self.sleep_input.setDecimals(1)
-        self.sleep_input.setSingleStep(0.1)
-        self.sleep_input.setSuffix(" сек")
-        hbox3.addWidget(sleep_label)
-        hbox3.addWidget(self.sleep_input)
-        hbox3.addStretch(1)
-        image_layout.addLayout(hbox3)
 
         # Добавление дополнительных изображений
         hbox_add = QHBoxLayout()
@@ -111,183 +187,64 @@ class ImageSearchModuleDialog(QDialog):
         self.images_list.setColumnWidth(1, 100)
         image_layout.addWidget(self.images_list)
 
-        layout.addWidget(image_group)
+        image_settings_layout.addWidget(image_group)
+        splitter.addWidget(image_settings_widget)
 
-        # Вкладки для "if result" и "if not result" и "elif" подходов
-        tabs = QTabWidget()
+        # === Нижняя часть: Холст скрипта и панель инструментов ===
+        script_widget = QWidget()
+        script_layout = QVBoxLayout(script_widget)
 
-        # Вкладка "if result"
-        if_result_tab = QWidget()
-        if_result_layout = QVBoxLayout(if_result_tab)
+        # Панель инструментов для холста
+        toolbar_layout = QHBoxLayout()
+        toolbar_layout.setSpacing(5)
 
-        found_label = QLabel("Действия, если изображение найдено:")
-        found_label.setStyleSheet("color: #FFA500; font-size: 14px;")
-        if_result_layout.addWidget(found_label)
+        # Заголовок для холста
+        canvas_label = QLabel("Рабочий холст для скрипта поиска изображений")
+        canvas_label.setStyleSheet("color: #FFA500; font-size: 14px; font-weight: bold;")
+        toolbar_layout.addWidget(canvas_label)
 
-        # Выбор конкретного изображения, для которого задаются действия
-        hbox_image_selector = QHBoxLayout()
-        image_selector_label = QLabel("Выберите изображение:")
-        self.image_selector_combo = QComboBox()
-        self.image_selector_combo.addItem("Любое найденное изображение")
-        hbox_image_selector.addWidget(image_selector_label)
-        hbox_image_selector.addWidget(self.image_selector_combo, 1)
-        if_result_layout.addLayout(hbox_image_selector)
+        toolbar_layout.addStretch(1)  # Растягиваем между заголовком и кнопками
 
-        # Сообщение в консоль
-        log_label = QLabel("Сообщение в консоль:")
-        self.log_event_if_found = QLineEdit()
-        self.log_event_if_found.setPlaceholderText("Сообщение для вывода в консоль (например, 'Победа найдена!')")
-        self.log_event_if_found.setText("Изображение найдено!")
-        if_result_layout.addWidget(log_label)
-        if_result_layout.addWidget(self.log_event_if_found)
+        # Кнопки для добавления элементов скрипта
+        add_if_result_btn = QPushButton("Добавить IF Result")
+        add_if_result_btn.setIcon(QIcon("assets/icons/create.svg"))
+        add_if_result_btn.clicked.connect(self.add_if_result_block)
 
-        # Группа действий
-        actions_group = QGroupBox("Выберите действия:")
-        actions_layout = QVBoxLayout(actions_group)
+        add_elif_btn = QPushButton("Добавить ELIF")
+        add_elif_btn.setIcon(QIcon("assets/icons/create.svg"))
+        add_elif_btn.clicked.connect(self.add_elif_block)
 
-        self.click_coords_check = QCheckBox("Кликнуть по координатам найденного изображения (get_coords)")
-        self.click_coords_check.setToolTip("Кликнуть в центр найденного изображения")
+        add_if_not_result_btn = QPushButton("Добавить IF Not Result")
+        add_if_not_result_btn.setIcon(QIcon("assets/icons/create.svg"))
+        add_if_not_result_btn.clicked.connect(self.add_if_not_result_block)
 
-        self.additional_actions_check = QCheckBox("Добавить дополнительные действия (клики/свайпы)")
-        self.additional_actions_check.setToolTip("Добавить дополнительные действия после нахождения изображения")
-        self.additional_actions_check.stateChanged.connect(self.toggle_additional_actions)
+        toolbar_layout.addWidget(add_if_result_btn)
+        toolbar_layout.addWidget(add_elif_btn)
+        toolbar_layout.addWidget(add_if_not_result_btn)
 
-        # Контейнер для дополнительных действий
-        self.additional_actions_container = QFrame()
-        additional_actions_layout = QVBoxLayout(self.additional_actions_container)
-        additional_actions_layout.setContentsMargins(20, 5, 5, 5)
+        script_layout.addLayout(toolbar_layout)
 
-        # Таблица для дополнительных действий
-        self.additional_actions_table = QTableWidget(0, 3)
-        self.additional_actions_table.setHorizontalHeaderLabels(["Тип", "Параметры", ""])
-        self.additional_actions_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        self.additional_actions_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.additional_actions_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
-        self.additional_actions_table.setColumnWidth(0, 120)
-        self.additional_actions_table.setColumnWidth(2, 100)
+        # Холст для скрипта
+        self.script_canvas = QWidget()
+        self.script_canvas_layout = QVBoxLayout(self.script_canvas)
+        self.script_canvas_layout.setContentsMargins(0, 0, 0, 0)
+        self.script_canvas_layout.setSpacing(5)
+        self.script_canvas_layout.addStretch()  # Добавляем растяжку внизу
 
-        # Кнопки для добавления действий
-        add_actions_layout = QHBoxLayout()
-        self.add_click_btn = QPushButton("Добавить клик")
-        self.add_swipe_btn = QPushButton("Добавить свайп")
-        self.add_sleep_btn = QPushButton("Добавить паузу")
+        # Заворачиваем холст в скролл область
+        scroll_area = QFrame()
+        scroll_layout = QVBoxLayout(scroll_area)
+        scroll_layout.setContentsMargins(0, 0, 0, 0)
+        scroll_layout.addWidget(self.script_canvas)
 
-        # Подключаем сигналы кнопок
-        self.add_click_btn.clicked.connect(self.add_click_action)
-        self.add_swipe_btn.clicked.connect(self.add_swipe_action)
-        self.add_sleep_btn.clicked.connect(self.add_sleep_action)
+        script_layout.addWidget(scroll_area, 1)  # Растягиваем холст
 
-        add_actions_layout.addWidget(self.add_click_btn)
-        add_actions_layout.addWidget(self.add_swipe_btn)
-        add_actions_layout.addWidget(self.add_sleep_btn)
+        splitter.addWidget(script_widget)
 
-        additional_actions_layout.addLayout(add_actions_layout)
-        additional_actions_layout.addWidget(self.additional_actions_table)
+        # Устанавливаем начальное соотношение сплиттера (1:2)
+        splitter.setSizes([200, 400])
 
-        self.additional_actions_container.setVisible(False)  # По умолчанию скрыт
-
-        self.continue_check = QCheckBox("Продолжить выполнение (continue)")
-        self.continue_check.setToolTip("Продолжить выполнение модулей на основном холсте")
-        self.continue_check.setChecked(True)  # По умолчанию включено
-
-        self.stop_bot_check = QCheckBox("Остановить бота (running.clear())")
-        self.stop_bot_check.setToolTip("Экстренно остановить выполнение бота")
-
-        actions_layout.addWidget(self.click_coords_check)
-        actions_layout.addWidget(self.additional_actions_check)
-        actions_layout.addWidget(self.additional_actions_container)
-        actions_layout.addWidget(self.continue_check)
-        actions_layout.addWidget(self.stop_bot_check)
-
-        if_result_layout.addWidget(actions_group)
-
-        # Добавляем кнопку для добавления блока else-if
-        self.add_elif_btn = QPushButton("Добавить блок ELIF для другого изображения")
-        self.add_elif_btn.clicked.connect(self.add_elif_block)
-        if_result_layout.addWidget(self.add_elif_btn)
-
-        tabs.addTab(if_result_tab, "Если изображение найдено")
-
-        # Вкладка "if not result"
-        if_not_result_tab = QWidget()
-        if_not_layout = QVBoxLayout(if_not_result_tab)
-
-        not_found_label = QLabel("Действия, если изображение не найдено:")
-        not_found_label.setStyleSheet("color: #FFA500; font-size: 14px;")
-        if_not_layout.addWidget(not_found_label)
-
-        # Сообщение в консоль
-        nf_log_label = QLabel("Сообщение в консоль:")
-        self.log_event_if_not_found = QLineEdit()
-        self.log_event_if_not_found.setPlaceholderText(
-            "Сообщение для вывода в консоль (например, 'Изображение не найдено!')")
-        self.log_event_if_not_found.setText("Изображение не найдено!")
-        if_not_layout.addWidget(nf_log_label)
-        if_not_layout.addWidget(self.log_event_if_not_found)
-
-        # Группа действий для случая "картинка не найдена"
-        not_found_group = QGroupBox("Выберите действия:")
-        not_found_layout = QVBoxLayout(not_found_group)
-
-        self.not_found_additional_actions_check = QCheckBox("Добавить дополнительные действия (клики/свайпы)")
-        self.not_found_additional_actions_check.setToolTip(
-            "Добавить дополнительные действия, если изображение не найдено")
-        self.not_found_additional_actions_check.stateChanged.connect(self.toggle_not_found_additional_actions)
-
-        # Контейнер для дополнительных действий при ненахождении
-        self.not_found_actions_container = QFrame()
-        not_found_actions_layout = QVBoxLayout(self.not_found_actions_container)
-        not_found_actions_layout.setContentsMargins(20, 5, 5, 5)
-
-        # Таблица для дополнительных действий
-        self.not_found_actions_table = QTableWidget(0, 3)
-        self.not_found_actions_table.setHorizontalHeaderLabels(["Тип", "Параметры", ""])
-        self.not_found_actions_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        self.not_found_actions_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        self.not_found_actions_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
-        self.not_found_actions_table.setColumnWidth(0, 120)
-        self.not_found_actions_table.setColumnWidth(2, 100)
-
-        # Кнопки для добавления действий
-        not_found_add_actions_layout = QHBoxLayout()
-        self.not_found_add_click_btn = QPushButton("Добавить клик")
-        self.not_found_add_swipe_btn = QPushButton("Добавить свайп")
-        self.not_found_add_sleep_btn = QPushButton("Добавить паузу")
-
-        # Подключаем сигналы кнопок
-        self.not_found_add_click_btn.clicked.connect(lambda: self.add_click_action(for_not_found=True))
-        self.not_found_add_swipe_btn.clicked.connect(lambda: self.add_swipe_action(for_not_found=True))
-        self.not_found_add_sleep_btn.clicked.connect(lambda: self.add_sleep_action(for_not_found=True))
-
-        not_found_add_actions_layout.addWidget(self.not_found_add_click_btn)
-        not_found_add_actions_layout.addWidget(self.not_found_add_swipe_btn)
-        not_found_add_actions_layout.addWidget(self.not_found_add_sleep_btn)
-
-        not_found_actions_layout.addLayout(not_found_add_actions_layout)
-        not_found_actions_layout.addWidget(self.not_found_actions_table)
-
-        self.not_found_actions_container.setVisible(False)  # По умолчанию скрыт
-
-        self.continue_not_found_check = QCheckBox("Продолжить выполнение (continue)")
-        self.continue_not_found_check.setToolTip("Продолжить выполнение модулей на основном холсте")
-        self.continue_not_found_check.setChecked(True)  # По умолчанию включено
-
-        self.stop_not_found_check = QCheckBox("Остановить бота (running.clear())")
-        self.stop_not_found_check.setToolTip("Экстренно остановить выполнение бота")
-
-        not_found_layout.addWidget(self.not_found_additional_actions_check)
-        not_found_layout.addWidget(self.not_found_actions_container)
-        not_found_layout.addWidget(self.continue_not_found_check)
-        not_found_layout.addWidget(self.stop_not_found_check)
-
-        if_not_layout.addWidget(not_found_group)
-        tabs.addTab(if_not_result_tab, "Если изображение не найдено")
-
-        # Добавляем вкладки для ELIF блоков (добавятся динамически)
-        self.elif_tabs = []  # Для хранения вкладок ELIF
-
-        layout.addWidget(tabs)
-        self.tabs = tabs  # Сохраняем ссылку на TabWidget
+        layout.addWidget(splitter, 1)  # Растягиваем сплиттер
 
         # Кнопки подтверждения/отмены
         buttons_layout = QHBoxLayout()
@@ -299,493 +256,6 @@ class ImageSearchModuleDialog(QDialog):
         buttons_layout.addWidget(self.btn_confirm)
         layout.addLayout(buttons_layout)
 
-        # Инициализируем данные для сохранения для блоков ELIF
-        self.elif_blocks_data = []
-
-    def remove_action(self, row, for_not_found=False):
-        """Удаляет действие из таблицы"""
-        table = self.not_found_actions_table if for_not_found else self.additional_actions_table
-        table.removeRow(row)
-
-    def add_elif_click_action(self, elif_id):
-        """Добавляет действие клика в таблицу действий блока ELIF"""
-        # Находим нужный блок ELIF
-        elif_block = None
-        for block in self.elif_tabs:
-            if block["id"] == elif_id:
-                elif_block = block
-                break
-
-        if not elif_block:
-            return
-
-        dialog = ClickModuleDialog(self)
-        if dialog.exec():
-            data = dialog.get_data()
-
-            # Получаем таблицу из блока ELIF
-            table = elif_block["actions_table"]
-
-            # Добавляем в таблицу
-            row = table.rowCount()
-            table.insertRow(row)
-
-            table.setItem(row, 0, QTableWidgetItem("Клик"))
-            description = f"X: {data['x']}, Y: {data['y']}, Задержка: {data['sleep']}с"
-            if data['description']:
-                description += f", {data['description']}"
-            table.setItem(row, 1, QTableWidgetItem(description))
-
-            # Сохраняем данные в тег элемента
-            item = table.item(row, 0)
-            item.setData(Qt.ItemDataRole.UserRole, data)
-
-            # Кнопка удаления
-            delete_btn = QPushButton("Удалить")
-            delete_btn.clicked.connect(lambda: self.remove_elif_action(elif_id, row))
-            table.setCellWidget(row, 2, delete_btn)
-
-    def add_elif_swipe_action(self, elif_id):
-        """Добавляет действие свайпа в таблицу действий блока ELIF"""
-        # Находим нужный блок ELIF
-        elif_block = None
-        for block in self.elif_tabs:
-            if block["id"] == elif_id:
-                elif_block = block
-                break
-
-        if not elif_block:
-            return
-
-        dialog = SwipeModuleDialog(self)
-        if dialog.exec():
-            data = dialog.get_data()
-
-            # Получаем таблицу из блока ELIF
-            table = elif_block["actions_table"]
-
-            # Добавляем в таблицу
-            row = table.rowCount()
-            table.insertRow(row)
-
-            table.setItem(row, 0, QTableWidgetItem("Свайп"))
-            description = f"От ({data['x1']}, {data['y1']}) до ({data['x2']}, {data['y2']}), Задержка: {data['sleep']}с"
-            if data['description']:
-                description += f", {data['description']}"
-            table.setItem(row, 1, QTableWidgetItem(description))
-
-            # Сохраняем данные в тег элемента
-            item = table.item(row, 0)
-            item.setData(Qt.ItemDataRole.UserRole, data)
-
-            # Кнопка удаления
-            delete_btn = QPushButton("Удалить")
-            delete_btn.clicked.connect(lambda: self.remove_elif_action(elif_id, row))
-            table.setCellWidget(row, 2, delete_btn)
-
-    def add_elif_sleep_action(self, elif_id):
-        """Добавляет действие паузы в таблицу действий блока ELIF"""
-        # Находим нужный блок ELIF
-        elif_block = None
-        for block in self.elif_tabs:
-            if block["id"] == elif_id:
-                elif_block = block
-                break
-
-        if not elif_block:
-            return
-
-        # Создаем простой диалог для ввода времени паузы
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Добавить паузу")
-        dialog.setModal(True)
-
-        layout = QVBoxLayout(dialog)
-
-        # Спиннер для времени
-        hbox = QHBoxLayout()
-        label = QLabel("Время паузы (секунды):")
-        spinner = QDoubleSpinBox()
-        spinner.setRange(0.1, 60.0)
-        spinner.setValue(1.0)
-        spinner.setDecimals(1)
-        spinner.setSingleStep(0.1)
-        spinner.setSuffix(" сек")
-
-        hbox.addWidget(label)
-        hbox.addWidget(spinner)
-        layout.addLayout(hbox)
-
-        # Кнопки
-        buttons = QHBoxLayout()
-        cancel_btn = QPushButton("Отмена")
-        ok_btn = QPushButton("OK")
-
-        cancel_btn.clicked.connect(dialog.reject)
-        ok_btn.clicked.connect(dialog.accept)
-
-        buttons.addWidget(cancel_btn)
-        buttons.addWidget(ok_btn)
-        layout.addLayout(buttons)
-
-        # Если диалог принят, добавляем паузу
-        if dialog.exec():
-            sleep_time = spinner.value()
-
-            # Получаем таблицу из блока ELIF
-            table = elif_block["actions_table"]
-
-            # Добавляем в таблицу
-            row = table.rowCount()
-            table.insertRow(row)
-
-            table.setItem(row, 0, QTableWidgetItem("Пауза"))
-            description = f"Пауза {sleep_time} секунд"
-            table.setItem(row, 1, QTableWidgetItem(description))
-
-            # Сохраняем данные в тег элемента
-            data = {"type": "sleep", "time": sleep_time}
-            item = table.item(row, 0)
-            item.setData(Qt.ItemDataRole.UserRole, data)
-
-            # Кнопка удаления
-            delete_btn = QPushButton("Удалить")
-            delete_btn.clicked.connect(lambda: self.remove_elif_action(elif_id, row))
-            table.setCellWidget(row, 2, delete_btn)
-
-    def remove_elif_action(self, elif_id, row):
-        """Удаляет действие из таблицы блока ELIF"""
-        # Находим нужный блок ELIF
-        elif_block = None
-        for block in self.elif_tabs:
-            if block["id"] == elif_id:
-                elif_block = block
-                break
-
-        if not elif_block:
-            return
-
-        # Удаляем строку из таблицы
-        table = elif_block["actions_table"]
-        table.removeRow(row)
-
-    def remove_elif_block(self, elif_id):
-        """Удаляет блок ELIF"""
-        # Находим нужный блок ELIF
-        elif_index = -1
-        for i, block in enumerate(self.elif_tabs):
-            if block["id"] == elif_id:
-                elif_index = i
-                break
-
-        if elif_index == -1:
-            return
-
-        # Спрашиваем подтверждение
-        reply = QMessageBox.question(
-            self,
-            "Удаление блока ELIF",
-            "Вы уверены, что хотите удалить этот блок ELIF?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
-
-        if reply == QMessageBox.StandardButton.Yes:
-            # Удаляем вкладку
-            block = self.elif_tabs[elif_index]
-            tab_index = block["tab_index"]
-            self.tabs.removeTab(tab_index)
-
-            # Удаляем данные блока из списка
-            self.elif_tabs.pop(elif_index)
-
-            # Обновляем индексы вкладок для оставшихся блоков ELIF
-            for i, block in enumerate(self.elif_tabs):
-                block["tab_index"] = self.tabs.indexOf(block["tab_widget"])
-
-    def get_data(self) -> Dict[str, Any]:
-        """Возвращает данные, заполненные пользователем"""
-        images = [self.image_name.text().strip()]
-
-        # Добавляем остальные изображения из таблицы
-        for row in range(self.images_list.rowCount()):
-            img_name = self.images_list.item(row, 0).text()
-            if img_name not in images:  # Избегаем дубликатов
-                images.append(img_name)
-
-        # Получаем выбранное изображение для if_result
-        selected_image = None
-        if self.image_selector_combo.currentIndex() > 0:  # Если выбрано конкретное изображение
-            selected_image = self.image_selector_combo.currentText()
-
-        # Собираем действия для if_result
-        if_result_actions = []
-        if self.additional_actions_check.isChecked():
-            for row in range(self.additional_actions_table.rowCount()):
-                action_type = self.additional_actions_table.item(row, 0).text()
-                action_data = self.additional_actions_table.item(row, 0).data(Qt.ItemDataRole.UserRole)
-
-                if action_type == "Клик":
-                    if_result_actions.append({
-                        "type": "click",
-                        "x": action_data["x"],
-                        "y": action_data["y"],
-                        "description": action_data["description"],
-                        "sleep": action_data["sleep"]
-                    })
-                elif action_type == "Свайп":
-                    if_result_actions.append({
-                        "type": "swipe",
-                        "x1": action_data["x1"],
-                        "y1": action_data["y1"],
-                        "x2": action_data["x2"],
-                        "y2": action_data["y2"],
-                        "description": action_data["description"],
-                        "sleep": action_data["sleep"]
-                    })
-                elif action_type == "Пауза":
-                    if_result_actions.append({
-                        "type": "sleep",
-                        "time": action_data["time"]
-                    })
-
-        # Собираем действия для if_not_result
-        if_not_result_actions = []
-        if self.not_found_additional_actions_check.isChecked():
-            for row in range(self.not_found_actions_table.rowCount()):
-                action_type = self.not_found_actions_table.item(row, 0).text()
-                action_data = self.not_found_actions_table.item(row, 0).data(Qt.ItemDataRole.UserRole)
-
-                if action_type == "Клик":
-                    if_not_result_actions.append({
-                        "type": "click",
-                        "x": action_data["x"],
-                        "y": action_data["y"],
-                        "description": action_data["description"],
-                        "sleep": action_data["sleep"]
-                    })
-                elif action_type == "Свайп":
-                    if_not_result_actions.append({
-                        "type": "swipe",
-                        "x1": action_data["x1"],
-                        "y1": action_data["y1"],
-                        "x2": action_data["x2"],
-                        "y2": action_data["y2"],
-                        "description": action_data["description"],
-                        "sleep": action_data["sleep"]
-                    })
-                elif action_type == "Пауза":
-                    if_not_result_actions.append({
-                        "type": "sleep",
-                        "time": action_data["time"]
-                    })
-
-        # Собираем данные блоков ELIF
-        elif_blocks = []
-        for block in self.elif_tabs:
-            # Получаем выбранное изображение для блока ELIF
-            elif_image = block["image_combo"].currentText()
-
-            # Собираем действия для блока ELIF
-            elif_actions = []
-            if block["additional_actions_check"].isChecked():
-                for row in range(block["actions_table"].rowCount()):
-                    action_type = block["actions_table"].item(row, 0).text()
-                    action_data = block["actions_table"].item(row, 0).data(Qt.ItemDataRole.UserRole)
-
-                    if action_type == "Клик":
-                        elif_actions.append({
-                            "type": "click",
-                            "x": action_data["x"],
-                            "y": action_data["y"],
-                            "description": action_data["description"],
-                            "sleep": action_data["sleep"]
-                        })
-                    elif action_type == "Свайп":
-                        elif_actions.append({
-                            "type": "swipe",
-                            "x1": action_data["x1"],
-                            "y1": action_data["y1"],
-                            "x2": action_data["x2"],
-                            "y2": action_data["y2"],
-                            "description": action_data["description"],
-                            "sleep": action_data["sleep"]
-                        })
-                    elif action_type == "Пауза":
-                        elif_actions.append({
-                            "type": "sleep",
-                            "time": action_data["time"]
-                        })
-
-            elif_blocks.append({
-                "image": elif_image,
-                "log_event": block["log_input"].text().strip(),
-                "get_coords": block["click_coords_check"].isChecked(),
-                "actions": elif_actions,
-                "continue": block["continue_check"].isChecked(),
-                "stop_bot": block["stop_bot_check"].isChecked()
-            })
-
-        result = {
-            "type": "image_search",
-            "images": images,
-            "timeout": self.timeout_input.value(),
-            "sleep_after_find": self.sleep_input.value(),
-            "if_result": {
-                "image": selected_image,  # None или имя конкретного изображения
-                "log_event": self.log_event_if_found.text().strip(),
-                "get_coords": self.click_coords_check.isChecked(),
-                "actions": if_result_actions,
-                "continue": self.continue_check.isChecked(),
-                "stop_bot": self.stop_bot_check.isChecked()
-            },
-            "if_not_result": {
-                "log_event": self.log_event_if_not_found.text().strip(),
-                "actions": if_not_result_actions,
-                "continue": self.continue_not_found_check.isChecked(),
-                "stop_bot": self.stop_not_found_check.isChecked()
-            }
-        }
-
-        # Добавляем блоки ELIF только если они есть
-        if elif_blocks:
-            result["elif_blocks"] = elif_blocks
-
-        return result
-
-    def add_elif_block(self):
-        """Добавляет новый блок ELIF для другого изображения"""
-        # Создаем новую вкладку для блока ELIF
-        elif_tab = QWidget()
-        elif_layout = QVBoxLayout(elif_tab)
-
-        elif_label = QLabel("Действия, если найдено другое изображение:")
-        elif_label.setStyleSheet("color: #FFA500; font-size: 14px;")
-        elif_layout.addWidget(elif_label)
-
-        # Выбор конкретного изображения для ELIF
-        hbox_elif_image = QHBoxLayout()
-        elif_image_label = QLabel("Выберите изображение:")
-        elif_image_combo = QComboBox()
-
-        # Заполняем комбобокс доступными изображениями
-        main_image = self.image_name.text().strip()
-        if main_image:
-            elif_image_combo.addItem(main_image)
-
-        for row in range(self.images_list.rowCount()):
-            image_name = self.images_list.item(row, 0).text()
-            if image_name != main_image:  # Избегаем дубликатов
-                elif_image_combo.addItem(image_name)
-
-        hbox_elif_image.addWidget(elif_image_label)
-        hbox_elif_image.addWidget(elif_image_combo, 1)
-        elif_layout.addLayout(hbox_elif_image)
-
-        # Сообщение в консоль
-        elif_log_label = QLabel("Сообщение в консоль:")
-        elif_log_input = QLineEdit()
-        elif_log_input.setPlaceholderText("Сообщение для вывода в консоль")
-        elif_log_input.setText(f"Найдено изображение {elif_image_combo.currentText()}!")
-        elif_layout.addWidget(elif_log_label)
-        elif_layout.addWidget(elif_log_input)
-
-        # Группа действий для ELIF
-        elif_actions_group = QGroupBox("Выберите действия:")
-        elif_actions_layout = QVBoxLayout(elif_actions_group)
-
-        elif_click_coords_check = QCheckBox("Кликнуть по координатам найденного изображения (get_coords)")
-
-        elif_additional_actions_check = QCheckBox("Добавить дополнительные действия (клики/свайпы)")
-        elif_additional_actions_check.setToolTip("Добавить дополнительные действия после нахождения изображения")
-
-        # Контейнер для дополнительных действий ELIF
-        elif_actions_container = QFrame()
-        elif_actions_layout = QVBoxLayout(elif_actions_container)
-        elif_actions_layout.setContentsMargins(20, 5, 5, 5)
-
-        # Таблица для дополнительных действий ELIF
-        elif_actions_table = QTableWidget(0, 3)
-        elif_actions_table.setHorizontalHeaderLabels(["Тип", "Параметры", ""])
-        elif_actions_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
-        elif_actions_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        elif_actions_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
-        elif_actions_table.setColumnWidth(0, 120)
-        elif_actions_table.setColumnWidth(2, 100)
-
-        # Кнопки для добавления действий ELIF
-        elif_add_actions_layout = QHBoxLayout()
-        elif_add_click_btn = QPushButton("Добавить клик")
-        elif_add_swipe_btn = QPushButton("Добавить свайп")
-        elif_add_sleep_btn = QPushButton("Добавить паузу")
-
-        # Идентификатор для блока ELIF
-        elif_id = len(self.elif_tabs)
-
-        # Подключаем сигналы кнопок с передачей идентификатора блока
-        elif_add_click_btn.clicked.connect(lambda: self.add_elif_click_action(elif_id))
-        elif_add_swipe_btn.clicked.connect(lambda: self.add_elif_swipe_action(elif_id))
-        elif_add_sleep_btn.clicked.connect(lambda: self.add_elif_sleep_action(elif_id))
-
-        elif_add_actions_layout.addWidget(elif_add_click_btn)
-        elif_add_actions_layout.addWidget(elif_add_swipe_btn)
-        elif_add_actions_layout.addWidget(elif_add_sleep_btn)
-
-        elif_actions_layout.addLayout(elif_add_actions_layout)
-        elif_actions_layout.addWidget(elif_actions_table)
-
-        elif_actions_container.setVisible(False)  # По умолчанию скрыт
-        elif_additional_actions_check.stateChanged.connect(
-            lambda state: elif_actions_container.setVisible(state == Qt.CheckState.Checked))
-
-        elif_continue_check = QCheckBox("Продолжить выполнение (continue)")
-        elif_continue_check.setToolTip("Продолжить выполнение модулей на основном холсте")
-        elif_continue_check.setChecked(True)  # По умолчанию включено
-
-        elif_stop_bot_check = QCheckBox("Остановить бота (running.clear())")
-        elif_stop_bot_check.setToolTip("Экстренно остановить выполнение бота")
-
-        elif_actions_layout.addWidget(elif_click_coords_check)
-        elif_actions_layout.addWidget(elif_additional_actions_check)
-        elif_actions_layout.addWidget(elif_actions_container)
-        elif_actions_layout.addWidget(elif_continue_check)
-        elif_actions_layout.addWidget(elif_stop_bot_check)
-
-        elif_layout.addWidget(elif_actions_group)
-
-        # Добавляем кнопку удаления блока ELIF
-        remove_elif_btn = QPushButton("Удалить этот блок ELIF")
-        remove_elif_btn.clicked.connect(lambda: self.remove_elif_block(elif_id))
-        elif_layout.addWidget(remove_elif_btn)
-
-        # Добавляем вкладку в TabWidget
-        tab_title = f"ELIF для {elif_image_combo.currentText()}"
-        tab_index = self.tabs.addTab(elif_tab, tab_title)
-
-        # Сохраняем данные блока ELIF
-        elif_block_data = {
-            "id": elif_id,
-            "tab_index": tab_index,
-            "tab_widget": elif_tab,
-            "image_combo": elif_image_combo,
-            "log_input": elif_log_input,
-            "click_coords_check": elif_click_coords_check,
-            "additional_actions_check": elif_additional_actions_check,
-            "actions_container": elif_actions_container,
-            "actions_table": elif_actions_table,
-            "continue_check": elif_continue_check,
-            "stop_bot_check": elif_stop_bot_check
-        }
-
-        self.elif_tabs.append(elif_block_data)
-
-    def toggle_additional_actions(self, state):
-        """Показывает или скрывает контейнер для дополнительных действий"""
-        self.additional_actions_container.setVisible(state == Qt.CheckState.Checked)
-
-    def toggle_not_found_additional_actions(self, state):
-        """Показывает или скрывает контейнер для дополнительных действий при ненахождении"""
-        self.not_found_actions_container.setVisible(state == Qt.CheckState.Checked)
-
     def browse_image(self):
         """Открывает диалог выбора основного изображения"""
         file_path, _ = QFileDialog.getOpenFileName(
@@ -795,10 +265,6 @@ class ImageSearchModuleDialog(QDialog):
             # Получаем только имя файла
             file_name = os.path.basename(file_path)
             self.image_name.setText(file_name)
-
-            # Добавляем изображение в выпадающий список
-            if self.image_selector_combo.findText(file_name) == -1:
-                self.image_selector_combo.addItem(file_name)
 
     def browse_additional_image(self):
         """Открывает диалог выбора дополнительного изображения"""
@@ -833,145 +299,1903 @@ class ImageSearchModuleDialog(QDialog):
         delete_btn.clicked.connect(lambda: self.remove_image(row_position))
         self.images_list.setCellWidget(row_position, 1, delete_btn)
 
-        # Добавляем изображение в выпадающий список
-        if self.image_selector_combo.findText(image_name) == -1:
-            self.image_selector_combo.addItem(image_name)
-
         self.additional_image.clear()
 
     def remove_image(self, row):
         """Удаляет изображение из списка"""
-        image_name = self.images_list.item(row, 0).text()
-
-        # Удаляем из таблицы
         self.images_list.removeRow(row)
 
-        # Проверяем, осталось ли это изображение в других строках таблицы
-        image_exists = False
-        for r in range(self.images_list.rowCount()):
-            if self.images_list.item(r, 0).text() == image_name:
-                image_exists = True
-                break
+    def add_script_item(self, item_type: str, description: str, data: Dict[str, Any] = None):
+        """Добавляет элемент в холст скрипта"""
+        item_index = len(self.script_items)
 
-        # Если это основное изображение и его больше нет в таблице, удаляем из комбобокса
-        if not image_exists and image_name != self.image_name.text():
-            index = self.image_selector_combo.findText(image_name)
-            if index > 0:  # Не удаляем "Любое найденное изображение"
-                self.image_selector_combo.removeItem(index)
+        # Создаем виджет элемента скрипта
+        item_widget = ScriptItemWidget(item_index, item_type, description)
 
-    def add_click_action(self, for_not_found=False):
-        """Добавляет действие клика в таблицу дополнительных действий"""
-        dialog = ClickModuleDialog(self)
-        if dialog.exec():
-            data = dialog.get_data()
+        # Если есть дополнительные данные, сохраняем их
+        if data:
+            item_widget.set_data(data)
 
-            # Определяем, в какую таблицу добавлять
-            table = self.not_found_actions_table if for_not_found else self.additional_actions_table
+        # Подключаем сигналы
+        item_widget.deleteRequested.connect(self.delete_script_item)
+        item_widget.editRequested.connect(self.edit_script_item)
 
-            # Добавляем в таблицу
-            row = table.rowCount()
-            table.insertRow(row)
+        # Добавляем в список и на холст
+        self.script_items.append(item_widget)
 
-            table.setItem(row, 0, QTableWidgetItem("Клик"))
-            description = f"X: {data['x']}, Y: {data['y']}, Задержка: {data['sleep']}с"
-            if data['description']:
-                description += f", {data['description']}"
-            table.setItem(row, 1, QTableWidgetItem(description))
+        # Добавляем перед растяжкой на холсте
+        self.script_canvas_layout.insertWidget(self.script_canvas_layout.count() - 1, item_widget)
 
-            # Сохраняем данные в тег элемента (Python не позволяет это сделать напрямую,
-            # но можно использовать функцию setData с пользовательской ролью)
-            item = table.item(row, 0)
-            item.setData(Qt.ItemDataRole.UserRole, data)
+        # Возвращаем индекс добавленного элемента
+        return item_index
 
-            # Кнопка удаления
-            delete_btn = QPushButton("Удалить")
-            delete_btn.clicked.connect(lambda: self.remove_action(row, for_not_found))
-            table.setCellWidget(row, 2, delete_btn)
+    def delete_script_item(self, index: int):
+        """Удаляет элемент с указанным индексом из холста скрипта"""
+        if 0 <= index < len(self.script_items):
+            # Получаем виджет элемента
+            item_widget = self.script_items[index]
 
-    def add_swipe_action(self, for_not_found=False):
-        """Добавляет действие свайпа в таблицу дополнительных действий"""
-        dialog = SwipeModuleDialog(self)
-        if dialog.exec():
-            data = dialog.get_data()
+            # Спрашиваем подтверждение
+            item_type = item_widget.item_type
+            reply = QMessageBox.question(
+                self,
+                "Удаление элемента",
+                f"Вы уверены, что хотите удалить элемент '{item_type}'?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
 
-            # Определяем, в какую таблицу добавлять
-            table = self.not_found_actions_table if for_not_found else self.additional_actions_table
+            if reply == QMessageBox.StandardButton.Yes:
+                # Удаляем из холста и списка
+                self.script_canvas_layout.removeWidget(item_widget)
+                item_widget.deleteLater()
+                self.script_items.pop(index)
 
-            # Добавляем в таблицу
-            row = table.rowCount()
-            table.insertRow(row)
+                # Обновляем индексы оставшихся элементов
+                for i, item in enumerate(self.script_items):
+                    item.index = i
 
-            table.setItem(row, 0, QTableWidgetItem("Свайп"))
-            description = f"От ({data['x1']}, {data['y1']}) до ({data['x2']}, {data['y2']}), Задержка: {data['sleep']}с"
-            if data['description']:
-                description += f", {data['description']}"
-            table.setItem(row, 1, QTableWidgetItem(description))
+    def edit_script_item(self, index: int):
+        """Редактирует элемент с указанным индексом в холсте скрипта"""
+        if 0 <= index < len(self.script_items):
+            # Получаем виджет элемента
+            item_widget = self.script_items[index]
+            item_type = item_widget.item_type
 
-            # Сохраняем данные в тег элемента
-            item = table.item(row, 0)
-            item.setData(Qt.ItemDataRole.UserRole, data)
+            # В зависимости от типа открываем нужный диалог редактирования
+            if item_type == "IF Result":
+                self.edit_if_result_block(index)
+            elif item_type == "ELIF":
+                self.edit_elif_block(index)
+            elif item_type == "IF Not Result":
+                self.edit_if_not_result_block(index)
 
-            # Кнопка удаления
-            delete_btn = QPushButton("Удалить")
-            delete_btn.clicked.connect(lambda: self.remove_action(row, for_not_found))
-            table.setCellWidget(row, 2, delete_btn)
-
-    def add_sleep_action(self, for_not_found=False):
-        """Добавляет действие паузы (time.sleep) в таблицу дополнительных действий"""
-        # Создаем простой диалог для ввода времени паузы
+    def add_if_result_block(self):
+        """Добавляет блок IF Result на холст"""
+        # Открываем диалог для настройки блока IF Result
         dialog = QDialog(self)
-        dialog.setWindowTitle("Добавить паузу")
+        dialog.setWindowTitle("Настройка блока IF Result")
         dialog.setModal(True)
+        dialog.resize(600, 500)
 
         layout = QVBoxLayout(dialog)
 
-        # Спиннер для времени
-        hbox = QHBoxLayout()
-        label = QLabel("Время паузы (секунды):")
-        spinner = QDoubleSpinBox()
-        spinner.setRange(0.1, 60.0)
-        spinner.setValue(1.0)
-        spinner.setDecimals(1)
-        spinner.setSingleStep(0.1)
-        spinner.setSuffix(" сек")
+        # Выбор конкретного изображения для этого блока
+        hbox_image = QHBoxLayout()
+        image_label = QLabel("Изображение для проверки:")
+        image_combo = QComboBox()
+        image_combo.addItem("Любое найденное изображение")
 
-        hbox.addWidget(label)
-        hbox.addWidget(spinner)
-        layout.addLayout(hbox)
+        # Добавляем все доступные изображения
+        main_image = self.image_name.text().strip()
+        if main_image:
+            image_combo.addItem(main_image)
 
-        # Кнопки
-        buttons = QHBoxLayout()
+        for row in range(self.images_list.rowCount()):
+            image_name = self.images_list.item(row, 0).text()
+            if image_name not in [main_image]:  # Избегаем дубликатов
+                image_combo.addItem(image_name)
+
+        hbox_image.addWidget(image_label)
+        hbox_image.addWidget(image_combo)
+        layout.addLayout(hbox_image)
+
+        # Настройка сообщения в консоль
+        hbox_log = QHBoxLayout()
+        log_label = QLabel("Сообщение в консоль:")
+        log_input = QLineEdit()
+        log_input.setText("Изображение найдено!")
+        log_input.setPlaceholderText("Например: Победа найдена!")
+        hbox_log.addWidget(log_label)
+        hbox_log.addWidget(log_input)
+        layout.addLayout(hbox_log)
+
+        # Чекбоксы для действий
+        actions_group = QGroupBox("Выберите действия:")
+        actions_layout = QVBoxLayout(actions_group)
+
+        get_coords_check = QCheckBox("Кликнуть по координатам найденного изображения (get_coords)")
+        get_coords_check.setToolTip("Кликнуть в центр найденного изображения")
+
+        continue_check = QCheckBox("Продолжить выполнение (continue)")
+        continue_check.setChecked(True)
+
+        stop_bot_check = QCheckBox("Остановить бота (running.clear())")
+
+        actions_layout.addWidget(get_coords_check)
+        actions_layout.addWidget(continue_check)
+        actions_layout.addWidget(stop_bot_check)
+
+        layout.addWidget(actions_group)
+
+        # Чекбокс для дополнительных действий
+        add_actions_check = QCheckBox("Добавить дополнительные действия (клики/свайпы)")
+        layout.addWidget(add_actions_check)
+
+        # Фрейм для дополнительных действий
+        actions_frame = QFrame()
+        actions_frame.setVisible(False)  # По умолчанию скрыт
+        actions_layout = QVBoxLayout(actions_frame)
+
+        # Таблица для дополнительных действий
+        actions_table = QTableWidget(0, 3)
+        actions_table.setHorizontalHeaderLabels(["Тип", "Параметры", ""])
+        actions_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        actions_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        actions_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        actions_table.setColumnWidth(0, 120)
+        actions_table.setColumnWidth(2, 80)
+
+        # Кнопки для добавления действий
+        add_actions_buttons = QHBoxLayout()
+        add_click_btn = QPushButton("Добавить клик")
+        add_swipe_btn = QPushButton("Добавить свайп")
+        add_sleep_btn = QPushButton("Добавить паузу")
+
+        # Функции для добавления действий в таблицу
+        def add_click_to_table():
+            click_dialog = ClickModuleDialog(dialog)
+            if click_dialog.exec():
+                data = click_dialog.get_data()
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+                actions_table.setItem(row, 0, QTableWidgetItem("Клик"))
+                desc = f"X: {data['x']}, Y: {data['y']}, Задержка: {data['sleep']}с"
+                if data['description']:
+                    desc += f", {data['description']}"
+                actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                # Сохраняем данные с помощью setData
+                item = actions_table.item(row, 0)
+                item.setData(Qt.ItemDataRole.UserRole, data)
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                del_btn.clicked.connect(lambda: actions_table.removeRow(row))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+        def add_swipe_to_table():
+            swipe_dialog = SwipeModuleDialog(dialog)
+            if swipe_dialog.exec():
+                data = swipe_dialog.get_data()
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+                actions_table.setItem(row, 0, QTableWidgetItem("Свайп"))
+                desc = f"От ({data['x1']}, {data['y1']}) до ({data['x2']}, {data['y2']}), Задержка: {data['sleep']}с"
+                if data['description']:
+                    desc += f", {data['description']}"
+                actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                # Сохраняем данные с помощью setData
+                item = actions_table.item(row, 0)
+                item.setData(Qt.ItemDataRole.UserRole, data)
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                del_btn.clicked.connect(lambda: actions_table.removeRow(row))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+        def add_sleep_to_table():
+            sleep_dialog = QDialog(dialog)
+            sleep_dialog.setWindowTitle("Добавить паузу")
+            sleep_dialog.setModal(True)
+
+            sleep_layout = QVBoxLayout(sleep_dialog)
+
+            # Спиннер для времени
+            hbox = QHBoxLayout()
+            label = QLabel("Время паузы (секунды):")
+            spinner = QDoubleSpinBox()
+            spinner.setRange(0.1, 60.0)
+            spinner.setValue(1.0)
+            spinner.setDecimals(1)
+            spinner.setSingleStep(0.1)
+            spinner.setSuffix(" сек")
+
+            hbox.addWidget(label)
+            hbox.addWidget(spinner)
+            sleep_layout.addLayout(hbox)
+
+            # Кнопки
+            buttons = QHBoxLayout()
+            cancel_btn = QPushButton("Отмена")
+            ok_btn = QPushButton("OK")
+
+            cancel_btn.clicked.connect(sleep_dialog.reject)
+            ok_btn.clicked.connect(sleep_dialog.accept)
+
+            buttons.addWidget(cancel_btn)
+            buttons.addWidget(ok_btn)
+            sleep_layout.addLayout(buttons)
+
+            if sleep_dialog.exec():
+                sleep_time = spinner.value()
+
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+
+                actions_table.setItem(row, 0, QTableWidgetItem("Пауза"))
+                actions_table.setItem(row, 1, QTableWidgetItem(f"Пауза {sleep_time} секунд"))
+
+                # Сохраняем данные с помощью setData
+                item = actions_table.item(row, 0)
+                item.setData(Qt.ItemDataRole.UserRole, {"type": "sleep", "time": sleep_time})
+
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                del_btn.clicked.connect(lambda: actions_table.removeRow(row))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+        # Подключаем функции к кнопкам
+        add_click_btn.clicked.connect(add_click_to_table)
+        add_swipe_btn.clicked.connect(add_swipe_to_table)
+        add_sleep_btn.clicked.connect(add_sleep_to_table)
+
+        add_actions_buttons.addWidget(add_click_btn)
+        add_actions_buttons.addWidget(add_swipe_btn)
+        add_actions_buttons.addWidget(add_sleep_btn)
+
+        actions_layout.addLayout(add_actions_buttons)
+        actions_layout.addWidget(actions_table)
+
+        layout.addWidget(actions_frame)
+
+        # Показываем/скрываем фрейм дополнительных действий
+        add_actions_check.stateChanged.connect(lambda state: actions_frame.setVisible(state == Qt.CheckState.Checked))
+
+        # Кнопки диалога
+        buttons_layout = QHBoxLayout()
         cancel_btn = QPushButton("Отмена")
-        ok_btn = QPushButton("OK")
+        ok_btn = QPushButton("Добавить")
 
         cancel_btn.clicked.connect(dialog.reject)
         ok_btn.clicked.connect(dialog.accept)
 
-        buttons.addWidget(cancel_btn)
-        buttons.addWidget(ok_btn)
-        layout.addLayout(buttons)
+        buttons_layout.addWidget(cancel_btn)
+        buttons_layout.addWidget(ok_btn)
+        layout.addLayout(buttons_layout)
 
-        # Если диалог принят, добавляем паузу
+        # Если диалог принят, добавляем блок на холст
         if dialog.exec():
-            sleep_time = spinner.value()
+            # Формируем описание блока
+            selected_image = "любое изображение"
+            if image_combo.currentIndex() > 0:
+                selected_image = image_combo.currentText()
 
-            # Определяем, в какую таблицу добавлять
-            table = self.not_found_actions_table if for_not_found else self.additional_actions_table
+            description = f"Если найдено {selected_image}"
 
-            # Добавляем в таблицу
-            row = table.rowCount()
-            table.insertRow(row)
+            # Собираем действия
+            actions = []
+            if get_coords_check.isChecked():
+                actions.append("get_coords")
+            if continue_check.isChecked():
+                actions.append("continue")
+            if stop_bot_check.isChecked():
+                actions.append("running.clear()")
 
-            table.setItem(row, 0, QTableWidgetItem("Пауза"))
-            description = f"Пауза {sleep_time} секунд"
-            table.setItem(row, 1, QTableWidgetItem(description))
+            if actions:
+                description += f" → {', '.join(actions)}"
 
-            # Сохраняем данные в тег элемента
-            data = {"type": "sleep", "time": sleep_time}
-            item = table.item(row, 0)
-            item.setData(Qt.ItemDataRole.UserRole, data)
+            # Добавляем информацию о дополнительных действиях
+            if add_actions_check.isChecked() and actions_table.rowCount() > 0:
+                description += f" + {actions_table.rowCount()} действий"
 
-            # Кнопка удаления
-            delete_btn = QPushButton("Удалить")
-            delete_btn.clicked.connect(lambda: self.remove_action(row, for_not_found))
-            table.setCellWidget(row, 2, delete_btn)
+            # Собираем данные для блока
+            data = {
+                "type": "if_result",
+                "image": None if image_combo.currentIndex() == 0 else image_combo.currentText(),
+                "log_event": log_input.text().strip(),
+                "get_coords": get_coords_check.isChecked(),
+                "continue": continue_check.isChecked(),
+                "stop_bot": stop_bot_check.isChecked(),
+                "additional_actions": []
+            }
+
+            # Если есть дополнительные действия, добавляем их
+            if add_actions_check.isChecked():
+                for row in range(actions_table.rowCount()):
+                    action_type = actions_table.item(row, 0).text()
+                    action_data = actions_table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+
+                    if action_type == "Клик":
+                        data["additional_actions"].append({
+                            "type": "click",
+                            "x": action_data["x"],
+                            "y": action_data["y"],
+                            "description": action_data["description"],
+                            "sleep": action_data["sleep"]
+                        })
+                    elif action_type == "Свайп":
+                        data["additional_actions"].append({
+                            "type": "swipe",
+                            "x1": action_data["x1"],
+                            "y1": action_data["y1"],
+                            "x2": action_data["x2"],
+                            "y2": action_data["y2"],
+                            "description": action_data["description"],
+                            "sleep": action_data["sleep"]
+                        })
+                    elif action_type == "Пауза":
+                        data["additional_actions"].append({
+                            "type": "sleep",
+                            "time": action_data["time"]
+                        })
+
+                    # Добавляем блок на холст
+                self.add_script_item("IF Result", description, data)
+
+    def add_if_not_result_block(self):
+        """Добавляет блок IF Not Result на холст"""
+        # Открываем диалог для настройки блока IF Not Result
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Настройка блока IF Not Result")
+        dialog.setModal(True)
+        dialog.resize(600, 500)
+
+        layout = QVBoxLayout(dialog)
+
+        # Настройка сообщения в консоль
+        hbox_log = QHBoxLayout()
+        log_label = QLabel("Сообщение в консоль:")
+        log_input = QLineEdit()
+        log_input.setText("Изображение не найдено!")
+        log_input.setPlaceholderText("Например: Изображение не найдено!")
+        hbox_log.addWidget(log_label)
+        hbox_log.addWidget(log_input)
+        layout.addLayout(hbox_log)
+
+        # Чекбоксы для действий
+        actions_group = QGroupBox("Выберите действия:")
+        actions_layout = QVBoxLayout(actions_group)
+
+        continue_check = QCheckBox("Продолжить выполнение (continue)")
+        continue_check.setChecked(True)
+
+        stop_bot_check = QCheckBox("Остановить бота (running.clear())")
+
+        actions_layout.addWidget(continue_check)
+        actions_layout.addWidget(stop_bot_check)
+
+        layout.addWidget(actions_group)
+
+        # Чекбокс для дополнительных действий
+        add_actions_check = QCheckBox("Добавить дополнительные действия (клики/свайпы)")
+        layout.addWidget(add_actions_check)
+
+        # Фрейм для дополнительных действий
+        actions_frame = QFrame()
+        actions_frame.setVisible(False)  # По умолчанию скрыт
+        actions_layout = QVBoxLayout(actions_frame)
+
+        # Таблица для дополнительных действий
+        actions_table = QTableWidget(0, 3)
+        actions_table.setHorizontalHeaderLabels(["Тип", "Параметры", ""])
+        actions_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        actions_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        actions_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        actions_table.setColumnWidth(0, 120)
+        actions_table.setColumnWidth(2, 80)
+
+        # Кнопки для добавления действий
+        add_actions_buttons = QHBoxLayout()
+        add_click_btn = QPushButton("Добавить клик")
+        add_swipe_btn = QPushButton("Добавить свайп")
+        add_sleep_btn = QPushButton("Добавить паузу")
+
+        # Функции для добавления действий в таблицу
+        def add_click_to_table():
+            click_dialog = ClickModuleDialog(dialog)
+            if click_dialog.exec():
+                data = click_dialog.get_data()
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+                actions_table.setItem(row, 0, QTableWidgetItem("Клик"))
+                desc = f"X: {data['x']}, Y: {data['y']}, Задержка: {data['sleep']}с"
+                if data['description']:
+                    desc += f", {data['description']}"
+                actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                # Сохраняем данные с помощью setData
+                item = actions_table.item(row, 0)
+                item.setData(Qt.ItemDataRole.UserRole, data)
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                del_btn.clicked.connect(lambda: actions_table.removeRow(row))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+        def add_swipe_to_table():
+            swipe_dialog = SwipeModuleDialog(dialog)
+            if swipe_dialog.exec():
+                data = swipe_dialog.get_data()
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+                actions_table.setItem(row, 0, QTableWidgetItem("Свайп"))
+                desc = f"От ({data['x1']}, {data['y1']}) до ({data['x2']}, {data['y2']}), Задержка: {data['sleep']}с"
+                if data['description']:
+                    desc += f", {data['description']}"
+                actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                # Сохраняем данные с помощью setData
+                item = actions_table.item(row, 0)
+                item.setData(Qt.ItemDataRole.UserRole, data)
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                del_btn.clicked.connect(lambda: actions_table.removeRow(row))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+        def add_sleep_to_table():
+            sleep_dialog = QDialog(dialog)
+            sleep_dialog.setWindowTitle("Добавить паузу")
+            sleep_dialog.setModal(True)
+
+            sleep_layout = QVBoxLayout(sleep_dialog)
+
+            # Спиннер для времени
+            hbox = QHBoxLayout()
+            label = QLabel("Время паузы (секунды):")
+            spinner = QDoubleSpinBox()
+            spinner.setRange(0.1, 60.0)
+            spinner.setValue(1.0)
+            spinner.setDecimals(1)
+            spinner.setSingleStep(0.1)
+            spinner.setSuffix(" сек")
+
+            hbox.addWidget(label)
+            hbox.addWidget(spinner)
+            sleep_layout.addLayout(hbox)
+
+            # Кнопки
+            buttons = QHBoxLayout()
+            cancel_btn = QPushButton("Отмена")
+            ok_btn = QPushButton("OK")
+
+            cancel_btn.clicked.connect(sleep_dialog.reject)
+            ok_btn.clicked.connect(sleep_dialog.accept)
+
+            buttons.addWidget(cancel_btn)
+            buttons.addWidget(ok_btn)
+            sleep_layout.addLayout(buttons)
+
+            if sleep_dialog.exec():
+                sleep_time = spinner.value()
+
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+
+                actions_table.setItem(row, 0, QTableWidgetItem("Пауза"))
+                actions_table.setItem(row, 1, QTableWidgetItem(f"Пауза {sleep_time} секунд"))
+
+                # Сохраняем данные с помощью setData
+                item = actions_table.item(row, 0)
+                item.setData(Qt.ItemDataRole.UserRole, {"type": "sleep", "time": sleep_time})
+
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                del_btn.clicked.connect(lambda: actions_table.removeRow(row))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+        # Подключаем функции к кнопкам
+        add_click_btn.clicked.connect(add_click_to_table)
+        add_swipe_btn.clicked.connect(add_swipe_to_table)
+        add_sleep_btn.clicked.connect(add_sleep_to_table)
+
+        add_actions_buttons.addWidget(add_click_btn)
+        add_actions_buttons.addWidget(add_swipe_btn)
+        add_actions_buttons.addWidget(add_sleep_btn)
+
+        actions_layout.addLayout(add_actions_buttons)
+        actions_layout.addWidget(actions_table)
+
+        layout.addWidget(actions_frame)
+
+        # Показываем/скрываем фрейм дополнительных действий
+        add_actions_check.stateChanged.connect(lambda state: actions_frame.setVisible(state == Qt.CheckState.Checked))
+
+        # Кнопки диалога
+        buttons_layout = QHBoxLayout()
+        cancel_btn = QPushButton("Отмена")
+        ok_btn = QPushButton("Добавить")
+
+        cancel_btn.clicked.connect(dialog.reject)
+        ok_btn.clicked.connect(dialog.accept)
+
+        buttons_layout.addWidget(cancel_btn)
+        buttons_layout.addWidget(ok_btn)
+        layout.addLayout(buttons_layout)
+
+        # Если диалог принят, добавляем блок на холст
+        if dialog.exec():
+            # Формируем описание блока
+            description = "Если изображение не найдено"
+
+            # Собираем действия
+            actions = []
+            if continue_check.isChecked():
+                actions.append("continue")
+            if stop_bot_check.isChecked():
+                actions.append("running.clear()")
+
+            if actions:
+                description += f" → {', '.join(actions)}"
+
+            # Добавляем информацию о дополнительных действиях
+            if add_actions_check.isChecked() and actions_table.rowCount() > 0:
+                description += f" + {actions_table.rowCount()} действий"
+
+            # Собираем данные для блока
+            data = {
+                "type": "if_not_result",
+                "log_event": log_input.text().strip(),
+                "continue": continue_check.isChecked(),
+                "stop_bot": stop_bot_check.isChecked(),
+                "additional_actions": []
+            }
+
+            # Если есть дополнительные действия, добавляем их
+            if add_actions_check.isChecked():
+                for row in range(actions_table.rowCount()):
+                    action_type = actions_table.item(row, 0).text()
+                    action_data = actions_table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+
+                    if action_type == "Клик":
+                        data["additional_actions"].append({
+                            "type": "click",
+                            "x": action_data["x"],
+                            "y": action_data["y"],
+                            "description": action_data["description"],
+                            "sleep": action_data["sleep"]
+                        })
+                    elif action_type == "Свайп":
+                        data["additional_actions"].append({
+                            "type": "swipe",
+                            "x1": action_data["x1"],
+                            "y1": action_data["y1"],
+                            "x2": action_data["x2"],
+                            "y2": action_data["y2"],
+                            "description": action_data["description"],
+                            "sleep": action_data["sleep"]
+                        })
+                    elif action_type == "Пауза":
+                        data["additional_actions"].append({
+                            "type": "sleep",
+                            "time": action_data["time"]
+                        })
+
+            # Добавляем блок на холст
+            self.add_script_item("IF Not Result", description, data)
+
+    def edit_if_result_block(self, index: int):
+        """Редактирует блок IF Result на холсте"""
+        # Находим элемент
+        if 0 <= index < len(self.script_items):
+            item = self.script_items[index]
+            if item.item_type != "IF Result":
+                return
+
+            # Создаем диалог редактирования с теми же полями, что и при добавлении
+            # Но заполняем данными из существующего блока
+            data = item.data
+
+            # Открываем диалог для редактирования блока
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Редактирование блока IF Result")
+            dialog.setModal(True)
+            dialog.resize(600, 500)
+
+            layout = QVBoxLayout(dialog)
+
+            # Выбор конкретного изображения для этого блока
+            hbox_image = QHBoxLayout()
+            image_label = QLabel("Изображение для проверки:")
+            image_combo = QComboBox()
+            image_combo.addItem("Любое найденное изображение")
+
+            # Добавляем все доступные изображения
+            main_image = self.image_name.text().strip()
+            if main_image:
+                image_combo.addItem(main_image)
+
+            for row in range(self.images_list.rowCount()):
+                image_name = self.images_list.item(row, 0).text()
+                if image_name not in [main_image]:  # Избегаем дубликатов
+                    image_combo.addItem(image_name)
+
+            # Устанавливаем выбранное изображение
+            if data.get("image"):
+                index = image_combo.findText(data["image"])
+                if index >= 0:
+                    image_combo.setCurrentIndex(index)
+
+            hbox_image.addWidget(image_label)
+            hbox_image.addWidget(image_combo)
+            layout.addLayout(hbox_image)
+
+            # Настройка сообщения в консоль
+            hbox_log = QHBoxLayout()
+            log_label = QLabel("Сообщение в консоль:")
+            log_input = QLineEdit()
+            log_input.setText(data.get("log_event", "Изображение найдено!"))
+            log_input.setPlaceholderText("Например: Победа найдена!")
+            hbox_log.addWidget(log_label)
+            hbox_log.addWidget(log_input)
+            layout.addLayout(hbox_log)
+
+            # Чекбоксы для действий
+            actions_group = QGroupBox("Выберите действия:")
+            actions_layout = QVBoxLayout(actions_group)
+
+            get_coords_check = QCheckBox("Кликнуть по координатам найденного изображения (get_coords)")
+            get_coords_check.setToolTip("Кликнуть в центр найденного изображения")
+            get_coords_check.setChecked(data.get("get_coords", False))
+
+            continue_check = QCheckBox("Продолжить выполнение (continue)")
+            continue_check.setChecked(data.get("continue", True))
+
+            stop_bot_check = QCheckBox("Остановить бота (running.clear())")
+            stop_bot_check.setChecked(data.get("stop_bot", False))
+
+            actions_layout.addWidget(get_coords_check)
+            actions_layout.addWidget(continue_check)
+            actions_layout.addWidget(stop_bot_check)
+
+            layout.addWidget(actions_group)
+
+            # Чекбокс для дополнительных действий
+            add_actions_check = QCheckBox("Добавить дополнительные действия (клики/свайпы)")
+            add_actions_check.setChecked(len(data.get("additional_actions", [])) > 0)
+            layout.addWidget(add_actions_check)
+
+            # Фрейм для дополнительных действий
+            actions_frame = QFrame()
+            actions_frame.setVisible(add_actions_check.isChecked())  # Показываем в зависимости от наличия действий
+            actions_layout = QVBoxLayout(actions_frame)
+
+            # Таблица для дополнительных действий
+            actions_table = QTableWidget(0, 3)
+            actions_table.setHorizontalHeaderLabels(["Тип", "Параметры", ""])
+            actions_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+            actions_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            actions_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+            actions_table.setColumnWidth(0, 120)
+            actions_table.setColumnWidth(2, 80)
+
+            # Заполняем таблицу существующими действиями
+            for action_data in data.get("additional_actions", []):
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+
+                action_type = action_data.get("type", "")
+                if action_type == "click":
+                    actions_table.setItem(row, 0, QTableWidgetItem("Клик"))
+                    desc = f"X: {action_data.get('x', 0)}, Y: {action_data.get('y', 0)}"
+                    if action_data.get("sleep"):
+                        desc += f", Задержка: {action_data.get('sleep')}с"
+                    if action_data.get("description"):
+                        desc += f", {action_data.get('description', '')}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, action_data)
+                elif action_type == "swipe":
+                    actions_table.setItem(row, 0, QTableWidgetItem("Свайп"))
+                    desc = f"От ({action_data.get('x1', 0)}, {action_data.get('y1', 0)}) "
+                    desc += f"до ({action_data.get('x2', 0)}, {action_data.get('y2', 0)})"
+                    if action_data.get("sleep"):
+                        desc += f", Задержка: {action_data.get('sleep')}с"
+                    if action_data.get("description"):
+                        desc += f", {action_data.get('description', '')}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, action_data)
+                elif action_type == "sleep":
+                    actions_table.setItem(row, 0, QTableWidgetItem("Пауза"))
+                    actions_table.setItem(row, 1, QTableWidgetItem(f"Пауза {action_data.get('time', 1.0)} секунд"))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, action_data)
+
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                row_for_deletion = row  # Захватываем текущее значение row
+                del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+            # Кнопки для добавления действий
+            add_actions_buttons = QHBoxLayout()
+            add_click_btn = QPushButton("Добавить клик")
+            add_swipe_btn = QPushButton("Добавить свайп")
+            add_sleep_btn = QPushButton("Добавить паузу")
+
+            # Функции для добавления действий в таблицу
+            def add_click_to_table():
+                click_dialog = ClickModuleDialog(dialog)
+                if click_dialog.exec():
+                    data = click_dialog.get_data()
+                    row = actions_table.rowCount()
+                    actions_table.insertRow(row)
+                    actions_table.setItem(row, 0, QTableWidgetItem("Клик"))
+                    desc = f"X: {data['x']}, Y: {data['y']}, Задержка: {data['sleep']}с"
+                    if data['description']:
+                        desc += f", {data['description']}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные с помощью setData
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, data)
+                    # Кнопка удаления
+                    del_btn = QPushButton("Удалить")
+                    row_for_deletion = row  # Захватываем текущее значение row
+                    del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                    actions_table.setCellWidget(row, 2, del_btn)
+
+            def add_swipe_to_table():
+                swipe_dialog = SwipeModuleDialog(dialog)
+                if swipe_dialog.exec():
+                    data = swipe_dialog.get_data()
+                    row = actions_table.rowCount()
+                    actions_table.insertRow(row)
+                    actions_table.setItem(row, 0, QTableWidgetItem("Свайп"))
+                    desc = f"От ({data['x1']}, {data['y1']}) до ({data['x2']}, {data['y2']}), Задержка: {data['sleep']}с"
+                    if data['description']:
+                        desc += f", {data['description']}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные с помощью setData
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, data)
+                    # Кнопка удаления
+                    del_btn = QPushButton("Удалить")
+                    row_for_deletion = row  # Захватываем текущее значение row
+                    del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                    actions_table.setCellWidget(row, 2, del_btn)
+
+            def add_sleep_to_table():
+                sleep_dialog = QDialog(dialog)
+                sleep_dialog.setWindowTitle("Добавить паузу")
+                sleep_dialog.setModal(True)
+
+                sleep_layout = QVBoxLayout(sleep_dialog)
+
+                # Спиннер для времени
+                hbox = QHBoxLayout()
+                label = QLabel("Время паузы (секунды):")
+                spinner = QDoubleSpinBox()
+                spinner.setRange(0.1, 60.0)
+                spinner.setValue(1.0)
+                spinner.setDecimals(1)
+                spinner.setSingleStep(0.1)
+                spinner.setSuffix(" сек")
+
+                hbox.addWidget(label)
+                hbox.addWidget(spinner)
+                sleep_layout.addLayout(hbox)
+
+                # Кнопки
+                buttons = QHBoxLayout()
+                cancel_btn = QPushButton("Отмена")
+                ok_btn = QPushButton("OK")
+
+                cancel_btn.clicked.connect(sleep_dialog.reject)
+                ok_btn.clicked.connect(sleep_dialog.accept)
+
+                buttons.addWidget(cancel_btn)
+                buttons.addWidget(ok_btn)
+                sleep_layout.addLayout(buttons)
+
+                if sleep_dialog.exec():
+                    sleep_time = spinner.value()
+
+                    row = actions_table.rowCount()
+                    actions_table.insertRow(row)
+
+                    actions_table.setItem(row, 0, QTableWidgetItem("Пауза"))
+                    actions_table.setItem(row, 1, QTableWidgetItem(f"Пауза {sleep_time} секунд"))
+
+                    # Сохраняем данные с помощью setData
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, {"type": "sleep", "time": sleep_time})
+
+                    # Кнопка удаления
+                    del_btn = QPushButton("Удалить")
+                    row_for_deletion = row  # Захватываем текущее значение row
+                    del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                    actions_table.setCellWidget(row, 2, del_btn)
+
+            # Подключаем функции к кнопкам
+            add_click_btn.clicked.connect(add_click_to_table)
+            add_swipe_btn.clicked.connect(add_swipe_to_table)
+            add_sleep_btn.clicked.connect(add_sleep_to_table)
+
+            add_actions_buttons.addWidget(add_click_btn)
+            add_actions_buttons.addWidget(add_swipe_btn)
+            add_actions_buttons.addWidget(add_sleep_btn)
+
+            actions_layout.addLayout(add_actions_buttons)
+            actions_layout.addWidget(actions_table)
+
+            layout.addWidget(actions_frame)
+
+            # Показываем/скрываем фрейм дополнительных действий
+            add_actions_check.stateChanged.connect(
+                lambda state: actions_frame.setVisible(state == Qt.CheckState.Checked))
+
+            # Кнопки диалога
+            buttons_layout = QHBoxLayout()
+            cancel_btn = QPushButton("Отмена")
+            ok_btn = QPushButton("Сохранить")
+
+            cancel_btn.clicked.connect(dialog.reject)
+            ok_btn.clicked.connect(dialog.accept)
+
+            buttons_layout.addWidget(cancel_btn)
+            buttons_layout.addWidget(ok_btn)
+            layout.addLayout(buttons_layout)
+
+            # Если диалог принят, обновляем блок
+            if dialog.exec():
+                # Формируем описание блока
+                selected_image = "любое изображение"
+                if image_combo.currentIndex() > 0:
+                    selected_image = image_combo.currentText()
+
+                description = f"Если найдено {selected_image}"
+
+                # Собираем действия
+                actions = []
+                if get_coords_check.isChecked():
+                    actions.append("get_coords")
+                if continue_check.isChecked():
+                    actions.append("continue")
+                if stop_bot_check.isChecked():
+                    actions.append("running.clear()")
+
+                if actions:
+                    description += f" → {', '.join(actions)}"
+
+                # Добавляем информацию о дополнительных действиях
+                if add_actions_check.isChecked() and actions_table.rowCount() > 0:
+                    description += f" + {actions_table.rowCount()} действий"
+
+                # Обновляем данные блока
+                new_data = {
+                    "type": "if_result",
+                    "image": None if image_combo.currentIndex() == 0 else image_combo.currentText(),
+                    "log_event": log_input.text().strip(),
+                    "get_coords": get_coords_check.isChecked(),
+                    "continue": continue_check.isChecked(),
+                    "stop_bot": stop_bot_check.isChecked(),
+                    "additional_actions": []
+                }
+
+                # Если есть дополнительные действия, добавляем их
+                if add_actions_check.isChecked():
+                    for row in range(actions_table.rowCount()):
+                        action_type = actions_table.item(row, 0).text()
+                        action_data = actions_table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+
+                        if action_type == "Клик":
+                            new_data["additional_actions"].append({
+                                "type": "click",
+                                "x": action_data["x"],
+                                "y": action_data["y"],
+                                "description": action_data["description"],
+                                "sleep": action_data["sleep"]
+                            })
+                        elif action_type == "Свайп":
+                            new_data["additional_actions"].append({
+                                "type": "swipe",
+                                "x1": action_data["x1"],
+                                "y1": action_data["y1"],
+                                "x2": action_data["x2"],
+                                "y2": action_data["y2"],
+                                "description": action_data["description"],
+                                "sleep": action_data["sleep"]
+                            })
+                        elif action_type == "Пауза":
+                            new_data["additional_actions"].append({
+                                "type": "sleep",
+                                "time": action_data["time"]
+                            })
+
+                # Обновляем данные и текст элемента
+                item.description = description
+                item.data = new_data
+
+                # Обновляем виджет на холсте
+                old_widget = item
+                item_index = item.index
+
+                # Удаляем старый виджет
+                self.script_canvas_layout.removeWidget(old_widget)
+                old_widget.deleteLater()
+
+                # Создаем новый виджет
+                new_widget = ScriptItemWidget(item_index, "IF Result", description)
+                new_widget.set_data(new_data)
+                new_widget.deleteRequested.connect(self.delete_script_item)
+                new_widget.editRequested.connect(self.edit_script_item)
+
+                # Обновляем запись в списке
+                self.script_items[item_index] = new_widget
+
+                # Добавляем на холст
+                self.script_canvas_layout.insertWidget(item_index, new_widget)
+
+    def edit_if_not_result_block(self, index: int):
+        """Редактирует блок IF Not Result на холсте"""
+        # Находим элемент
+        if 0 <= index < len(self.script_items):
+            item = self.script_items[index]
+            if item.item_type != "IF Not Result":
+                return
+
+            # Получаем данные блока
+            data = item.data
+
+            # Открываем диалог для редактирования блока
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Редактирование блока IF Not Result")
+            dialog.setModal(True)
+            dialog.resize(600, 500)
+
+            layout = QVBoxLayout(dialog)
+
+            # Настройка сообщения в консоль
+            hbox_log = QHBoxLayout()
+            log_label = QLabel("Сообщение в консоль:")
+            log_input = QLineEdit()
+            log_input.setText(data.get("log_event", "Изображение не найдено!"))
+            log_input.setPlaceholderText("Например: Изображение не найдено!")
+            hbox_log.addWidget(log_label)
+            hbox_log.addWidget(log_input)
+            layout.addLayout(hbox_log)
+
+            # Чекбоксы для действий
+            actions_group = QGroupBox("Выберите действия:")
+            actions_layout = QVBoxLayout(actions_group)
+
+            continue_check = QCheckBox("Продолжить выполнение (continue)")
+            continue_check.setChecked(data.get("continue", True))
+
+            stop_bot_check = QCheckBox("Остановить бота (running.clear())")
+            stop_bot_check.setChecked(data.get("stop_bot", False))
+
+            actions_layout.addWidget(continue_check)
+            actions_layout.addWidget(stop_bot_check)
+
+            layout.addWidget(actions_group)
+
+            # Чекбокс для дополнительных действий
+            add_actions_check = QCheckBox("Добавить дополнительные действия (клики/свайпы)")
+            add_actions_check.setChecked(len(data.get("additional_actions", [])) > 0)
+            layout.addWidget(add_actions_check)
+
+            # Фрейм для дополнительных действий
+            actions_frame = QFrame()
+            actions_frame.setVisible(add_actions_check.isChecked())  # Показываем в зависимости от наличия действий
+            actions_layout = QVBoxLayout(actions_frame)
+
+            # Таблица для дополнительных действий
+            actions_table = QTableWidget(0, 3)
+            actions_table.setHorizontalHeaderLabels(["Тип", "Параметры", ""])
+            actions_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+            actions_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            actions_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+            actions_table.setColumnWidth(0, 120)
+            actions_table.setColumnWidth(2, 80)
+
+            # Заполняем таблицу существующими действиями
+            for action_data in data.get("additional_actions", []):
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+
+                action_type = action_data.get("type", "")
+                if action_type == "click":
+                    actions_table.setItem(row, 0, QTableWidgetItem("Клик"))
+                    desc = f"X: {action_data.get('x', 0)}, Y: {action_data.get('y', 0)}"
+                    if action_data.get("sleep"):
+                        desc += f", Задержка: {action_data.get('sleep')}с"
+                    if action_data.get("description"):
+                        desc += f", {action_data.get('description', '')}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, action_data)
+                elif action_type == "swipe":
+                    actions_table.setItem(row, 0, QTableWidgetItem("Свайп"))
+                    desc = f"От ({action_data.get('x1', 0)}, {action_data.get('y1', 0)}) "
+                    desc += f"до ({action_data.get('x2', 0)}, {action_data.get('y2', 0)})"
+                    if action_data.get("sleep"):
+                        desc += f", Задержка: {action_data.get('sleep')}с"
+                    if action_data.get("description"):
+                        desc += f", {action_data.get('description', '')}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, action_data)
+                elif action_type == "sleep":
+                    actions_table.setItem(row, 0, QTableWidgetItem("Пауза"))
+                    actions_table.setItem(row, 1, QTableWidgetItem(f"Пауза {action_data.get('time', 1.0)} секунд"))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, action_data)
+
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                row_for_deletion = row  # Захватываем текущее значение row
+                del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+            # Кнопки для добавления действий
+            add_actions_buttons = QHBoxLayout()
+            add_click_btn = QPushButton("Добавить клик")
+            add_swipe_btn = QPushButton("Добавить свайп")
+            add_sleep_btn = QPushButton("Добавить паузу")
+
+            # Функции для добавления действий в таблицу
+            def add_click_to_table():
+                click_dialog = ClickModuleDialog(dialog)
+                if click_dialog.exec():
+                    data = click_dialog.get_data()
+                    row = actions_table.rowCount()
+                    actions_table.insertRow(row)
+                    actions_table.setItem(row, 0, QTableWidgetItem("Клик"))
+                    desc = f"X: {data['x']}, Y: {data['y']}, Задержка: {data['sleep']}с"
+                    if data['description']:
+                        desc += f", {data['description']}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные с помощью setData
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, data)
+                    # Кнопка удаления
+                    del_btn = QPushButton("Удалить")
+                    row_for_deletion = row  # Захватываем текущее значение row
+                    del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                    actions_table.setCellWidget(row, 2, del_btn)
+
+            def add_swipe_to_table():
+                swipe_dialog = SwipeModuleDialog(dialog)
+                if swipe_dialog.exec():
+                    data = swipe_dialog.get_data()
+                    row = actions_table.rowCount()
+                    actions_table.insertRow(row)
+                    actions_table.setItem(row, 0, QTableWidgetItem("Свайп"))
+                    desc = f"От ({data['x1']}, {data['y1']}) до ({data['x2']}, {data['y2']}), Задержка: {data['sleep']}с"
+                    if data['description']:
+                        desc += f", {data['description']}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные с помощью setData
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, data)
+                    # Кнопка удаления
+                    del_btn = QPushButton("Удалить")
+                    row_for_deletion = row  # Захватываем текущее значение row
+                    del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                    actions_table.setCellWidget(row, 2, del_btn)
+
+            def add_sleep_to_table():
+                sleep_dialog = QDialog(dialog)
+                sleep_dialog.setWindowTitle("Добавить паузу")
+                sleep_dialog.setModal(True)
+
+                sleep_layout = QVBoxLayout(sleep_dialog)
+
+                # Спиннер для времени
+                hbox = QHBoxLayout()
+                label = QLabel("Время паузы (секунды):")
+                spinner = QDoubleSpinBox()
+                spinner.setRange(0.1, 60.0)
+                spinner.setValue(1.0)
+                spinner.setDecimals(1)
+                spinner.setSingleStep(0.1)
+                spinner.setSuffix(" сек")
+
+                hbox.addWidget(label)
+                hbox.addWidget(spinner)
+                sleep_layout.addLayout(hbox)
+
+                # Кнопки
+                buttons = QHBoxLayout()
+                cancel_btn = QPushButton("Отмена")
+                ok_btn = QPushButton("OK")
+
+                cancel_btn.clicked.connect(sleep_dialog.reject)
+                ok_btn.clicked.connect(sleep_dialog.accept)
+
+                buttons.addWidget(cancel_btn)
+                buttons.addWidget(ok_btn)
+                sleep_layout.addLayout(buttons)
+
+                if sleep_dialog.exec():
+                    sleep_time = spinner.value()
+
+                    row = actions_table.rowCount()
+                    actions_table.insertRow(row)
+
+                    actions_table.setItem(row, 0, QTableWidgetItem("Пауза"))
+                    actions_table.setItem(row, 1, QTableWidgetItem(f"Пауза {sleep_time} секунд"))
+
+                    # Сохраняем данные с помощью setData
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, {"type": "sleep", "time": sleep_time})
+
+                    # Кнопка удаления
+                    del_btn = QPushButton("Удалить")
+                    row_for_deletion = row  # Захватываем текущее значение row
+                    del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                    actions_table.setCellWidget(row, 2, del_btn)
+
+            # Подключаем функции к кнопкам
+            add_click_btn.clicked.connect(add_click_to_table)
+            add_swipe_btn.clicked.connect(add_swipe_to_table)
+            add_sleep_btn.clicked.connect(add_sleep_to_table)
+
+            add_actions_buttons.addWidget(add_click_btn)
+            add_actions_buttons.addWidget(add_swipe_btn)
+            add_actions_buttons.addWidget(add_sleep_btn)
+
+            actions_layout.addLayout(add_actions_buttons)
+            actions_layout.addWidget(actions_table)
+
+            layout.addWidget(actions_frame)
+
+            # Показываем/скрываем фрейм дополнительных действий
+            add_actions_check.stateChanged.connect(
+                lambda state: actions_frame.setVisible(state == Qt.CheckState.Checked))
+
+            # Кнопки диалога
+            buttons_layout = QHBoxLayout()
+            cancel_btn = QPushButton("Отмена")
+            ok_btn = QPushButton("Сохранить")
+
+            cancel_btn.clicked.connect(dialog.reject)
+            ok_btn.clicked.connect(dialog.accept)
+
+            buttons_layout.addWidget(cancel_btn)
+            buttons_layout.addWidget(ok_btn)
+            layout.addLayout(buttons_layout)
+
+            # Если диалог принят, обновляем блок
+            if dialog.exec():
+                # Формируем описание блока
+                description = "Если изображение не найдено"
+
+                # Собираем действия
+                actions = []
+                if continue_check.isChecked():
+                    actions.append("continue")
+                if stop_bot_check.isChecked():
+                    actions.append("running.clear()")
+
+                if actions:
+                    description += f" → {', '.join(actions)}"
+
+                # Добавляем информацию о дополнительных действиях
+                if add_actions_check.isChecked() and actions_table.rowCount() > 0:
+                    description += f" + {actions_table.rowCount()} действий"
+
+                # Обновляем данные блока
+                new_data = {
+                    "type": "if_not_result",
+                    "log_event": log_input.text().strip(),
+                    "continue": continue_check.isChecked(),
+                    "stop_bot": stop_bot_check.isChecked(),
+                    "additional_actions": []
+                }
+
+                # Если есть дополнительные действия, добавляем их
+                if add_actions_check.isChecked():
+                    for row in range(actions_table.rowCount()):
+                        action_type = actions_table.item(row, 0).text()
+                        action_data = actions_table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+
+                        if action_type == "Клик":
+                            new_data["additional_actions"].append({
+                                "type": "click",
+                                "x": action_data["x"],
+                                "y": action_data["y"],
+                                "description": action_data["description"],
+                                "sleep": action_data["sleep"]
+                            })
+                        elif action_type == "Свайп":
+                            new_data["additional_actions"].append({
+                                "type": "swipe",
+                                "x1": action_data["x1"],
+                                "y1": action_data["y1"],
+                                "x2": action_data["x2"],
+                                "y2": action_data["y2"],
+                                "description": action_data["description"],
+                                "sleep": action_data["sleep"]
+                            })
+                        elif action_type == "Пауза":
+                            new_data["additional_actions"].append({
+                                "type": "sleep",
+                                "time": action_data["time"]
+                            })
+
+                # Обновляем данные и текст элемента
+                item.description = description
+                item.data = new_data
+
+                # Обновляем виджет на холсте
+                old_widget = item
+                item_index = item.index
+
+                # Удаляем старый виджет
+                self.script_canvas_layout.removeWidget(old_widget)
+                old_widget.deleteLater()
+
+                # Создаем новый виджет
+                new_widget = ScriptItemWidget(item_index, "IF Not Result", description)
+                new_widget.set_data(new_data)
+                new_widget.deleteRequested.connect(self.delete_script_item)
+                new_widget.editRequested.connect(self.edit_script_item)
+
+                # Обновляем запись в списке
+                self.script_items[item_index] = new_widget
+
+                # Добавляем на холст
+                self.script_canvas_layout.insertWidget(item_index, new_widget)
+
+    def add_elif_block(self):
+        """Добавляет блок ELIF на холст"""
+        # Открываем диалог для настройки блока ELIF
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Настройка блока ELIF")
+        dialog.setModal(True)
+        dialog.resize(600, 500)
+
+        layout = QVBoxLayout(dialog)
+
+        # Выбор конкретного изображения для ELIF
+        hbox_image = QHBoxLayout()
+        image_label = QLabel("Изображение для проверки:")
+        image_combo = QComboBox()
+
+        # Добавляем все доступные изображения
+        main_image = self.image_name.text().strip()
+        if main_image:
+            image_combo.addItem(main_image)
+
+        for row in range(self.images_list.rowCount()):
+            image_name = self.images_list.item(row, 0).text()
+            image_combo.addItem(image_name)
+
+        hbox_image.addWidget(image_label)
+        hbox_image.addWidget(image_combo)
+        layout.addLayout(hbox_image)
+
+        # Настройка сообщения в консоль
+        hbox_log = QHBoxLayout()
+        log_label = QLabel("Сообщение в консоль:")
+        log_input = QLineEdit()
+        log_input.setText("Найдено другое изображение!")
+        log_input.setPlaceholderText("Например: Найдено изображение поражения!")
+        hbox_log.addWidget(log_label)
+        hbox_log.addWidget(log_input)
+        layout.addLayout(hbox_log)
+
+        # Чекбоксы для действий
+        actions_group = QGroupBox("Выберите действия:")
+        actions_layout = QVBoxLayout(actions_group)
+
+        get_coords_check = QCheckBox("Кликнуть по координатам найденного изображения (get_coords)")
+        get_coords_check.setToolTip("Кликнуть в центр найденного изображения")
+
+        continue_check = QCheckBox("Продолжить выполнение (continue)")
+        continue_check.setChecked(True)
+
+        stop_bot_check = QCheckBox("Остановить бота (running.clear())")
+
+        actions_layout.addWidget(get_coords_check)
+        actions_layout.addWidget(continue_check)
+        actions_layout.addWidget(stop_bot_check)
+
+        layout.addWidget(actions_group)
+
+        # Чекбокс для дополнительных действий
+        add_actions_check = QCheckBox("Добавить дополнительные действия (клики/свайпы)")
+        layout.addWidget(add_actions_check)
+
+        # Фрейм для дополнительных действий
+        actions_frame = QFrame()
+        actions_frame.setVisible(False)  # По умолчанию скрыт
+        actions_layout = QVBoxLayout(actions_frame)
+
+        # Таблица для дополнительных действий
+        actions_table = QTableWidget(0, 3)
+        actions_table.setHorizontalHeaderLabels(["Тип", "Параметры", ""])
+        actions_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+        actions_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        actions_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+        actions_table.setColumnWidth(0, 120)
+        actions_table.setColumnWidth(2, 80)
+
+        # Кнопки для добавления действий
+        add_actions_buttons = QHBoxLayout()
+        add_click_btn = QPushButton("Добавить клик")
+        add_swipe_btn = QPushButton("Добавить свайп")
+        add_sleep_btn = QPushButton("Добавить паузу")
+
+        # Функции для добавления действий в таблицу (аналогично IF Result)
+        def add_click_to_table():
+            click_dialog = ClickModuleDialog(dialog)
+            if click_dialog.exec():
+                data = click_dialog.get_data()
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+                actions_table.setItem(row, 0, QTableWidgetItem("Клик"))
+                desc = f"X: {data['x']}, Y: {data['y']}, Задержка: {data['sleep']}с"
+                if data['description']:
+                    desc += f", {data['description']}"
+                actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                # Сохраняем данные с помощью setData
+                item = actions_table.item(row, 0)
+                item.setData(Qt.ItemDataRole.UserRole, data)
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                row_for_deletion = row
+                del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+        def add_swipe_to_table():
+            swipe_dialog = SwipeModuleDialog(dialog)
+            if swipe_dialog.exec():
+                data = swipe_dialog.get_data()
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+                actions_table.setItem(row, 0, QTableWidgetItem("Свайп"))
+                desc = f"От ({data['x1']}, {data['y1']}) до ({data['x2']}, {data['y2']}), Задержка: {data['sleep']}с"
+                if data['description']:
+                    desc += f", {data['description']}"
+                actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                # Сохраняем данные с помощью setData
+                item = actions_table.item(row, 0)
+                item.setData(Qt.ItemDataRole.UserRole, data)
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                row_for_deletion = row
+                del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+        def add_sleep_to_table():
+            sleep_dialog = QDialog(dialog)
+            sleep_dialog.setWindowTitle("Добавить паузу")
+            sleep_dialog.setModal(True)
+
+            sleep_layout = QVBoxLayout(sleep_dialog)
+
+            # Спиннер для времени
+            hbox = QHBoxLayout()
+            label = QLabel("Время паузы (секунды):")
+            spinner = QDoubleSpinBox()
+            spinner.setRange(0.1, 60.0)
+            spinner.setValue(1.0)
+            spinner.setDecimals(1)
+            spinner.setSingleStep(0.1)
+            spinner.setSuffix(" сек")
+
+            hbox.addWidget(label)
+            hbox.addWidget(spinner)
+            sleep_layout.addLayout(hbox)
+
+            # Кнопки
+            buttons = QHBoxLayout()
+            cancel_btn = QPushButton("Отмена")
+            ok_btn = QPushButton("OK")
+
+            cancel_btn.clicked.connect(sleep_dialog.reject)
+            ok_btn.clicked.connect(sleep_dialog.accept)
+
+            buttons.addWidget(cancel_btn)
+            buttons.addWidget(ok_btn)
+            sleep_layout.addLayout(buttons)
+
+            if sleep_dialog.exec():
+                sleep_time = spinner.value()
+
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+
+                actions_table.setItem(row, 0, QTableWidgetItem("Пауза"))
+                actions_table.setItem(row, 1, QTableWidgetItem(f"Пауза {sleep_time} секунд"))
+
+                # Сохраняем данные с помощью setData
+                item = actions_table.item(row, 0)
+                item.setData(Qt.ItemDataRole.UserRole, {"type": "sleep", "time": sleep_time})
+
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                row_for_deletion = row
+                del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+        # Подключаем функции к кнопкам
+        add_click_btn.clicked.connect(add_click_to_table)
+        add_swipe_btn.clicked.connect(add_swipe_to_table)
+        add_sleep_btn.clicked.connect(add_sleep_to_table)
+
+        add_actions_buttons.addWidget(add_click_btn)
+        add_actions_buttons.addWidget(add_swipe_btn)
+        add_actions_buttons.addWidget(add_sleep_btn)
+
+        actions_layout.addLayout(add_actions_buttons)
+        actions_layout.addWidget(actions_table)
+
+        layout.addWidget(actions_frame)
+
+        # Показываем/скрываем фрейм дополнительных действий
+        add_actions_check.stateChanged.connect(lambda state: actions_frame.setVisible(state == Qt.CheckState.Checked))
+
+        # Кнопки диалога
+        buttons_layout = QHBoxLayout()
+        cancel_btn = QPushButton("Отмена")
+        ok_btn = QPushButton("Добавить")
+
+        cancel_btn.clicked.connect(dialog.reject)
+        ok_btn.clicked.connect(dialog.accept)
+
+        buttons_layout.addWidget(cancel_btn)
+        buttons_layout.addWidget(ok_btn)
+        layout.addLayout(buttons_layout)
+
+        # Если диалог принят, добавляем блок на холст
+        if dialog.exec():
+            # Проверяем, что выбрано изображение
+            selected_image = image_combo.currentText()
+            if not selected_image:
+                QMessageBox.warning(self, "Внимание", "Необходимо выбрать изображение для блока ELIF.")
+                return
+
+            # Формируем описание блока
+            description = f"ELIF: Если найдено {selected_image}"
+
+            # Собираем действия
+            actions = []
+            if get_coords_check.isChecked():
+                actions.append("get_coords")
+            if continue_check.isChecked():
+                actions.append("continue")
+            if stop_bot_check.isChecked():
+                actions.append("running.clear()")
+
+            if actions:
+                description += f" → {', '.join(actions)}"
+
+            # Добавляем информацию о дополнительных действиях
+            if add_actions_check.isChecked() and actions_table.rowCount() > 0:
+                description += f" + {actions_table.rowCount()} действий"
+
+            # Собираем данные для блока
+            data = {
+                "type": "elif",
+                "image": selected_image,
+                "log_event": log_input.text().strip(),
+                "get_coords": get_coords_check.isChecked(),
+                "continue": continue_check.isChecked(),
+                "stop_bot": stop_bot_check.isChecked(),
+                "additional_actions": []
+            }
+
+            # Если есть дополнительные действия, добавляем их
+            if add_actions_check.isChecked():
+                for row in range(actions_table.rowCount()):
+                    action_type = actions_table.item(row, 0).text()
+                    action_data = actions_table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+
+                    if action_type == "Клик":
+                        data["additional_actions"].append({
+                            "type": "click",
+                            "x": action_data["x"],
+                            "y": action_data["y"],
+                            "description": action_data["description"],
+                            "sleep": action_data["sleep"]
+                        })
+                    elif action_type == "Свайп":
+                        data["additional_actions"].append({
+                            "type": "swipe",
+                            "x1": action_data["x1"],
+                            "y1": action_data["y1"],
+                            "x2": action_data["x2"],
+                            "y2": action_data["y2"],
+                            "description": action_data["description"],
+                            "sleep": action_data["sleep"]
+                        })
+                    elif action_type == "Пауза":
+                        data["additional_actions"].append({
+                            "type": "sleep",
+                            "time": action_data["time"]
+                        })
+
+            # Добавляем блок на холст
+            self.add_script_item("ELIF", description, data)
+
+    def edit_elif_block(self, index: int):
+        """Редактирует блок ELIF на холсте"""
+        # Находим элемент
+        if 0 <= index < len(self.script_items):
+            item = self.script_items[index]
+            if item.item_type != "ELIF":
+                return
+
+            # Получаем данные блока
+            data = item.data
+
+            # Открываем диалог для редактирования блока
+            dialog = QDialog(self)
+            dialog.setWindowTitle("Редактирование блока ELIF")
+            dialog.setModal(True)
+            dialog.resize(600, 500)
+
+            layout = QVBoxLayout(dialog)
+
+            # Выбор конкретного изображения для этого блока
+            hbox_image = QHBoxLayout()
+            image_label = QLabel("Изображение для проверки:")
+            image_combo = QComboBox()
+
+            # Добавляем все доступные изображения
+            main_image = self.image_name.text().strip()
+            if main_image:
+                image_combo.addItem(main_image)
+
+            for row in range(self.images_list.rowCount()):
+                image_name = self.images_list.item(row, 0).text()
+                image_combo.addItem(image_name)
+
+            # Устанавливаем выбранное изображение
+            if data.get("image"):
+                index = image_combo.findText(data["image"])
+                if index >= 0:
+                    image_combo.setCurrentIndex(index)
+
+            hbox_image.addWidget(image_label)
+            hbox_image.addWidget(image_combo)
+            layout.addLayout(hbox_image)
+
+            # Настройка сообщения в консоль
+            hbox_log = QHBoxLayout()
+            log_label = QLabel("Сообщение в консоль:")
+            log_input = QLineEdit()
+            log_input.setText(data.get("log_event", "Найдено другое изображение!"))
+            log_input.setPlaceholderText("Например: Найдено изображение поражения!")
+            hbox_log.addWidget(log_label)
+            hbox_log.addWidget(log_input)
+            layout.addLayout(hbox_log)
+
+            # Чекбоксы для действий
+            actions_group = QGroupBox("Выберите действия:")
+            actions_layout = QVBoxLayout(actions_group)
+
+            get_coords_check = QCheckBox("Кликнуть по координатам найденного изображения (get_coords)")
+            get_coords_check.setToolTip("Кликнуть в центр найденного изображения")
+            get_coords_check.setChecked(data.get("get_coords", False))
+
+            continue_check = QCheckBox("Продолжить выполнение (continue)")
+            continue_check.setChecked(data.get("continue", True))
+
+            stop_bot_check = QCheckBox("Остановить бота (running.clear())")
+            stop_bot_check.setChecked(data.get("stop_bot", False))
+
+            actions_layout.addWidget(get_coords_check)
+            actions_layout.addWidget(continue_check)
+            actions_layout.addWidget(stop_bot_check)
+
+            layout.addWidget(actions_group)
+
+            # Чекбокс для дополнительных действий
+            add_actions_check = QCheckBox("Добавить дополнительные действия (клики/свайпы)")
+            add_actions_check.setChecked(len(data.get("additional_actions", [])) > 0)
+            layout.addWidget(add_actions_check)
+
+            # Фрейм для дополнительных действий
+            actions_frame = QFrame()
+            actions_frame.setVisible(add_actions_check.isChecked())  # Показываем в зависимости от наличия действий
+            actions_layout = QVBoxLayout(actions_frame)
+
+            # Таблица для дополнительных действий
+            actions_table = QTableWidget(0, 3)
+            actions_table.setHorizontalHeaderLabels(["Тип", "Параметры", ""])
+            actions_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)
+            actions_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+            actions_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
+            actions_table.setColumnWidth(0, 120)
+            actions_table.setColumnWidth(2, 80)
+
+            # Заполняем таблицу существующими действиями (код аналогичен edit_if_result_block)
+            for action_data in data.get("additional_actions", []):
+                row = actions_table.rowCount()
+                actions_table.insertRow(row)
+
+                action_type = action_data.get("type", "")
+                if action_type == "click":
+                    actions_table.setItem(row, 0, QTableWidgetItem("Клик"))
+                    desc = f"X: {action_data.get('x', 0)}, Y: {action_data.get('y', 0)}"
+                    if action_data.get("sleep"):
+                        desc += f", Задержка: {action_data.get('sleep')}с"
+                    if action_data.get("description"):
+                        desc += f", {action_data.get('description', '')}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, action_data)
+                elif action_type == "swipe":
+                    actions_table.setItem(row, 0, QTableWidgetItem("Свайп"))
+                    desc = f"От ({action_data.get('x1', 0)}, {action_data.get('y1', 0)}) "
+                    desc += f"до ({action_data.get('x2', 0)}, {action_data.get('y2', 0)})"
+                    if action_data.get("sleep"):
+                        desc += f", Задержка: {action_data.get('sleep')}с"
+                    if action_data.get("description"):
+                        desc += f", {action_data.get('description', '')}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, action_data)
+                elif action_type == "sleep":
+                    actions_table.setItem(row, 0, QTableWidgetItem("Пауза"))
+                    actions_table.setItem(row, 1, QTableWidgetItem(f"Пауза {action_data.get('time', 1.0)} секунд"))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, action_data)
+
+                # Кнопка удаления
+                del_btn = QPushButton("Удалить")
+                row_for_deletion = row  # Захватываем текущее значение row
+                del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                actions_table.setCellWidget(row, 2, del_btn)
+
+            # Кнопки для добавления действий (код аналогичен edit_if_result_block)
+            add_actions_buttons = QHBoxLayout()
+            add_click_btn = QPushButton("Добавить клик")
+            add_swipe_btn = QPushButton("Добавить свайп")
+            add_sleep_btn = QPushButton("Добавить паузу")
+
+            # Функции для добавления действий в таблицу
+            def add_click_to_table():
+                click_dialog = ClickModuleDialog(dialog)
+                if click_dialog.exec():
+                    data = click_dialog.get_data()
+                    row = actions_table.rowCount()
+                    actions_table.insertRow(row)
+                    actions_table.setItem(row, 0, QTableWidgetItem("Клик"))
+                    desc = f"X: {data['x']}, Y: {data['y']}, Задержка: {data['sleep']}с"
+                    if data['description']:
+                        desc += f", {data['description']}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, data)
+                    # Кнопка удаления
+                    del_btn = QPushButton("Удалить")
+                    row_for_deletion = row
+                    del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                    actions_table.setCellWidget(row, 2, del_btn)
+
+            def add_swipe_to_table():
+                swipe_dialog = SwipeModuleDialog(dialog)
+                if swipe_dialog.exec():
+                    data = swipe_dialog.get_data()
+                    row = actions_table.rowCount()
+                    actions_table.insertRow(row)
+                    actions_table.setItem(row, 0, QTableWidgetItem("Свайп"))
+                    desc = f"От ({data['x1']}, {data['y1']}) до ({data['x2']}, {data['y2']}), Задержка: {data['sleep']}с"
+                    if data['description']:
+                        desc += f", {data['description']}"
+                    actions_table.setItem(row, 1, QTableWidgetItem(desc))
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, data)
+                    # Кнопка удаления
+                    del_btn = QPushButton("Удалить")
+                    row_for_deletion = row
+                    del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                    actions_table.setCellWidget(row, 2, del_btn)
+
+            def add_sleep_to_table():
+                sleep_dialog = QDialog(dialog)
+                sleep_dialog.setWindowTitle("Добавить паузу")
+                sleep_dialog.setModal(True)
+
+                sleep_layout = QVBoxLayout(sleep_dialog)
+
+                # Спиннер для времени
+                hbox = QHBoxLayout()
+                label = QLabel("Время паузы (секунды):")
+                spinner = QDoubleSpinBox()
+                spinner.setRange(0.1, 60.0)
+                spinner.setValue(1.0)
+                spinner.setDecimals(1)
+                spinner.setSingleStep(0.1)
+                spinner.setSuffix(" сек")
+
+                hbox.addWidget(label)
+                hbox.addWidget(spinner)
+                sleep_layout.addLayout(hbox)
+
+                # Кнопки
+                buttons = QHBoxLayout()
+                cancel_btn = QPushButton("Отмена")
+                ok_btn = QPushButton("OK")
+
+                cancel_btn.clicked.connect(sleep_dialog.reject)
+                ok_btn.clicked.connect(sleep_dialog.accept)
+
+                buttons.addWidget(cancel_btn)
+                buttons.addWidget(ok_btn)
+                sleep_layout.addLayout(buttons)
+
+                if sleep_dialog.exec():
+                    sleep_time = spinner.value()
+
+                    row = actions_table.rowCount()
+                    actions_table.insertRow(row)
+
+                    actions_table.setItem(row, 0, QTableWidgetItem("Пауза"))
+                    actions_table.setItem(row, 1, QTableWidgetItem(f"Пауза {sleep_time} секунд"))
+
+                    # Сохраняем данные
+                    item = actions_table.item(row, 0)
+                    item.setData(Qt.ItemDataRole.UserRole, {"type": "sleep", "time": sleep_time})
+
+                    # Кнопка удаления
+                    del_btn = QPushButton("Удалить")
+                    row_for_deletion = row
+                    del_btn.clicked.connect(lambda checked=False, r=row_for_deletion: actions_table.removeRow(r))
+                    actions_table.setCellWidget(row, 2, del_btn)
+
+            # Подключаем функции к кнопкам
+            add_click_btn.clicked.connect(add_click_to_table)
+            add_swipe_btn.clicked.connect(add_swipe_to_table)
+            add_sleep_btn.clicked.connect(add_sleep_to_table)
+
+            add_actions_buttons.addWidget(add_click_btn)
+            add_actions_buttons.addWidget(add_swipe_btn)
+            add_actions_buttons.addWidget(add_sleep_btn)
+
+            actions_layout.addLayout(add_actions_buttons)
+            actions_layout.addWidget(actions_table)
+
+            layout.addWidget(actions_frame)
+
+            # Показываем/скрываем фрейм дополнительных действий
+            add_actions_check.stateChanged.connect(
+                lambda state: actions_frame.setVisible(state == Qt.CheckState.Checked))
+
+            # Кнопки диалога
+            buttons_layout = QHBoxLayout()
+            cancel_btn = QPushButton("Отмена")
+            ok_btn = QPushButton("Сохранить")
+
+            cancel_btn.clicked.connect(dialog.reject)
+            ok_btn.clicked.connect(dialog.accept)
+
+            buttons_layout.addWidget(cancel_btn)
+            buttons_layout.addWidget(ok_btn)
+            layout.addLayout(buttons_layout)
+
+            # Если диалог принят, обновляем блок
+            if dialog.exec():
+                # Формируем описание блока
+                selected_image = image_combo.currentText()
+                description = f"ELIF: Если найдено {selected_image}"
+
+                # Собираем действия
+                actions = []
+                if get_coords_check.isChecked():
+                    actions.append("get_coords")
+                if continue_check.isChecked():
+                    actions.append("continue")
+                if stop_bot_check.isChecked():
+                    actions.append("running.clear()")
+
+                if actions:
+                    description += f" → {', '.join(actions)}"
+
+                # Добавляем информацию о дополнительных действиях
+                if add_actions_check.isChecked() and actions_table.rowCount() > 0:
+                    description += f" + {actions_table.rowCount()} действий"
+
+                # Обновляем данные блока
+                new_data = {
+                    "type": "elif",
+                    "image": image_combo.currentText(),
+                    "log_event": log_input.text().strip(),
+                    "get_coords": get_coords_check.isChecked(),
+                    "continue": continue_check.isChecked(),
+                    "stop_bot": stop_bot_check.isChecked(),
+                    "additional_actions": []
+                }
+
+                # Если есть дополнительные действия, добавляем их
+                if add_actions_check.isChecked():
+                    for row in range(actions_table.rowCount()):
+                        action_type = actions_table.item(row, 0).text()
+                        action_data = actions_table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+
+                        if action_type == "Клик":
+                            new_data["additional_actions"].append({
+                                "type": "click",
+                                "x": action_data["x"],
+                                "y": action_data["y"],
+                                "description": action_data["description"],
+                                "sleep": action_data["sleep"]
+                            })
+                        elif action_type == "Свайп":
+                            new_data["additional_actions"].append({
+                                "type": "swipe",
+                                "x1": action_data["x1"],
+                                "y1": action_data["y1"],
+                                "x2": action_data["x2"],
+                                "y2": action_data["y2"],
+                                "description": action_data["description"],
+                                "sleep": action_data["sleep"]
+                            })
+                        elif action_type == "Пауза":
+                            new_data["additional_actions"].append({
+                                "type": "sleep",
+                                "time": action_data["time"]
+                            })
+
+                # Обновляем данные и текст элемента
+                item.description = description
+                item.data = new_data
+
+                # Обновляем виджет на холсте
+                old_widget = item
+                item_index = item.index
+
+                # Удаляем старый виджет
+                self.script_canvas_layout.removeWidget(old_widget)
+                old_widget.deleteLater()
+
+                # Создаем новый виджет
+                new_widget = ScriptItemWidget(item_index, "ELIF", description)
+                new_widget.set_data(new_data)
+                new_widget.deleteRequested.connect(self.delete_script_item)
+                new_widget.editRequested.connect(self.edit_script_item)
+
+                # Обновляем запись в списке
+                self.script_items[item_index] = new_widget
+
+                # Добавляем на холст
+                self.script_canvas_layout.insertWidget(item_index, new_widget)
+
+    def get_data(self) -> Dict[str, Any]:
+        """Возвращает данные модуля поиска изображений"""
+        # Собираем основные данные
+        result = {
+            "type": "image_search",
+            "image": self.image_name.text().strip(),
+            "timeout": self.timeout_input.value(),
+            "script_items": []
+        }
+
+        # Добавляем дополнительные изображения, если они есть
+        additional_images = []
+        for row in range(self.images_list.rowCount()):
+            image_name = self.images_list.item(row, 0).text()
+            additional_images.append(image_name)
+
+        if additional_images:
+            result["additional_images"] = additional_images
+
+        # Собираем данные из элементов скрипта
+        for item in self.script_items:
+            result["script_items"].append({
+                "type": item.item_type,
+                "data": item.data
+            })
+
+        return result

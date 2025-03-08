@@ -533,28 +533,26 @@ class CreateBotPage(QWidget):
             data = dialog.get_data()
 
             # Формируем строку описания
-            images_str = ", ".join(data["images"])
-            description = f"Поиск: {images_str} (таймаут: {data['timeout']} сек)"
+            images_str = ", ".join(data.get("images", []))
+            description = f"Поиск: {images_str} (таймаут: {data.get('timeout', 120)} сек)"
 
-            # Добавляем детали о действиях после нахождения/ненахождения изображений
-            if_result_acts = []
-            if data["if_result"].get("get_coords"):
-                if_result_acts.append("get_coords")
-            if data["if_result"].get("continue"):
-                if_result_acts.append("continue")
-            if data["if_result"].get("stop_bot"):
-                if_result_acts.append("running.clear()")
+            # Добавляем детали о количестве блоков скрипта
+            script_items = data.get("script_items", [])
+            if script_items:
+                if_result_count = sum(1 for item in script_items if item.get("type") == "if_result")
+                elif_count = sum(1 for item in script_items if item.get("type") == "elif")
+                if_not_result_count = sum(1 for item in script_items if item.get("type") == "if_not_result")
 
-            if data["if_result"].get("actions") and len(data["if_result"]["actions"]) > 0:
-                if_result_acts.append(f"{len(data['if_result']['actions'])} действий")
+                blocks_info = []
+                if if_result_count:
+                    blocks_info.append(f"{if_result_count} IF Result")
+                if elif_count:
+                    blocks_info.append(f"{elif_count} ELIF")
+                if if_not_result_count:
+                    blocks_info.append(f"{if_not_result_count} IF Not Result")
 
-            # Добавляем информацию о ELIF блоках, если они есть
-            if data.get("elif_blocks") and len(data["elif_blocks"]) > 0:
-                description += f", {len(data['elif_blocks'])} ELIF блоков"
-
-            # Если есть дополнительные действия, добавляем их в описание
-            if if_result_acts:
-                description += f" | Действия: {', '.join(if_result_acts)}"
+                if blocks_info:
+                    description += f" | Блоки: {', '.join(blocks_info)}"
 
             # Добавляем модуль в таблицу
             self.add_module_to_table("Поиск картинки", description, data)
