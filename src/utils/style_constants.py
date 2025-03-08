@@ -22,14 +22,14 @@ DIALOG_STYLE = """
         padding: 5px;
     }
     QPushButton {
-        background-color: #FF5722;
-        color: white;
+        background-color: #FFA500;
+        color: black;
         border: none;
         border-radius: 4px;
         padding: 8px 16px;
     }
     QPushButton:hover {
-        background-color: #FF7043;
+        background-color: #FFB347;
     }
     QGroupBox {
         color: #FFA500;
@@ -62,7 +62,7 @@ CHECKBOX_STYLE = """
     }
     QCheckBox::indicator:checked {
         border: 1px solid #555;
-        background-color: #FF5722;
+        background-color: #FFA500;
     }
 """
 
@@ -84,7 +84,7 @@ TAB_AND_TABLE_STYLE = """
         padding: 6px;
     }
     QTabBar::tab:selected {
-        background-color: #FF5722;
+        background-color: #FFA500;
     }
     QTabBar::tab:!selected {
         margin-top: 2px;
@@ -95,7 +95,7 @@ TAB_AND_TABLE_STYLE = """
         gridline-color: #555;
     }
     QHeaderView::section {
-        background-color: #FF5722;
+        background-color: #FFA500;
         color: white;
         padding: 4px;
         border: 1px solid #555;
@@ -111,7 +111,7 @@ SCROLLBAR_STYLE = """
         margin: 0px;
     }
     QScrollBar::handle:vertical {
-        background-color: #FF5722;
+        background-color: #FFA500;
         min-height: 20px;
         border-radius: 6px;
     }
@@ -125,7 +125,7 @@ SCROLLBAR_STYLE = """
         margin: 0px;
     }
     QScrollBar::handle:horizontal {
-        background-color: #FF5722;
+        background-color: #FFA500;
         min-width: 20px;
         border-radius: 6px;
     }
@@ -154,7 +154,7 @@ COMBOBOX_STYLE = """
     }
     QComboBox QAbstractItemView {
         border: 1px solid #555;
-        selection-background-color: #FF5722;
+        selection-background-color: #FFA500;
         background-color: #2C2C2C;
         color: white;
     }
@@ -191,14 +191,17 @@ MAIN_FRAME_STYLE = """
 
 
 # Цвет акцентов (вместо оранжевого)
-ACCENT_COLOR = "#3498DB"  # Синий
-ACCENT_COLOR_HOVER = "#2980B9"  # Темно-синий для hover
+ACCENT_COLOR = "#F0C14B"  # для совместимости со старым кодом
+ACCENT_COLOR_HOVER = "#DDAF37"  # для совместимости со старым кодом
+PRIMARY_COLOR = "#F0C14B"  # темно оранжевый
+PRIMARY_COLOR_HOVER = "#DDAF37"  # темно оранжевый с небольшим засветлением
+
 
 # Обновленный стиль акцентных кнопок
 ACCENT_BUTTON_STYLE = f"""
     QPushButton {{
         background-color: {ACCENT_COLOR};
-        color: white;
+        color: black;
         border-radius: 5px;
         margin-bottom: 5px;
         font-weight: bold;

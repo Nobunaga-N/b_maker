@@ -222,7 +222,7 @@ class CreateBotPage(QWidget):
                 border: 1px solid #444;
             }
             QTableWidget::item:selected {
-                background-color: #FF5722;
+                background-color: #FFA500;
                 color: white;
             }
         """)
