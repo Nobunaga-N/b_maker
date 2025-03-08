@@ -212,3 +212,44 @@ def create_check_box(text: str, checked: bool = False) -> QCheckBox:
         }
     """)
     return checkbox
+
+# Создайте функцию-обертку для создания спиннеров без кнопок в src/utils/ui_factory.py
+
+def create_spinbox_without_buttons(min_val: int = 0, max_val: int = 100, default: int = 0, suffix: str = None) -> QSpinBox:
+    """Создает числовой спиннер без кнопок +/-"""
+    spinner = QSpinBox()
+    spinner.setRange(min_val, max_val)
+    spinner.setValue(default)
+    if suffix:
+        spinner.setSuffix(suffix)
+    spinner.setStyleSheet("""
+        background-color: #2C2C2C; 
+        color: white; 
+        padding: 5px;
+        border: 1px solid #444;
+        border-radius: 4px;
+    """)
+    # Отключаем кнопки программно
+    spinner.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+    return spinner
+
+def create_double_spinbox_without_buttons(min_val: float = 0.0, max_val: float = 100.0,
+                                        default: float = 0.0, decimals: int = 1,
+                                        suffix: str = None) -> QDoubleSpinBox:
+    """Создает числовой спиннер с плавающей точкой без кнопок +/-"""
+    spinner = QDoubleSpinBox()
+    spinner.setRange(min_val, max_val)
+    spinner.setValue(default)
+    spinner.setDecimals(decimals)
+    if suffix:
+        spinner.setSuffix(suffix)
+    spinner.setStyleSheet("""
+        background-color: #2C2C2C; 
+        color: white; 
+        padding: 5px;
+        border: 1px solid #444;
+        border-radius: 4px;
+    """)
+    # Отключаем кнопки программно
+    spinner.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+    return spinner

@@ -156,6 +156,7 @@ class ImageSearchModuleDialog(QDialog):
         self.timeout_input.setRange(1, 3600)
         self.timeout_input.setValue(120)  # По умолчанию 120 секунд (2 минуты)
         self.timeout_input.setSuffix(" сек")
+        self.timeout_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         hbox2.addWidget(timeout_label)
         hbox2.addWidget(self.timeout_input)
         hbox2.addStretch(1)

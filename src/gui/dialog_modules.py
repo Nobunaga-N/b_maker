@@ -12,6 +12,7 @@ from typing import Dict, Any
 
 from src.utils.style_constants import DIALOG_STYLE
 
+
 # Скопируйте сюда классы ClickModuleDialog и SwipeModuleDialog из custom_widgets.py
 class ClickModuleDialog(QDialog):
     """
@@ -43,6 +44,7 @@ class ClickModuleDialog(QDialog):
         self.x_input = QSpinBox()
         self.x_input.setRange(0, 5000)
         self.x_input.setSingleStep(1)
+        self.x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         x_layout.addWidget(x_label)
         x_layout.addWidget(self.x_input)
         coords_layout.addLayout(x_layout)
@@ -53,6 +55,7 @@ class ClickModuleDialog(QDialog):
         self.y_input = QSpinBox()
         self.y_input.setRange(0, 5000)
         self.y_input.setSingleStep(1)
+        self.y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         y_layout.addWidget(y_label)
         y_layout.addWidget(self.y_input)
         coords_layout.addLayout(y_layout)
@@ -85,6 +88,7 @@ class ClickModuleDialog(QDialog):
         self.sleep_input.setDecimals(1)
         self.sleep_input.setSingleStep(0.1)
         self.sleep_input.setSuffix(" сек")
+        self.sleep_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
         delay_layout.addWidget(delay_label)
         delay_layout.addWidget(self.sleep_input)
 
@@ -142,6 +146,7 @@ class SwipeModuleDialog(QDialog):
         x_label = QLabel("Координата X:")
         self.start_x_input = QSpinBox()
         self.start_x_input.setRange(0, 5000)
+        self.start_x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         hbox_start_x.addWidget(x_label)
         hbox_start_x.addWidget(self.start_x_input)
 
@@ -149,6 +154,7 @@ class SwipeModuleDialog(QDialog):
         y_label = QLabel("Координата Y:")
         self.start_y_input = QSpinBox()
         self.start_y_input.setRange(0, 5000)
+        self.start_y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         hbox_start_y.addWidget(y_label)
         hbox_start_y.addWidget(self.start_y_input)
 
@@ -164,6 +170,7 @@ class SwipeModuleDialog(QDialog):
         end_x_label = QLabel("Координата X:")
         self.end_x_input = QSpinBox()
         self.end_x_input.setRange(0, 5000)
+        self.end_x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         hbox_end_x.addWidget(end_x_label)
         hbox_end_x.addWidget(self.end_x_input)
 
@@ -171,6 +178,7 @@ class SwipeModuleDialog(QDialog):
         end_y_label = QLabel("Координата Y:")
         self.end_y_input = QSpinBox()
         self.end_y_input.setRange(0, 5000)
+        self.end_y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         hbox_end_y.addWidget(end_y_label)
         hbox_end_y.addWidget(self.end_y_input)
 
@@ -206,6 +214,7 @@ class SwipeModuleDialog(QDialog):
         self.sleep_input.setDecimals(1)
         self.sleep_input.setSingleStep(0.1)
         self.sleep_input.setSuffix(" сек")
+        self.sleep_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
         delay_layout.addWidget(sleep_label)
         delay_layout.addWidget(self.sleep_input)
 

@@ -87,6 +87,7 @@ class ActivityModuleDialog(QDialog):
         self.restart_from_line = QSpinBox()
         self.restart_from_line.setRange(1, 999)
         self.restart_from_line.setEnabled(False)
+        self.restart_from_line.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         self.restart_from_check = QCheckBox("Перезапустить со строки:")
         self.restart_from_check.toggled.connect(self.restart_from_line.setEnabled)
         hbox_restart.addWidget(self.restart_from_check)

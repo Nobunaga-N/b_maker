@@ -349,6 +349,7 @@ class MainWindow(QMainWindow):
         self.cycles_input = QSpinBox()
         self.cycles_input.setRange(0, 9999)
         self.cycles_input.setStyleSheet("color: #FFFFFF; background-color: #2C2C2C;")
+        self.cycles_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         manager_layout.addWidget(self.cycles_input)
 
         self.work_time_label = QLabel("Время работы (минуты, 0 - отключено):")
@@ -358,6 +359,7 @@ class MainWindow(QMainWindow):
         self.work_time_input = QSpinBox()
         self.work_time_input.setRange(0, 1440)
         self.work_time_input.setStyleSheet("color: #FFFFFF; background-color: #2C2C2C;")
+        self.work_time_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         manager_layout.addWidget(self.work_time_input)
 
         self.threads_label = QLabel("Количество потоков (эмуляторов одновременно):")
@@ -367,6 +369,7 @@ class MainWindow(QMainWindow):
         self.threads_input = QSpinBox()
         self.threads_input.setRange(1, 50)
         self.threads_input.setStyleSheet("color: #FFFFFF; background-color: #2C2C2C;")
+        self.threads_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         manager_layout.addWidget(self.threads_input)
 
         self.emulators_label = QLabel("Список эмуляторов (пример: 0:5,7,9:10):")
