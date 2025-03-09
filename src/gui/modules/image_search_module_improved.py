@@ -43,6 +43,7 @@ class ImageSearchModuleDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Настройка модуля поиска изображений")
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMinMaxButtonsHint)
         self.setModal(True)
         self.resize(900, 700)
 
@@ -69,14 +70,6 @@ class ImageSearchModuleDialog(QDialog):
         title_label = QLabel("Настройка модуля поиска изображений")
         title_label.setStyleSheet("color: #FFA500; font-size: 18px; font-weight: bold;")
         title_layout.addWidget(title_label)
-
-        # Кнопка для полноэкранного режима
-        self.fullscreen_btn = QToolButton()
-        self.fullscreen_btn.setIcon(QIcon("assets/icons/settings.svg"))  # Замените на подходящую иконку
-        self.fullscreen_btn.setIconSize(QSize(24, 24))
-        self.fullscreen_btn.setToolTip("Развернуть на весь экран / Свернуть")
-        self.fullscreen_btn.clicked.connect(self.toggle_fullscreen)
-        title_layout.addWidget(self.fullscreen_btn)
 
         layout.addLayout(title_layout)
 
@@ -210,23 +203,6 @@ class ImageSearchModuleDialog(QDialog):
         buttons_layout.addWidget(self.btn_cancel)
         buttons_layout.addWidget(self.btn_confirm)
         layout.addLayout(buttons_layout)
-
-    def toggle_fullscreen(self):
-        """Переключает полноэкранный режим диалога"""
-        if not self.is_fullscreen:
-            # Сохраняем текущую геометрию перед разворачиванием
-            self.normal_geometry = self.geometry()
-            # Разворачиваем на весь экран
-            available_geometry = QApplication.primaryScreen().availableGeometry()
-            self.setGeometry(available_geometry)
-            self.is_fullscreen = True
-            self.fullscreen_btn.setToolTip("Свернуть")
-        else:
-            # Восстанавливаем сохраненную геометрию
-            if self.normal_geometry:
-                self.setGeometry(self.normal_geometry)
-            self.is_fullscreen = False
-            self.fullscreen_btn.setToolTip("Развернуть на весь экран")
 
     def browse_image(self):
         """Открывает диалог выбора основного изображения"""

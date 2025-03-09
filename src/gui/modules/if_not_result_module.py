@@ -31,6 +31,9 @@ class IfNotResultModuleDialog(QDialog):
         """Настраивает интерфейс диалога"""
         layout = QVBoxLayout(self)
 
+        # Добавляем WindowMinMaxButtonsHint для стандартных кнопок окна
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMinMaxButtonsHint)
+
         # --- 1. Настройки основных параметров ---
         settings_group = QGroupBox("Настройки")
         settings_layout = QVBoxLayout(settings_group)
@@ -45,14 +48,6 @@ class IfNotResultModuleDialog(QDialog):
         log_layout.addWidget(log_label)
         log_layout.addWidget(self.log_input, 1)
         settings_layout.addLayout(log_layout)
-
-        # Чекбоксы для действий
-        self.continue_check = QCheckBox("Продолжить выполнение (continue)")
-        self.continue_check.setChecked(True)
-        self.stop_bot_check = QCheckBox("Остановить бота (running.clear())")
-
-        settings_layout.addWidget(self.continue_check)
-        settings_layout.addWidget(self.stop_bot_check)
 
         layout.addWidget(settings_group)
 
@@ -83,8 +78,6 @@ class IfNotResultModuleDialog(QDialog):
         data = {
             "type": "if_not_result",
             "log_event": self.log_input.text(),
-            "continue": self.continue_check.isChecked(),
-            "stop_bot": self.stop_bot_check.isChecked(),
             "actions": self.canvas.get_modules_data()
         }
 
@@ -95,10 +88,6 @@ class IfNotResultModuleDialog(QDialog):
         # Сообщение в консоль
         if "log_event" in data:
             self.log_input.setText(data["log_event"])
-
-        # Чекбоксы
-        self.continue_check.setChecked(data.get("continue", True))
-        self.stop_bot_check.setChecked(data.get("stop_bot", False))
 
         # Загружаем действия в холст
         if "actions" in data:

@@ -154,13 +154,6 @@ class CanvasModule(QFrame):
         title_label.setStyleSheet("color: #FFA500; font-size: 14px; font-weight: bold;")
         title_layout.addWidget(title_label)
 
-        # Кнопка для полноэкранного режима
-        self.fullscreen_btn = QToolButton()
-        self.fullscreen_btn.setIcon(QIcon("assets/icons/settings.svg"))  # Подобрать подходящую иконку
-        self.fullscreen_btn.setToolTip("Развернуть на весь экран")
-        self.fullscreen_btn.clicked.connect(self.toggle_fullscreen)
-        title_layout.addWidget(self.fullscreen_btn)
-
         main_layout.addLayout(title_layout)
 
         # Скролл-область для холста
@@ -209,12 +202,6 @@ class CanvasModule(QFrame):
         """
         # Базовые кнопки можно добавить здесь, если нужно
         layout.addStretch(1)  # Растягивающееся пространство
-
-    def toggle_fullscreen(self):
-        """Переключает режим отображения холста (обычный/полноэкранный)"""
-        # Логика переключения режима будет реализована позже
-        # или переопределена в дочерних классах
-        pass
 
     def add_module(self, module_type: str, description: str, data: dict = None):
         """Добавляет новый модуль на холст"""

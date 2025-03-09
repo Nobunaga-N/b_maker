@@ -153,6 +153,7 @@ class IfResultCanvas(CanvasModule):
         self.add_module("running.clear()", description, data)
 
     def edit_module(self, index: int):
+        from PyQt6.QtWidgets import QLabel
         """Редактирует модуль на холсте"""
         if 0 <= index < len(self.modules):
             module = self.modules[index]
@@ -190,6 +191,13 @@ class IfResultCanvas(CanvasModule):
 
                     module.description = description
                     module.set_data(data)
+
+                    # Обновляем текст в виджете
+                    for i in range(module.layout().count()):
+                        item = module.layout().itemAt(i)
+                        if item.widget() and isinstance(item.widget(), QLabel):
+                            item.widget().setText(description)
+                            break
 
                     # Принудительно перерисовываем модули
                     self._redraw_modules()
@@ -233,6 +241,13 @@ class IfResultCanvas(CanvasModule):
 
                     module.description = description
                     module.set_data(data)
+
+                    # Обновляем текст в виджете
+                    for i in range(module.layout().count()):
+                        item = module.layout().itemAt(i)
+                        if item.widget() and isinstance(item.widget(), QLabel):
+                            item.widget().setText(description)
+                            break
 
                     # Принудительно перерисовываем модули
                     self._redraw_modules()
@@ -287,6 +302,13 @@ class IfResultCanvas(CanvasModule):
                     module.description = description
                     module.set_data(data)
 
+                    # Обновляем текст в виджете
+                    for i in range(module.layout().count()):
+                        item = module.layout().itemAt(i)
+                        if item.widget() and isinstance(item.widget(), QLabel):
+                            item.widget().setText(description)
+                            break
+
                     # Принудительно перерисовываем модули
                     self._redraw_modules()
 
@@ -317,6 +339,9 @@ class IfResultModuleDialog(QDialog):
         """Настраивает интерфейс диалога"""
         layout = QVBoxLayout(self)
 
+        # Добавляем WindowMinMaxButtonsHint для стандартных кнопок окна
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMinMaxButtonsHint)
+
         # --- 1. Настройки изображения и основных параметров ---
         settings_group = QGroupBox("Настройки")
         settings_layout = QVBoxLayout(settings_group)
@@ -342,16 +367,6 @@ class IfResultModuleDialog(QDialog):
         log_layout.addWidget(log_label)
         log_layout.addWidget(self.log_input, 1)
         settings_layout.addLayout(log_layout)
-
-        # Чекбоксы для действий
-        self.get_coords_check = QCheckBox("Кликнуть по координатам найденного изображения (get_coords)")
-        self.continue_check = QCheckBox("Продолжить выполнение (continue)")
-        self.continue_check.setChecked(True)
-        self.stop_bot_check = QCheckBox("Остановить бота (running.clear())")
-
-        settings_layout.addWidget(self.get_coords_check)
-        settings_layout.addWidget(self.continue_check)
-        settings_layout.addWidget(self.stop_bot_check)
 
         layout.addWidget(settings_group)
 
@@ -387,9 +402,6 @@ class IfResultModuleDialog(QDialog):
             "type": "if_result",
             "image": image,
             "log_event": self.log_input.text(),
-            "get_coords": self.get_coords_check.isChecked(),
-            "continue": self.continue_check.isChecked(),
-            "stop_bot": self.stop_bot_check.isChecked(),
             "actions": self.canvas.get_modules_data()
         }
 
@@ -406,11 +418,6 @@ class IfResultModuleDialog(QDialog):
         # Сообщение в консоль
         if "log_event" in data:
             self.log_input.setText(data["log_event"])
-
-        # Чекбоксы
-        self.get_coords_check.setChecked(data.get("get_coords", False))
-        self.continue_check.setChecked(data.get("continue", True))
-        self.stop_bot_check.setChecked(data.get("stop_bot", False))
 
         # Загружаем действия в холст
         if "actions" in data:
