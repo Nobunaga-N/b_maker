@@ -539,6 +539,29 @@ class CreateBotPage(QWidget):
                 if isinstance(data.get("timeout"), (int, float)):
                     dialog.timeout_input.setValue(int(data.get("timeout", 60)))
 
+                # Загружаем script_items в диалог - это критически важная часть
+                if "script_items" in data and data["script_items"]:
+                    for item in data["script_items"]:
+                        item_type = item.get("type")
+                        item_data = item.get("data", {})
+
+                        # Зависит от типа элемента скрипта
+                        description = ""
+                        if item_type == "IF Result":
+                            selected_image = "любое изображение"
+                            if item_data.get("image"):
+                                selected_image = item_data["image"]
+                            description = f"Если найдено {selected_image}"
+                            # Можно добавить дополнительное описание, если нужно
+                        elif item_type == "ELIF":
+                            selected_image = item_data.get("image", "неизвестное изображение")
+                            description = f"ELIF: Если найдено {selected_image}"
+                        elif item_type == "IF Not Result":
+                            description = "Если изображение не найдено"
+
+                        # Добавляем элемент на холст диалога
+                        dialog.add_script_item(item_type, description, item_data)
+
                 # Заполняем настройки для случая, если изображение найдено
                 if_result = data.get("if_result", {})
                 if if_result.get("log_event") is not None:
