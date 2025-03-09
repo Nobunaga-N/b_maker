@@ -338,6 +338,23 @@ class IfResultModuleDialog(QDialog):
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
         layout = QVBoxLayout(self)
+        # Применяем специальный стиль для вложенного диалога
+        self.setStyleSheet("""
+                        QDialog {
+                            background-color: #1A1A1A; /* Немного темнее фон */
+                            border: 2px solid #FF8C00; /* Оранжевая рамка */
+                        }
+                        QPushButton {
+                            background-color: #FF8C00;
+                            color: black;
+                            border-radius: 4px;
+                            padding: 8px 16px;
+                            font-weight: bold;
+                        }
+                        QGroupBox {
+                            border: 1px solid #FF8C00;
+                        }
+                    """)
 
         # Добавляем WindowMinMaxButtonsHint для стандартных кнопок окна
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMinMaxButtonsHint)

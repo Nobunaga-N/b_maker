@@ -384,6 +384,29 @@ class ImageSearchModuleDialog(QDialog):
 
         # Открываем диалог для настройки блока IF Result
         dialog = IfResultModuleDialog(images, self)
+
+        # Смещаем диалог относительно родительского
+        dialog_pos = self.mapToGlobal(self.rect().center())
+        dialog.move(dialog_pos.x() - dialog.width() // 2 + 50, dialog_pos.y() - dialog.height() // 2 + 50)
+
+        # Меняем стиль кнопок для визуального различия
+        dialog.ok_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #FF8C00; /* более яркий оранжевый */
+                    color: black;
+                    border: none;
+                    border-radius: 4px;
+                    padding: 8px 16px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #FFA54F;
+                }
+            """)
+
+        # Добавляем указание в заголовок
+        dialog.setWindowTitle("Подмодуль IF Result - настройка")
+
         if dialog.exec():
             data = dialog.get_data()
             if not data:
@@ -437,6 +460,27 @@ class ImageSearchModuleDialog(QDialog):
 
         # Открываем диалог для настройки блока ELIF
         dialog = ElifModuleDialog(images, self)
+        # Смещаем диалог относительно родительского
+        dialog_pos = self.mapToGlobal(self.rect().center())
+        dialog.move(dialog_pos.x() - dialog.width() // 2 + 50, dialog_pos.y() - dialog.height() // 2 + 50)
+
+        # Меняем стиль кнопок для визуального различия
+        dialog.ok_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #FF8C00; /* более яркий оранжевый */
+                    color: black;
+                    border: none;
+                    border-radius: 4px;
+                    padding: 8px 16px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #FFA54F;
+                }
+            """)
+
+        # Добавляем указание в заголовок
+        dialog.setWindowTitle("Подмодуль Elif - настройка")
         if dialog.exec():
             data = dialog.get_data()
             if not data:
@@ -470,6 +514,27 @@ class ImageSearchModuleDialog(QDialog):
         """Добавляет блок IF Not Result на холст"""
         # Открываем диалог для настройки блока IF Not Result
         dialog = IfNotResultModuleDialog(self)
+        # Смещаем диалог относительно родительского
+        dialog_pos = self.mapToGlobal(self.rect().center())
+        dialog.move(dialog_pos.x() - dialog.width() // 2 + 50, dialog_pos.y() - dialog.height() // 2 + 50)
+
+        # Меняем стиль кнопок для визуального различия
+        dialog.ok_btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #FF8C00; /* более яркий оранжевый */
+                    color: black;
+                    border: none;
+                    border-radius: 4px;
+                    padding: 8px 16px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #FFA54F;
+                }
+            """)
+
+        # Добавляем указание в заголовок
+        dialog.setWindowTitle("Подмодуль IF not Result - настройка")
         if dialog.exec():
             data = dialog.get_data()
             if not data:
