@@ -543,16 +543,12 @@ class CreateBotPage(QWidget):
                 if_result = data.get("if_result", {})
                 if if_result.get("log_event") is not None:
                     dialog.log_event_if_found.setText(str(if_result.get("log_event", "")))
-                dialog.click_coords_check.setChecked(bool(if_result.get("get_coords", False)))
-                dialog.continue_check.setChecked(bool(if_result.get("continue", False)))
-                dialog.stop_bot_check.setChecked(bool(if_result.get("stop_bot", False)))
 
                 # Заполняем настройки для случая, если изображение не найдено
                 if_not_result = data.get("if_not_result", {})
                 if if_not_result.get("log_event") is not None:
                     dialog.log_event_if_not_found.setText(str(if_not_result.get("log_event", "")))
-                dialog.continue_not_found_check.setChecked(bool(if_not_result.get("continue", False)))
-                dialog.stop_not_found_check.setChecked(bool(if_not_result.get("stop_bot", False)))
+
 
                 if dialog.exec():
                     new_data = dialog.get_data()
