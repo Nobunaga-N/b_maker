@@ -95,7 +95,7 @@ TAB_AND_TABLE_STYLE = """
         gridline-color: #555;
     }
     QHeaderView::section {
-        background-color: #FFA500;
+        background-color: #3a3a3a;
         color: white;
         padding: 4px;
         border: 1px solid #555;
