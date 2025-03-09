@@ -3,7 +3,7 @@
 Модуль содержит пользовательские виджеты для интерфейса приложения.
 """
 from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog
-from src.gui.image_search_module import ImageSearchModuleDialog
+from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
 
 from PyQt6.QtWidgets import (
     QDialog, QLabel, QVBoxLayout, QLineEdit, QPushButton,

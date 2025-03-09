@@ -14,7 +14,7 @@ from typing import Dict, List, Any, Optional
 
 from src.utils.file_manager import create_bot_environment
 from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog
-from src.gui.image_search_module import ImageSearchModuleDialog
+from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
 from src.gui.custom_widgets import ActivityModuleDialog
 
 
