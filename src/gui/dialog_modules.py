@@ -161,13 +161,17 @@ class SwipeModuleDialog(QDialog):
 
         hbox_end_x = QHBoxLayout()
         end_x_label = QLabel("Координата X:")
-        self.x_input = create_spinbox_without_buttons(0, 5000)
+        self.end_x_input = QSpinBox()
+        self.end_x_input.setRange(0, 5000)
+        self.end_x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         hbox_end_x.addWidget(end_x_label)
         hbox_end_x.addWidget(self.end_x_input)
 
         hbox_end_y = QHBoxLayout()
         end_y_label = QLabel("Координата Y:")
-        self.y_input = create_spinbox_without_buttons(0, 5000)
+        self.end_y_input = QSpinBox()
+        self.end_y_input.setRange(0, 5000)
+        self.end_y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
         hbox_end_y.addWidget(end_y_label)
         hbox_end_y.addWidget(self.end_y_input)
 
@@ -231,3 +235,81 @@ class SwipeModuleDialog(QDialog):
             "console_description": self.console_description_input.text().strip(),
             "sleep": self.sleep_input.value()
         }
+
+
+class TimeSleepModuleDialog(QDialog):
+    """
+    Диалог для настройки модуля time.sleep.
+    Позволяет задать время задержки в секундах.
+    """
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Настройка модуля паузы")
+        self.setModal(True)
+        self.resize(350, 200)
+        self.setup_ui()
+
+    def setup_ui(self):
+        """Настраивает интерфейс диалога"""
+        layout = QVBoxLayout(self)
+        layout.setSpacing(10)
+
+        # Используем стиль из констант
+        self.setStyleSheet(DIALOG_STYLE)
+
+        delay_group = QGroupBox("Время задержки")
+        delay_layout = QVBoxLayout(delay_group)
+
+        # Спиннер для времени задержки
+        delay_input_layout = QHBoxLayout()
+        delay_label = QLabel("Задержка:")
+        self.delay_input = QDoubleSpinBox()
+        self.delay_input.setRange(0.1, 300.0)  # От 0.1 до 300 секунд (5 минут)
+        self.delay_input.setValue(1.0)
+        self.delay_input.setDecimals(1)
+        self.delay_input.setSingleStep(0.1)
+        self.delay_input.setSuffix(" сек")
+        self.delay_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)  # Отключаем кнопки
+        delay_input_layout.addWidget(delay_label)
+        delay_input_layout.addWidget(self.delay_input)
+        delay_layout.addLayout(delay_input_layout)
+
+        # Описание
+        desc_label = QLabel("Описание:")
+        self.description_input = QLineEdit()
+        self.description_input.setPlaceholderText("Необязательное описание паузы")
+        delay_layout.addWidget(desc_label)
+        delay_layout.addWidget(self.description_input)
+
+        layout.addWidget(delay_group)
+
+        # Кнопки
+        buttons_layout = QHBoxLayout()
+        self.btn_cancel = QPushButton("Отмена")
+        self.btn_confirm = QPushButton("Подтвердить")
+        self.btn_cancel.clicked.connect(self.reject)
+        self.btn_confirm.clicked.connect(self.accept)
+        buttons_layout.addWidget(self.btn_cancel)
+        buttons_layout.addWidget(self.btn_confirm)
+
+        layout.addLayout(buttons_layout)
+
+    def get_data(self) -> Dict[str, Any]:
+        """
+        Возвращает данные, введенные пользователем.
+        """
+        return {
+            "type": "time_sleep",
+            "delay": self.delay_input.value(),
+            "description": self.description_input.text().strip()
+        }
+
+    def load_data(self, data: Dict[str, Any]):
+        """
+        Загружает данные для редактирования.
+        """
+        if "delay" in data:
+            self.delay_input.setValue(float(data["delay"]))
+        if "description" in data:
+            self.description_input.setText(data["description"])

@@ -13,7 +13,7 @@ import json
 from typing import Dict, List, Any, Optional
 
 from src.utils.file_manager import create_bot_environment
-from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog
+from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog, TimeSleepModuleDialog
 from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
 from src.gui.custom_widgets import ActivityModuleDialog, ModuleListItem
 
@@ -214,7 +214,7 @@ class CreateBotPage(QWidget):
 
         # Модули
         self.btn_add_click = QPushButton("Добавить клик")
-        self.btn_add_click.setIcon(QIcon("assets/icons/click.svg"))
+        self.btn_add_click.setIcon(QIcon("assets/icons/click-white.svg"))
         self.btn_add_click.clicked.connect(self.add_click_module)
         modules_layout.addWidget(self.btn_add_click)
 
@@ -227,6 +227,11 @@ class CreateBotPage(QWidget):
         self.btn_add_image_search.setIcon(QIcon("assets/icons/search.svg"))
         self.btn_add_image_search.clicked.connect(self.add_image_search_module)
         modules_layout.addWidget(self.btn_add_image_search)
+
+        self.btn_add_time_sleep = QPushButton("Добавить паузу")
+        self.btn_add_time_sleep.setIcon(QIcon("assets/icons/pause-white.svg"))
+        self.btn_add_time_sleep.clicked.connect(self.add_time_sleep_module)
+        modules_layout.addWidget(self.btn_add_time_sleep)
 
         self.btn_add_activity = QPushButton("Настройка Activity")
         self.btn_add_activity.setIcon(QIcon("assets/icons/activity.svg"))
@@ -311,6 +316,20 @@ class CreateBotPage(QWidget):
         splitter.setSizes([300, 700])
 
         main_layout.addWidget(splitter, 1)  # Растягиваем по вертикали
+
+    def add_time_sleep_module(self):
+        """Добавляет модуль time.sleep в холст"""
+        dialog = TimeSleepModuleDialog(self)
+        if dialog.exec():
+            data = dialog.get_data()
+
+            # Формируем описание для отображения
+            description = f"Пауза {data['delay']} сек"
+            if data.get('description'):
+                description += f" - {data['description']}"
+
+            # Добавляем модуль в таблицу
+            self.add_module_to_table("Пауза", description, data)
 
     def load_games(self):
         """Загружает список игр из настроек"""
@@ -681,6 +700,32 @@ class CreateBotPage(QWidget):
                     if item:
                         item.setText(new_description)
 
+            elif module_type == "Пауза":
+                dialog = TimeSleepModuleDialog(self)
+
+                # Заполняем диалог текущими данными
+                data = module.data
+                if isinstance(data.get("delay"), (int, float)):
+                    dialog.delay_input.setValue(float(data.get("delay", 1.0)))
+                if data.get("description") is not None:
+                    dialog.description_input.setText(str(data.get("description", "")))
+
+                if dialog.exec():
+                    new_data = dialog.get_data()
+
+                    # Обновляем данные модуля
+                    module.data.update(new_data)
+
+                    # Обновляем отображение в таблице
+                    description = f"Пауза {new_data['delay']} сек"
+                    if new_data.get('description'):
+                        description += f" - {new_data['description']}"
+
+                    module.display_text = description
+                    item = self.modules_table.item(row, 2)
+                    if item:
+                        item.setText(description)
+
             elif module_type == "Поиск картинки":
                 dialog = ImageSearchModuleDialog(self)
 
@@ -1018,6 +1063,13 @@ class CreateBotPage(QWidget):
                     images_str = ", ".join(module_data.get("images", []))
                     description = f"Поиск: {images_str} (таймаут: {module_data.get('timeout', 0)} сек)"
                     self.add_module_to_table("Поиск картинки", description, module_data)
+
+                elif module_type == "time_sleep":
+                    # Добавляем модуль time.sleep
+                    description = f"Пауза {module_data.get('delay', 1.0)} сек"
+                    if module_data.get('description'):
+                        description += f" - {module_data['description']}"
+                    self.add_module_to_table("Пауза", description, module_data)
 
             # If no Activity module was found, add it
             if not activity_found:

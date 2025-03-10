@@ -43,52 +43,55 @@ class ActivityCanvasModule(CanvasModule):
         """Creates tool buttons for the activity canvas"""
         # Close game button
         self.btn_close_game = QPushButton("close.game")
-        self.btn_close_game.setIcon(QIcon("assets/icons/delete.svg"))
+        self.btn_close_game.setIcon(QIcon("assets/icons/stop-black.svg"))
         self.btn_close_game.clicked.connect(self.add_close_game_module)
         layout.addWidget(self.btn_close_game)
 
         # Restart emulator button
         self.btn_restart_emulator = QPushButton("restart.emulator")
-        self.btn_restart_emulator.setIcon(QIcon("assets/icons/activity.svg"))
+        self.btn_restart_emulator.setIcon(QIcon("assets/icons/activity-black.svg"))
         self.btn_restart_emulator.clicked.connect(self.add_restart_emulator_module)
         layout.addWidget(self.btn_restart_emulator)
 
         # Start game button
         self.btn_start_game = QPushButton("start.game")
-        self.btn_start_game.setIcon(QIcon("assets/icons/create.svg"))
+        self.btn_start_game.setIcon(QIcon("assets/icons/continue-black.svg"))
         self.btn_start_game.clicked.connect(self.add_start_game_module)
         layout.addWidget(self.btn_start_game)
 
         # Time sleep button
         self.btn_time_sleep = QPushButton("time.sleep")
+        self.btn_time_sleep.setIcon(QIcon("assets/icons/pause-black.svg"))
         self.btn_time_sleep.clicked.connect(self.add_time_sleep_module)
         layout.addWidget(self.btn_time_sleep)
 
         # Restart from button
         self.btn_restart_from = QPushButton("restart.from")
+        self.btn_restart_from.setIcon(QIcon("assets/icons/activity-black.svg"))
         self.btn_restart_from.clicked.connect(self.add_restart_from_module)
         layout.addWidget(self.btn_restart_from)
 
         # Restart from last button
         self.btn_restart_from_last = QPushButton("restart.from.last")
+        self.btn_restart_from_last.setIcon(QIcon("assets/icons/activity-black.svg"))
         self.btn_restart_from_last.clicked.connect(self.add_restart_from_last_module)
         layout.addWidget(self.btn_restart_from_last)
 
         # Click button
         self.btn_click = QPushButton("Клик")
-        self.btn_click.setIcon(QIcon("assets/icons/click.svg"))
+        self.btn_click.setIcon(QIcon("assets/icons/pointer-arrow-icon.svg"))
         self.btn_click.clicked.connect(self.add_click_module)
         layout.addWidget(self.btn_click)
 
         # Swipe button
         self.btn_swipe = QPushButton("Свайп")
-        self.btn_swipe.setIcon(QIcon("assets/icons/swipe.svg"))
+        self.btn_swipe.setIcon(QIcon("assets/icons/swipe-black.svg"))
         self.btn_swipe.clicked.connect(self.add_swipe_module)
         layout.addWidget(self.btn_swipe)
 
         # Image search button
         self.btn_image_search = QPushButton("Поиск по картинке")
-        self.btn_image_search.setIcon(QIcon("assets/icons/search.svg"))
+        self.btn_image_search.setIcon(QIcon("assets/icons/search-black.svg"))
         self.btn_image_search.clicked.connect(self.add_image_search_module)
         layout.addWidget(self.btn_image_search)
 

@@ -110,11 +110,12 @@ class IfResultCanvas(CanvasModule):
         input_layout = QHBoxLayout()
         time_label = QLabel("Время задержки (сек):")
         time_spinner = QDoubleSpinBox()
-        time_spinner.setRange(0.1, 60.0)
+        time_spinner.setRange(0.1, 300.0)
         time_spinner.setValue(1.0)
         time_spinner.setDecimals(1)
         time_spinner.setSingleStep(0.1)
         time_spinner.setSuffix(" сек")
+
 
         input_layout.addWidget(time_label)
         input_layout.addWidget(time_spinner)
@@ -270,7 +271,7 @@ class IfResultCanvas(CanvasModule):
                 input_layout = QHBoxLayout()
                 time_label = QLabel("Время задержки (сек):")
                 time_spinner = QDoubleSpinBox()
-                time_spinner.setRange(0.1, 60.0)
+                time_spinner.setRange(0.1, 300.0)
                 time_spinner.setValue(data.get("time", 1.0))
                 time_spinner.setDecimals(1)
                 time_spinner.setSingleStep(0.1)
