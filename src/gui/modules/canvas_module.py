@@ -76,7 +76,7 @@ class ModuleItem(QFrame):
 
         # Кнопки управления
         self.edit_btn = QToolButton()
-        self.edit_btn.setIcon(QIcon("assets/icons/edit.svg"))
+        self.edit_btn.setIcon(QIcon("assets/icons/edit-white.svg"))
         self.edit_btn.setToolTip("Редактировать")
         self.edit_btn.clicked.connect(lambda: self.editRequested.emit(self.index))
 
