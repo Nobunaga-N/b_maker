@@ -9,11 +9,9 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from typing import Dict, Any
-
 from src.utils.style_constants import DIALOG_STYLE
+from src.utils.ui_factory import create_spinbox_without_buttons, create_double_spinbox_without_buttons
 
-
-# Скопируйте сюда классы ClickModuleDialog и SwipeModuleDialog из custom_widgets.py
 class ClickModuleDialog(QDialog):
     """
     Диалог для настройки модуля клика.
@@ -83,12 +81,7 @@ class ClickModuleDialog(QDialog):
         delay_layout = QHBoxLayout(delay_group)
 
         delay_label = QLabel("Время задержки после клика:")
-        self.sleep_input = QDoubleSpinBox()
-        self.sleep_input.setRange(0.0, 60.0)
-        self.sleep_input.setDecimals(1)
-        self.sleep_input.setSingleStep(0.1)
-        self.sleep_input.setSuffix(" сек")
-        self.sleep_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        self.sleep_input = create_double_spinbox_without_buttons(0.0, 300.0, 0.0, 1, " сек")
         delay_layout.addWidget(delay_label)
         delay_layout.addWidget(self.sleep_input)
 
@@ -168,17 +161,13 @@ class SwipeModuleDialog(QDialog):
 
         hbox_end_x = QHBoxLayout()
         end_x_label = QLabel("Координата X:")
-        self.end_x_input = QSpinBox()
-        self.end_x_input.setRange(0, 5000)
-        self.end_x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+        self.x_input = create_spinbox_without_buttons(0, 5000)
         hbox_end_x.addWidget(end_x_label)
         hbox_end_x.addWidget(self.end_x_input)
 
         hbox_end_y = QHBoxLayout()
         end_y_label = QLabel("Координата Y:")
-        self.end_y_input = QSpinBox()
-        self.end_y_input.setRange(0, 5000)
-        self.end_y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+        self.y_input = create_spinbox_without_buttons(0, 5000)
         hbox_end_y.addWidget(end_y_label)
         hbox_end_y.addWidget(self.end_y_input)
 
@@ -210,7 +199,7 @@ class SwipeModuleDialog(QDialog):
 
         sleep_label = QLabel("Время задержки после свайпа:")
         self.sleep_input = QDoubleSpinBox()
-        self.sleep_input.setRange(0.0, 60.0)
+        self.sleep_input.setRange(0.0, 300.0)
         self.sleep_input.setDecimals(1)
         self.sleep_input.setSingleStep(0.1)
         self.sleep_input.setSuffix(" сек")

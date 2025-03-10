@@ -16,6 +16,7 @@ from src.gui.modules.canvas_module import CanvasModule, ModuleItem
 from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog
 from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
 from src.utils.style_constants import FULL_DIALOG_STYLE
+from src.utils.ui_factory import create_spinbox_without_buttons, create_double_spinbox_without_buttons
 
 class ModuleListItem:
     """
@@ -370,7 +371,7 @@ class ActivityCanvasModule(CanvasModule):
                 input_layout = QHBoxLayout()
                 time_label = QLabel("Время задержки (сек):")
                 time_spinner = QDoubleSpinBox()
-                time_spinner.setRange(0.1, 60.0)
+                time_spinner.setRange(0.1, 300.0)
                 time_spinner.setValue(data.get("time", 1.0))
                 time_spinner.setDecimals(1)
                 time_spinner.setSingleStep(0.1)
