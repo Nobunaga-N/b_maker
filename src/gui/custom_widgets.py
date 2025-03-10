@@ -131,6 +131,7 @@ class ActivityCanvasModule(CanvasModule):
         time_spinner.setDecimals(1)
         time_spinner.setSingleStep(0.1)
         time_spinner.setSuffix(" сек")
+        time_spinner.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)  # Отключаем кнопки
 
         input_layout.addWidget(time_label)
         input_layout.addWidget(time_spinner)
@@ -173,6 +174,7 @@ class ActivityCanvasModule(CanvasModule):
         line_spinner = QSpinBox()
         line_spinner.setRange(1, 999)
         line_spinner.setValue(1)
+        line_spinner.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)  # Отключаем кнопки
 
         input_layout.addWidget(line_label)
         input_layout.addWidget(line_spinner)
@@ -515,10 +517,11 @@ class ActivityModuleDialog(QDialog):
         time_sleep_layout = QHBoxLayout()
         time_sleep_label = QLabel("Задержка перед запуском (сек):")
         self.time_sleep_input = QDoubleSpinBox()
-        self.time_sleep_input.setRange(0.0, 60.0)
+        self.time_sleep_input.setRange(0.0, 300.0)
         self.time_sleep_input.setValue(1.0)
         self.time_sleep_input.setSingleStep(0.1)
         self.time_sleep_input.setDecimals(1)
+        self.time_sleep_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)  # Отключаем кнопки
         time_sleep_layout.addWidget(time_sleep_label)
         time_sleep_layout.addWidget(self.time_sleep_input)
         launch_layout.addLayout(time_sleep_layout)
