@@ -116,7 +116,7 @@ class ModuleItem(QFrame):
         # Обратите внимание: передаем "self" для кнопок, чтобы иметь правильный контекст
         self.move_up_btn = self._create_tool_button("↑", "Переместить вверх", self._move_up_requested)
         self.move_down_btn = self._create_tool_button("↓", "Переместить вниз", self._move_down_requested)
-        self.edit_btn = self._create_tool_button("✎", "Редактировать", self._edit_requested)
+        self.edit_btn = self._create_tool_button("🖉", "Редактировать", self._edit_requested)
         self.delete_btn = self._create_tool_button("✕", "Удалить", self._delete_requested)
 
         top_layout.addWidget(self.move_up_btn)
@@ -211,12 +211,12 @@ class ActivityCanvasModule(CanvasModule):
         basic_layout.setSpacing(4)
 
         # Кнопки для первой группы
-        self.btn_close_game = self._create_tool_button("close.game", "Закрыть игру", "stop-black.svg",
+        self.btn_close_game = self._create_tool_button("close.game", "Закрыть игру", "stop-red.svg",
                                                        self.add_close_game_module)
         self.btn_restart_emulator = self._create_tool_button("restart.emulator", "Перезапустить эмулятор",
-                                                             "activity-black.svg", self.add_restart_emulator_module)
+                                                             "activity-blue.svg", self.add_restart_emulator_module)
         self.btn_start_game = self._create_tool_button("start.game", "Запустить игру",
-                                                       "continue-black.svg", self.add_start_game_module)
+                                                       "continue-green.svg", self.add_start_game_module)
 
         basic_layout.addWidget(self.btn_close_game)
         basic_layout.addWidget(self.btn_restart_emulator)
@@ -232,11 +232,11 @@ class ActivityCanvasModule(CanvasModule):
 
         # Кнопки для второй группы
         self.btn_time_sleep = self._create_tool_button("time.sleep", "Пауза",
-                                                       "pause-black.svg", self.add_time_sleep_module)
+                                                       "pause-pink.svg", self.add_time_sleep_module)
         self.btn_restart_from = self._create_tool_button("restart.from", "Перезапуск с позиции",
-                                                         "activity-black.svg", self.add_restart_from_module)
+                                                         "activity-blue.svg", self.add_restart_from_module)
         self.btn_restart_from_last = self._create_tool_button("restart.from.last", "Последняя позиция",
-                                                              "activity-black.svg", self.add_restart_from_last_module)
+                                                              "activity-orange.svg", self.add_restart_from_last_module)
 
         flow_layout.addWidget(self.btn_time_sleep)
         flow_layout.addWidget(self.btn_restart_from)
@@ -252,11 +252,11 @@ class ActivityCanvasModule(CanvasModule):
 
         # Кнопки для третьей группы
         self.btn_click = self._create_tool_button("Клик", "Клик по координатам",
-                                                  "pointer-arrow-icon.svg", self.add_click_module)
+                                                  "click-ping.svg", self.add_click_module)
         self.btn_swipe = self._create_tool_button("Свайп", "Свайп по координатам",
-                                                  "swipe-black.svg", self.add_swipe_module)
+                                                  "swipe-blue.svg", self.add_swipe_module)
         self.btn_image_search = self._create_tool_button("Поиск", "Поиск по картинке",
-                                                         "search-black.svg", self.add_image_search_module)
+                                                         "search-orange.svg", self.add_image_search_module)
 
         actions_layout.addWidget(self.btn_click)
         actions_layout.addWidget(self.btn_swipe)
