@@ -5,85 +5,139 @@
 
 from PyQt6.QtWidgets import (
     QDialog, QLabel, QVBoxLayout, QLineEdit, QPushButton,
-    QGroupBox, QHBoxLayout, QSpinBox, QDoubleSpinBox
+    QGroupBox, QHBoxLayout, QSpinBox, QDoubleSpinBox,
+    QComboBox, QCheckBox, QTableWidget, QHeaderView,
+    QTableWidgetItem, QFileDialog, QMessageBox, QTabWidget,
+    QWidget, QFrame, QScrollArea, QFormLayout, QToolButton
 )
 from PyQt6.QtCore import Qt
 from typing import Dict, Any
 from src.utils.style_constants import DIALOG_STYLE
 from src.utils.ui_factory import create_spinbox_without_buttons, create_double_spinbox_without_buttons
 
+# Улучшенные версии базовых диалогов для модулей
+
 class ClickModuleDialog(QDialog):
     """
-    Диалог для настройки модуля клика.
-    Позволяет задать координаты, описание и время задержки после клика.
+    Улучшенный компактный диалог для настройки модуля клика.
     """
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Настройка модуля клика")
+        self.setWindowTitle("Настройка клика")
         self.setModal(True)
-        self.resize(400, 350)
+        self.resize(350, 300)
         self.setup_ui()
 
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
+        layout.setSpacing(8)
+        layout.setContentsMargins(10, 10, 10, 10)
 
-        # Используем стиль из констант
-        self.setStyleSheet(DIALOG_STYLE)
+        # Улучшенный стиль
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #202020;
+                color: white;
+            }
+            QLabel {
+                color: white;
+            }
+            QGroupBox {
+                font-weight: bold;
+                color: #FFA500;
+                border: 1px solid #444;
+                border-radius: 4px;
+                margin-top: 8px;
+                padding-top: 8px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 6px;
+                padding: 0 3px;
+            }
+            QSpinBox, QDoubleSpinBox {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #444;
+                border-radius: 3px;
+                padding: 3px;
+                min-height: 22px;
+                max-height: 22px;
+            }
+            QLineEdit {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #444;
+                border-radius: 3px;
+                padding: 3px;
+                min-height: 22px;
+                max-height: 22px;
+            }
+            QPushButton {
+                background-color: #FFA500;
+                color: black;
+                border-radius: 3px;
+                padding: 5px 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #FFB347;
+            }
+        """)
 
+        # Группа координат (используем FormLayout для компактности)
         coords_group = QGroupBox("Координаты клика")
-        coords_layout = QVBoxLayout(coords_group)
+        coords_layout = QFormLayout(coords_group)
+        coords_layout.setContentsMargins(6, 12, 6, 6)
+        coords_layout.setSpacing(4)
 
-        # Координата X с использованием QSpinBox
-        x_layout = QHBoxLayout()
-        x_label = QLabel("Координата X:")
+        # Координата X
         self.x_input = QSpinBox()
         self.x_input.setRange(0, 5000)
         self.x_input.setSingleStep(1)
         self.x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-        x_layout.addWidget(x_label)
-        x_layout.addWidget(self.x_input)
-        coords_layout.addLayout(x_layout)
+        coords_layout.addRow("Координата X:", self.x_input)
 
-        # Координата Y с использованием QSpinBox
-        y_layout = QHBoxLayout()
-        y_label = QLabel("Координата Y:")
+        # Координата Y
         self.y_input = QSpinBox()
         self.y_input.setRange(0, 5000)
         self.y_input.setSingleStep(1)
         self.y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-        y_layout.addWidget(y_label)
-        y_layout.addWidget(self.y_input)
-        coords_layout.addLayout(y_layout)
+        coords_layout.addRow("Координата Y:", self.y_input)
 
         layout.addWidget(coords_group)
 
-        # Описания
+        # Группа описаний
         descriptions_group = QGroupBox("Описания")
-        descriptions_layout = QVBoxLayout(descriptions_group)
+        descriptions_layout = QFormLayout(descriptions_group)
+        descriptions_layout.setContentsMargins(6, 12, 6, 6)
+        descriptions_layout.setSpacing(4)
 
         self.description_input = QLineEdit()
         self.description_input.setPlaceholderText("Описание для отображения на холсте")
-        descriptions_layout.addWidget(QLabel("Описание:"))
-        descriptions_layout.addWidget(self.description_input)
+        descriptions_layout.addRow("Описание:", self.description_input)
 
         self.console_description_input = QLineEdit()
         self.console_description_input.setPlaceholderText("Описание для вывода в консоль")
-        descriptions_layout.addWidget(QLabel("Описание для консоли:"))
-        descriptions_layout.addWidget(self.console_description_input)
+        descriptions_layout.addRow("Описание для консоли:", self.console_description_input)
 
         layout.addWidget(descriptions_group)
 
-        # Задержка
+        # Группа задержки
         delay_group = QGroupBox("Задержка")
-        delay_layout = QHBoxLayout(delay_group)
+        delay_layout = QFormLayout(delay_group)
+        delay_layout.setContentsMargins(6, 12, 6, 6)
+        delay_layout.setSpacing(4)
 
-        delay_label = QLabel("Время задержки после клика:")
-        self.sleep_input = create_double_spinbox_without_buttons(0.0, 300.0, 0.0, 1, " сек")
-        delay_layout.addWidget(delay_label)
-        delay_layout.addWidget(self.sleep_input)
+        self.sleep_input = QDoubleSpinBox()
+        self.sleep_input.setRange(0.0, 300.0)
+        self.sleep_input.setDecimals(1)
+        self.sleep_input.setSingleStep(0.1)
+        self.sleep_input.setSuffix(" сек")
+        self.sleep_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        delay_layout.addRow("Время задержки после клика:", self.sleep_input)
 
         layout.addWidget(delay_group)
 
@@ -113,107 +167,147 @@ class ClickModuleDialog(QDialog):
 
 class SwipeModuleDialog(QDialog):
     """
-    Диалог для настройки модуля свайпа.
+    Улучшенный компактный диалог для настройки модуля свайпа.
     """
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Настройка модуля свайпа")
+        self.setWindowTitle("Настройка свайпа")
         self.setModal(True)
-        self.resize(450, 400)
+        self.resize(350, 350)
         self.setup_ui()
 
     def setup_ui(self):
         """Настраивает интерфейс диалога свайпа"""
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
+        layout.setSpacing(8)
+        layout.setContentsMargins(10, 10, 10, 10)
 
-        # Применяем стиль из констант
-        self.setStyleSheet(DIALOG_STYLE)
+        # Улучшенный стиль (такой же, как у диалога клика)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #202020;
+                color: white;
+            }
+            QLabel {
+                color: white;
+            }
+            QGroupBox {
+                font-weight: bold;
+                color: #FFA500;
+                border: 1px solid #444;
+                border-radius: 4px;
+                margin-top: 8px;
+                padding-top: 8px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 6px;
+                padding: 0 3px;
+            }
+            QSpinBox, QDoubleSpinBox {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #444;
+                border-radius: 3px;
+                padding: 3px;
+                min-height: 22px;
+                max-height: 22px;
+            }
+            QLineEdit {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #444;
+                border-radius: 3px;
+                padding: 3px;
+                min-height: 22px;
+                max-height: 22px;
+            }
+            QPushButton {
+                background-color: #FFA500;
+                color: black;
+                border-radius: 3px;
+                padding: 5px 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #FFB347;
+            }
+        """)
 
         # Координаты начала свайпа
         start_group = QGroupBox("Начальные координаты")
-        start_layout = QVBoxLayout(start_group)
+        start_layout = QFormLayout(start_group)
+        start_layout.setContentsMargins(6, 12, 6, 6)
+        start_layout.setSpacing(4)
 
-        hbox_start_x = QHBoxLayout()
-        x_label = QLabel("Координата X:")
+        # X
         self.start_x_input = QSpinBox()
         self.start_x_input.setRange(0, 5000)
         self.start_x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-        hbox_start_x.addWidget(x_label)
-        hbox_start_x.addWidget(self.start_x_input)
+        start_layout.addRow("Координата X:", self.start_x_input)
 
-        hbox_start_y = QHBoxLayout()
-        y_label = QLabel("Координата Y:")
+        # Y
         self.start_y_input = QSpinBox()
         self.start_y_input.setRange(0, 5000)
         self.start_y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-        hbox_start_y.addWidget(y_label)
-        hbox_start_y.addWidget(self.start_y_input)
+        start_layout.addRow("Координата Y:", self.start_y_input)
 
-        start_layout.addLayout(hbox_start_x)
-        start_layout.addLayout(hbox_start_y)
         layout.addWidget(start_group)
 
         # Координаты конца свайпа
         end_group = QGroupBox("Конечные координаты")
-        end_layout = QVBoxLayout(end_group)
+        end_layout = QFormLayout(end_group)
+        end_layout.setContentsMargins(6, 12, 6, 6)
+        end_layout.setSpacing(4)
 
-        hbox_end_x = QHBoxLayout()
-        end_x_label = QLabel("Координата X:")
+        # X
         self.end_x_input = QSpinBox()
         self.end_x_input.setRange(0, 5000)
         self.end_x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-        hbox_end_x.addWidget(end_x_label)
-        hbox_end_x.addWidget(self.end_x_input)
+        end_layout.addRow("Координата X:", self.end_x_input)
 
-        hbox_end_y = QHBoxLayout()
-        end_y_label = QLabel("Координата Y:")
+        # Y
         self.end_y_input = QSpinBox()
         self.end_y_input.setRange(0, 5000)
         self.end_y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-        hbox_end_y.addWidget(end_y_label)
-        hbox_end_y.addWidget(self.end_y_input)
+        end_layout.addRow("Координата Y:", self.end_y_input)
 
-        end_layout.addLayout(hbox_end_x)
-        end_layout.addLayout(hbox_end_y)
         layout.addWidget(end_group)
 
         # Описания
         descriptions_group = QGroupBox("Описания")
-        descriptions_layout = QVBoxLayout(descriptions_group)
+        descriptions_layout = QFormLayout(descriptions_group)
+        descriptions_layout.setContentsMargins(6, 12, 6, 6)
+        descriptions_layout.setSpacing(4)
 
-        desc_label = QLabel("Описание:")
         self.description_input = QLineEdit()
         self.description_input.setPlaceholderText("Описание для отображения на холсте")
-        descriptions_layout.addWidget(desc_label)
-        descriptions_layout.addWidget(self.description_input)
+        descriptions_layout.addRow("Описание:", self.description_input)
 
-        console_desc_label = QLabel("Описание для консоли:")
         self.console_description_input = QLineEdit()
         self.console_description_input.setPlaceholderText("Описание для вывода в консоль")
-        descriptions_layout.addWidget(console_desc_label)
-        descriptions_layout.addWidget(self.console_description_input)
+        descriptions_layout.addRow("Описание для консоли:", self.console_description_input)
 
         layout.addWidget(descriptions_group)
 
         # Задержка
         delay_group = QGroupBox("Задержка")
-        delay_layout = QHBoxLayout(delay_group)
+        delay_layout = QFormLayout(delay_group)
+        delay_layout.setContentsMargins(6, 12, 6, 6)
+        delay_layout.setSpacing(4)
 
-        sleep_label = QLabel("Время задержки после свайпа:")
         self.sleep_input = QDoubleSpinBox()
         self.sleep_input.setRange(0.0, 300.0)
         self.sleep_input.setDecimals(1)
         self.sleep_input.setSingleStep(0.1)
         self.sleep_input.setSuffix(" сек")
         self.sleep_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
-        delay_layout.addWidget(sleep_label)
-        delay_layout.addWidget(self.sleep_input)
+        delay_layout.addRow("Время задержки после свайпа:", self.sleep_input)
 
         layout.addWidget(delay_group)
 
-        # Кнопки подтверждения/отмены
+        # Кнопки
         buttons_layout = QHBoxLayout()
         self.btn_cancel = QPushButton("Отмена")
         self.btn_confirm = QPushButton("Подтвердить")
@@ -221,6 +315,7 @@ class SwipeModuleDialog(QDialog):
         self.btn_confirm.clicked.connect(self.accept)
         buttons_layout.addWidget(self.btn_cancel)
         buttons_layout.addWidget(self.btn_confirm)
+
         layout.addLayout(buttons_layout)
 
     def get_data(self) -> Dict[str, Any]:
@@ -239,48 +334,94 @@ class SwipeModuleDialog(QDialog):
 
 class TimeSleepModuleDialog(QDialog):
     """
-    Диалог для настройки модуля time.sleep.
-    Позволяет задать время задержки в секундах.
+    Улучшенный компактный диалог для настройки модуля паузы.
     """
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Настройка модуля паузы")
+        self.setWindowTitle("Настройка паузы")
         self.setModal(True)
-        self.resize(350, 200)
+        self.resize(300, 180)
         self.setup_ui()
 
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
         layout = QVBoxLayout(self)
-        layout.setSpacing(10)
+        layout.setSpacing(8)
+        layout.setContentsMargins(10, 10, 10, 10)
 
-        # Используем стиль из констант
-        self.setStyleSheet(DIALOG_STYLE)
+        # Улучшенный стиль (такой же, как у других диалогов)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #202020;
+                color: white;
+            }
+            QLabel {
+                color: white;
+            }
+            QGroupBox {
+                font-weight: bold;
+                color: #FFA500;
+                border: 1px solid #444;
+                border-radius: 4px;
+                margin-top: 8px;
+                padding-top: 8px;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 6px;
+                padding: 0 3px;
+            }
+            QSpinBox, QDoubleSpinBox {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #444;
+                border-radius: 3px;
+                padding: 3px;
+                min-height: 22px;
+                max-height: 22px;
+            }
+            QLineEdit {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #444;
+                border-radius: 3px;
+                padding: 3px;
+                min-height: 22px;
+                max-height: 22px;
+            }
+            QPushButton {
+                background-color: #FFA500;
+                color: black;
+                border-radius: 3px;
+                padding: 5px 10px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #FFB347;
+            }
+        """)
 
-        delay_group = QGroupBox("Время задержки")
-        delay_layout = QVBoxLayout(delay_group)
+        # Группа параметров паузы
+        delay_group = QGroupBox("Параметры паузы")
+        delay_layout = QFormLayout(delay_group)
+        delay_layout.setContentsMargins(6, 12, 6, 6)
+        delay_layout.setSpacing(4)
 
-        # Спиннер для времени задержки
-        delay_input_layout = QHBoxLayout()
-        delay_label = QLabel("Задержка:")
+        # Время задержки
         self.delay_input = QDoubleSpinBox()
-        self.delay_input.setRange(0.1, 300.0)  # От 0.1 до 300 секунд (5 минут)
+        self.delay_input.setRange(0.1, 300.0)
         self.delay_input.setValue(1.0)
         self.delay_input.setDecimals(1)
         self.delay_input.setSingleStep(0.1)
         self.delay_input.setSuffix(" сек")
-        self.delay_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)  # Отключаем кнопки
-        delay_input_layout.addWidget(delay_label)
-        delay_input_layout.addWidget(self.delay_input)
-        delay_layout.addLayout(delay_input_layout)
+        self.delay_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        delay_layout.addRow("Время задержки:", self.delay_input)
 
         # Описание
-        desc_label = QLabel("Описание:")
         self.description_input = QLineEdit()
         self.description_input.setPlaceholderText("Необязательное описание паузы")
-        delay_layout.addWidget(desc_label)
-        delay_layout.addWidget(self.description_input)
+        delay_layout.addRow("Описание:", self.description_input)
 
         layout.addWidget(delay_group)
 
