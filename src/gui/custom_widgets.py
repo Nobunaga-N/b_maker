@@ -33,9 +33,16 @@ class ActivityModuleDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Настройка модуля проверки Activity")
+        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMinMaxButtonsHint)
         self.setModal(True)
         self.resize(500, 400)
+
+        # Состояние полноэкранного режима
+        self.is_fullscreen = False
+        self.normal_geometry = None
         self.setup_ui()
+
+
 
     def setup_ui(self):
         """Настраивает интерфейс диалога Activity"""
