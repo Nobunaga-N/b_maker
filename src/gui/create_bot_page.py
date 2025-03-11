@@ -18,15 +18,7 @@ from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
 from src.gui.custom_widgets import ActivityModuleDialog, ModuleListItem
 
 
-class ModuleListItem:
-    """
-    Класс для представления модуля в списке модулей.
-    """
 
-    def __init__(self, module_type: str, display_text: str, data: Dict[str, Any]):
-        self.module_type = module_type
-        self.display_text = display_text
-        self.data = data
 
 
 class CreateBotPage(QWidget):

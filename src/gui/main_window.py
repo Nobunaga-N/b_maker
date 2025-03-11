@@ -225,27 +225,6 @@ class ManagerQueueWidget(QTreeWidget):
                 print(f"Бот {bot_name} удалён из очереди.")
 
 
-class CreateBotWindow(QMainWindow):
-    """
-    Окно для создания или редактирования бота (без изменений).
-    """
-
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Create or Edit Bot")
-        self.setGeometry(300, 300, 600, 400)
-
-        central_widget = QWidget(self)
-        self.setCentralWidget(central_widget)
-
-        layout = QVBoxLayout(central_widget)
-        label = QLabel("Здесь будет логика создания/редактирования бота.")
-        label.setStyleSheet("color: white;")
-        layout.addWidget(label)
-
-        self.setStyleSheet("background-color: #2C2C2C;")
-
-
 class MainWindow(QMainWindow):
     """
     Главное окно приложения:
