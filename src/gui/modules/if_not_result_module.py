@@ -2,10 +2,11 @@
 """
 Модуль для подмодуля IF Not Result, используемого в модуле поиска изображений.
 """
-from PyQt6.QtWidgets import QVBoxLayout
+from PyQt6.QtWidgets import QVBoxLayout, QFrame
 from src.utils.ui_factory import create_group_box
 from src.gui.modules.if_result_module import IfResultCanvas
 from src.gui.modules.script_block_base import ScriptBlockDialog
+from src.utils.style_constants import SCRIPT_SUBMODULE_CANVAS_STYLE
 
 
 class IfNotResultModuleDialog(ScriptBlockDialog):
@@ -19,10 +20,11 @@ class IfNotResultModuleDialog(ScriptBlockDialog):
 
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
-        super().setup_ui()
+        # Инициализируем базовый layout напрямую
+        self.layout = QVBoxLayout(self)
 
         # --- 1. Настройки основных параметров ---
-        self.setup_settings_group()
+        settings_group, settings_layout = self.setup_settings_group()
 
         # Устанавливаем текст по умолчанию
         self.log_input.setText("Изображение не найдено!")
@@ -39,6 +41,7 @@ class IfNotResultModuleDialog(ScriptBlockDialog):
         action_layout = QVBoxLayout(action_group)
 
         self.canvas = IfResultCanvas(self)
+        self.canvas.setStyleSheet(SCRIPT_SUBMODULE_CANVAS_STYLE)
         action_layout.addWidget(self.canvas)
 
         self.layout.addWidget(action_group)

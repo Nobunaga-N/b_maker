@@ -16,6 +16,9 @@ from src.utils.ui_factory import (
     create_script_button, create_group_box, create_input_field
 )
 from src.gui.modules.script_block_base import ScriptBlockDialog
+from src.utils.style_constants import (
+    SCRIPT_SUBMODULE_BUTTON_STYLE,SCRIPT_SUBMODULE_CANVAS_STYLE, SCRIPT_DIALOG_BLUE_STYLE
+)
 
 
 class IfResultCanvas(CanvasModule):
@@ -26,6 +29,8 @@ class IfResultCanvas(CanvasModule):
 
     def __init__(self, parent=None):
         super().__init__("Редактор логики IF Result", parent)
+        self.setStyleSheet(SCRIPT_SUBMODULE_CANVAS_STYLE)  # Применяем новый стиль
+
 
     def create_tool_buttons(self, layout):
         """Создает кнопки инструментов для холста IF Result"""
@@ -36,6 +41,7 @@ class IfResultCanvas(CanvasModule):
             "pointer-arrow-icon",
             self.add_click_module
         )
+        self.btn_add_click.setStyleSheet(SCRIPT_SUBMODULE_BUTTON_STYLE)
         layout.addWidget(self.btn_add_click)
 
         # Кнопка добавления свайпа
@@ -45,6 +51,7 @@ class IfResultCanvas(CanvasModule):
             "swipe-black",
             self.add_swipe_module
         )
+        self.btn_add_swipe.setStyleSheet(SCRIPT_SUBMODULE_BUTTON_STYLE)
         layout.addWidget(self.btn_add_swipe)
 
         # Кнопка добавления get_coords
@@ -54,6 +61,7 @@ class IfResultCanvas(CanvasModule):
             "get-coords",
             self.add_get_coords_module
         )
+        self.btn_add_get_coords.setStyleSheet(SCRIPT_SUBMODULE_BUTTON_STYLE)
         layout.addWidget(self.btn_add_get_coords)
 
         # Кнопка добавления паузы
@@ -63,6 +71,7 @@ class IfResultCanvas(CanvasModule):
             "pause-black",
             self.add_sleep_module
         )
+        self.btn_add_sleep.setStyleSheet(SCRIPT_SUBMODULE_BUTTON_STYLE)
         layout.addWidget(self.btn_add_sleep)
 
         # Кнопка добавления continue
@@ -72,6 +81,7 @@ class IfResultCanvas(CanvasModule):
             "continue-black",
             self.add_continue_module
         )
+        self.btn_add_continue.setStyleSheet(SCRIPT_SUBMODULE_BUTTON_STYLE)
         layout.addWidget(self.btn_add_continue)
 
         # Кнопка добавления running.clear()
@@ -81,6 +91,7 @@ class IfResultCanvas(CanvasModule):
             "stop-black",
             self.add_running_clear_module
         )
+        self.btn_add_running_clear.setStyleSheet(SCRIPT_SUBMODULE_BUTTON_STYLE)
         layout.addWidget(self.btn_add_running_clear)
 
         layout.addStretch(1)  # Растягивающееся пространство в конце
@@ -123,6 +134,7 @@ class IfResultCanvas(CanvasModule):
         dialog.setWindowTitle("Добавить паузу")
         dialog.setModal(True)
         dialog.resize(300, 150)
+        dialog.setStyleSheet(SCRIPT_DIALOG_BLUE_STYLE)
 
         layout = QVBoxLayout(dialog)
 
@@ -135,6 +147,11 @@ class IfResultCanvas(CanvasModule):
         time_spinner.setDecimals(1)
         time_spinner.setSingleStep(0.1)
         time_spinner.setSuffix(" сек")
+        time_spinner.setStyleSheet("""
+            background-color: #283A5A;
+            color: white;
+            border: 1px solid #4C7BD9;
+        """)
 
         input_layout.addWidget(time_label)
         input_layout.addWidget(time_spinner)
@@ -185,7 +202,8 @@ class IfResultModuleDialog(ScriptBlockDialog):
 
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
-        super().setup_ui()
+        # Инициализируем базовый layout напрямую
+        self.layout = QVBoxLayout(self)
 
         # --- 1. Настройки изображения и основных параметров ---
         settings_group, settings_layout = self.setup_settings_group()

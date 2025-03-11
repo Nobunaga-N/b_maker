@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont
 
-from src.utils.style_constants import ACCENT_BUTTON_STYLE
+from src.utils.style_constants import SCRIPT_SUBMODULE_ITEM_STYLE
 
 
 class ModuleItem(QFrame):
@@ -204,9 +204,10 @@ class CanvasModule(QFrame):
         layout.addStretch(1)  # Растягивающееся пространство
 
     def add_module(self, module_type: str, description: str, data: dict = None):
-        """Добавляет новый модуль на холст"""
+        """Добавляет новый модуль на холст подмодуля"""
         index = len(self.modules)
         module_item = ModuleItem(index, module_type, description)
+        module_item.setStyleSheet(SCRIPT_SUBMODULE_ITEM_STYLE)
 
         if data:
             module_item.set_data(data)

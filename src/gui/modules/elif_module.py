@@ -21,7 +21,8 @@ class ElifModuleDialog(ScriptBlockDialog):
 
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
-        super().setup_ui()
+        # Инициализируем базовый layout напрямую
+        self.layout = QVBoxLayout(self)
 
         # --- 1. Настройки изображения и основных параметров ---
         settings_group, settings_layout = self.setup_settings_group()

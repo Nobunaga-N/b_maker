@@ -6,12 +6,13 @@
 
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QLineEdit, QComboBox, QGroupBox
+    QLineEdit, QComboBox, QGroupBox, QFrame
 )
 from PyQt6.QtCore import Qt
 
-from src.utils.style_constants import SCRIPT_DIALOG_STYLE
+
 from src.utils.ui_factory import create_input_field, create_group_box
+from src.utils.style_constants import SCRIPT_DIALOG_BLUE_STYLE
 
 
 class ScriptBlockDialog(QDialog):
@@ -23,9 +24,14 @@ class ScriptBlockDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setModal(True)
-        self.resize(800, 600)
-        self.setStyleSheet(SCRIPT_DIALOG_STYLE)
+        self.resize(900, 700)  # Увеличиваем размер окна
+        self.setStyleSheet(SCRIPT_DIALOG_BLUE_STYLE)  # Используем новый синий стиль
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMinMaxButtonsHint)
+
+        # Смещаем позицию окна относительно родителя
+        if parent:
+            from src.utils.ui_factory import position_dialog_with_offset
+            position_dialog_with_offset(self, parent, 50, 50)
 
         # Будет инициализировано в дочерних классах
         self.canvas = None
@@ -36,9 +42,8 @@ class ScriptBlockDialog(QDialog):
         """Настраивает базовый интерфейс диалога"""
         self.layout = QVBoxLayout(self)
 
-        # Каждый подкласс должен переопределить этот метод
-        # и вызвать super().setup_ui() для настройки базового интерфейса
-        # Метод setup_buttons() больше не вызывается здесь
+        # ВАЖНО: этот метод больше не вызывает setup_buttons()
+        # Дочерние классы должны сами вызывать этот метод в конце своих setup_ui
 
     def setup_settings_group(self):
         """Создает группу настроек"""
@@ -66,17 +71,55 @@ class ScriptBlockDialog(QDialog):
         pass
 
     def setup_buttons(self):
-        """Создает кнопки диалога с выравниванием вправо"""
-        from src.utils.ui_factory import create_action_buttons_panel
+        """Создает кнопки диалога с выравниванием вправо и новыми цветами"""
+        buttons_layout = QHBoxLayout()
 
-        # Создаем панель с кнопками
-        buttons_panel, self.cancel_btn, self.ok_btn = create_action_buttons_panel()
+        self.cancel_btn = QPushButton("Отмена")
+        self.cancel_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #D94C4C;
+                color: white;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #E55E5E;
+            }
+        """)
 
-        # Подключаем сигналы
+        self.ok_btn = QPushButton("Подтвердить")
+        self.ok_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border-radius: 4px;
+                padding: 8px 16px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #5EBF61;
+            }
+        """)
+
         self.cancel_btn.clicked.connect(self.reject)
         self.ok_btn.clicked.connect(self.accept)
 
+        buttons_layout.addStretch(1)  # Добавляем растяжку слева для выравнивания кнопок вправо
+        buttons_layout.addWidget(self.cancel_btn)
+        buttons_layout.addWidget(self.ok_btn)
+
         # Добавляем панель в основной лейаут
+        buttons_panel = QFrame()
+        buttons_panel.setStyleSheet("""
+            QFrame {
+                border-top: 1px solid #4C7BD9;
+                margin-top: 10px;
+                padding-top: 10px;
+            }
+        """)
+        buttons_panel.setLayout(buttons_layout)
+
         self.layout.addWidget(buttons_panel)
 
     def get_data(self):

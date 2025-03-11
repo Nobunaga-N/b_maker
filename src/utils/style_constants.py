@@ -489,57 +489,6 @@ SCRIPT_CANVAS_STYLE = """
     border: 1px solid #444;
 """
 
-# Стиль для диалогов скрипт-блоков
-SCRIPT_DIALOG_STYLE = """
-    QDialog {
-        background-color: #1A1A1A;
-        border: 2px solid #FF8C00;
-    }
-    QPushButton {
-        background-color: #FF8C00;
-        color: black;
-        border-radius: 4px;
-        padding: 8px 16px;
-        font-weight: bold;
-    }
-    QPushButton:hover {
-        background-color: #FFB347;
-    }
-    QGroupBox {
-        border: 1px solid #FF8C00;
-        color: #FFA500;
-        font-weight: bold;
-        margin-top: 15px;
-        padding-top: 15px;
-    }
-    QGroupBox::title {
-        subcontrol-origin: margin;
-        left: 10px;
-        padding: 0 5px;
-    }
-    QLabel {
-        color: white;
-    }
-    QLineEdit, QComboBox {
-        background-color: #2A2A2A;
-        color: white;
-        border: 1px solid #555;
-        border-radius: 3px;
-        padding: 4px;
-    }
-    QComboBox QAbstractItemView {
-        background-color: #2A2A2A;
-        color: white;
-        border: 1px solid #555;
-    }
-    QToolTip {
-        background-color: #2A2A2A;
-        color: white;
-        border: 1px solid #FFA500;
-        padding: 2px;
-    }
-"""
-
 # Стиль для кнопки отмены (красная)
 CANCEL_BUTTON_STYLE = """
     QPushButton {
@@ -602,6 +551,131 @@ COMPACT_IMAGE_SETTINGS_STYLE = """
     QHBoxLayout {
         margin: 2px;
         spacing: 4px;
+    }
+"""
+
+# Стиль для диалогов скрипт-блоков с синей темой (заменит SCRIPT_DIALOG_STYLE)
+SCRIPT_DIALOG_BLUE_STYLE = """
+    QDialog {
+        background-color: #1E2B3C;
+        border: 2px solid #4C7BD9;
+    }
+    QPushButton {
+        background-color: #4C7BD9;
+        color: white;
+        border-radius: 4px;
+        padding: 8px 16px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #5E8DE5;
+    }
+    QGroupBox {
+        border: 1px solid #4C7BD9;
+        color: #89B4FF;
+        font-weight: bold;
+        margin-top: 15px;
+        padding-top: 15px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 10px;
+        padding: 0 5px;
+    }
+    QLabel {
+        color: white;
+    }
+    QLineEdit, QComboBox {
+        background-color: #283A5A;
+        color: white;
+        border: 1px solid #4C7BD9;
+        border-radius: 3px;
+        padding: 4px;
+    }
+    QComboBox QAbstractItemView {
+        background-color: #283A5A;
+        color: white;
+        border: 1px solid #4C7BD9;
+    }
+    QToolTip {
+        background-color: #283A5A;
+        color: white;
+        border: 1px solid #4C7BD9;
+        padding: 2px;
+    }
+    QScrollArea {
+        border: none;
+        background-color: transparent;
+    }
+    QScrollBar:vertical {
+        background-color: #1E2B3C;
+        width: 12px;
+        margin: 0px;
+    }
+    QScrollBar::handle:vertical {
+        background-color: #4C7BD9;
+        min-height: 20px;
+        border-radius: 6px;
+    }
+    QScrollBar::handle:vertical:hover {
+        background-color: #5E8DE5;
+    }
+    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+        height: 0px;
+    }
+"""
+
+# Стиль для холста подмодуля в синей теме
+SCRIPT_SUBMODULE_CANVAS_STYLE = """
+    background-color: #283A5A;
+    border-radius: 4px;
+    border: 1px solid #4C7BD9;
+    padding: 5px;
+"""
+
+# Стиль для элемента в холсте подмодуля
+SCRIPT_SUBMODULE_ITEM_STYLE = """
+    QFrame {
+        background-color: #354967;
+        border: 1px solid #4C7BD9;
+        border-radius: 3px;
+        margin: 2px;
+    }
+    QFrame:hover {
+        border: 1px solid #89B4FF;
+    }
+    QLabel {
+        color: white;
+        padding: 2px;
+    }
+    QToolButton {
+        background-color: transparent;
+        border: none;
+        color: white;
+        icon-size: 16px;
+        min-width: 20px;
+        max-width: 20px;
+        min-height: 20px;
+        max-height: 20px;
+        padding: 1px;
+    }
+    QToolButton:hover {
+        background-color: rgba(76, 123, 217, 0.3);
+        border-radius: 2px;
+    }
+"""
+
+# Стиль для кнопок в холсте подмодуля
+SCRIPT_SUBMODULE_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #4C7BD9;
+        color: white;
+        border-radius: 3px;
+        padding: 5px 10px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #5E8DE5;
     }
 """
 

@@ -469,3 +469,18 @@ def create_multiple_file_dialog(title="Выбрать файлы", filter="Из�
 
     files, _ = QFileDialog.getOpenFileNames(None, title, "", filter)
     return files
+
+
+def position_dialog_with_offset(dialog, parent, x_offset=50, y_offset=50):
+    """
+    Позиционирует диалог со смещением относительно родительского окна.
+
+    Args:
+        dialog: Диалог для позиционирования
+        parent: Родительское окно
+        x_offset: Смещение по горизонтали (пикселей)
+        y_offset: Смещение по вертикали (пикселей)
+    """
+    if parent:
+        parent_pos = parent.pos()
+        dialog.move(parent_pos.x() + x_offset, parent_pos.y() + y_offset)
