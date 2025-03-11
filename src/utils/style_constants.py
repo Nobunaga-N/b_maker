@@ -540,5 +540,44 @@ SCRIPT_DIALOG_STYLE = """
     }
 """
 
+# Стиль для кнопки отмены (красная)
+CANCEL_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #FF4444;
+        color: white;
+        border-radius: 3px;
+        padding: 5px 10px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #FF6666;
+    }
+"""
+
+# Стиль для кнопки подтверждения (зеленая)
+CONFIRM_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #44BB44;
+        color: white;
+        border-radius: 3px;
+        padding: 5px 10px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #66CC66;
+    }
+"""
+
+# Стиль для панели кнопок
+BUTTONS_PANEL_STYLE = """
+    QFrame {
+        border: 1px solid #555;
+        border-radius: 4px;
+        padding: 5px;
+        margin-top: 10px;
+        background-color: #2A2A2A;
+    }
+"""
+
 # Стиль для заголовка модуля активности
 ACTIVITY_MODULE_TITLE_STYLE = "color: #FFA500; font-size: 14px; font-weight: bold; margin-bottom: 8px;"

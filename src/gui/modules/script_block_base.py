@@ -38,9 +38,7 @@ class ScriptBlockDialog(QDialog):
 
         # Каждый подкласс должен переопределить этот метод
         # и вызвать super().setup_ui() для настройки базового интерфейса
-
-        # --- Кнопки диалога ---
-        self.setup_buttons()
+        # Метод setup_buttons() больше не вызывается здесь
 
     def setup_settings_group(self):
         """Создает группу настроек"""
@@ -68,18 +66,18 @@ class ScriptBlockDialog(QDialog):
         pass
 
     def setup_buttons(self):
-        """Создает кнопки диалога"""
-        buttons_layout = QHBoxLayout()
-        self.cancel_btn = QPushButton("Отмена")
-        self.ok_btn = QPushButton("Подтвердить")
+        """Создает кнопки диалога с выравниванием вправо"""
+        from src.utils.ui_factory import create_action_buttons_panel
 
+        # Создаем панель с кнопками
+        buttons_panel, self.cancel_btn, self.ok_btn = create_action_buttons_panel()
+
+        # Подключаем сигналы
         self.cancel_btn.clicked.connect(self.reject)
         self.ok_btn.clicked.connect(self.accept)
 
-        buttons_layout.addWidget(self.cancel_btn)
-        buttons_layout.addWidget(self.ok_btn)
-
-        self.layout.addLayout(buttons_layout)
+        # Добавляем панель в основной лейаут
+        self.layout.addWidget(buttons_panel)
 
     def get_data(self):
         """

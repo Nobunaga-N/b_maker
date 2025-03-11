@@ -206,6 +206,9 @@ class IfResultModuleDialog(ScriptBlockDialog):
         # --- 2. Холст для дополнительных действий ---
         self.setup_canvas()
 
+        # --- 3. Кнопки диалога (добавляем в конце) ---
+        self.setup_buttons()
+
     def setup_canvas(self):
         """Создает холст для действий"""
         action_group = create_group_box("Дополнительные действия")
