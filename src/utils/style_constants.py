@@ -263,5 +263,91 @@ SIDEBAR_ICON_STYLE = """
     }
 """
 
+# Добавьте эти константы в src/utils/style_constants.py
+
+# Улучшенный стиль для диалогов модулей
+MODULE_DIALOG_STYLE = """
+    QDialog {
+        background-color: #202020;
+        color: white;
+    }
+    QLabel {
+        color: white;
+    }
+    QGroupBox {
+        font-weight: bold;
+        color: #FFA500;
+        border: 1px solid #444;
+        border-radius: 4px;
+        margin-top: 8px;
+        padding-top: 8px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 6px;
+        padding: 0 3px;
+    }
+    QSpinBox, QDoubleSpinBox {
+        background-color: #2A2A2A;
+        color: white;
+        border: 1px solid #444;
+        border-radius: 3px;
+        padding: 3px;
+        min-height: 22px;
+        max-height: 22px;
+    }
+    QLineEdit {
+        background-color: #2A2A2A;
+        color: white;
+        border: 1px solid #444;
+        border-radius: 3px;
+        padding: 3px;
+        min-height: 22px;
+        max-height: 22px;
+    }
+    QToolTip {
+        background-color: #2A2A2A;
+        color: white;
+        border: 1px solid #FFA500;
+        padding: 2px;
+        opacity: 200;
+    }
+"""
+
+# Стиль для кнопок в диалогах модулей (с оранжевым цветом #FFA500)
+MODULE_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #FFA500;
+        color: black;
+        border-radius: 3px;
+        padding: 5px 10px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #FFB347;
+    }
+"""
+
+# Стиль для групп в форме
+FORM_GROUP_STYLE = """
+    QGroupBox {
+        font-weight: bold;
+        color: #FFA500;
+        border: 1px solid #444;
+        border-radius: 4px;
+        margin-top: 8px;
+        padding-top: 16px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 6px;
+        padding: 0 3px;
+        color: #FFA500;
+    }
+    QLabel {
+        color: white;
+    }
+"""
+
 # Полный стиль для диалогов (комбинация стилей)
 FULL_DIALOG_STYLE = DIALOG_STYLE + CHECKBOX_STYLE + TAB_AND_TABLE_STYLE + SCROLLBAR_STYLE + COMBOBOX_STYLE

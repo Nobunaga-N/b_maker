@@ -26,11 +26,25 @@ def create_title_label(text: str, font_size: int = 16) -> QLabel:
 
 
 def create_accent_button(text: str, icon_path: str = None) -> QPushButton:
-    """Создает кнопку с оранжевым фоном"""
+    """
+    Создает кнопку с акцентным стилем (оранжевый фон).
+
+    Args:
+        text: Текст кнопки
+        icon_path: Путь к иконке (опционально)
+
+    Returns:
+        QPushButton: Стилизованная кнопка
+    """
+    from src.utils.style_constants import ACCENT_BUTTON_STYLE
+    from PyQt6.QtGui import QIcon
+
     button = QPushButton(text)
+    button.setStyleSheet(ACCENT_BUTTON_STYLE)
+
     if icon_path:
         button.setIcon(QIcon(icon_path))
-    button.setStyleSheet(ACCENT_BUTTON_STYLE)
+
     return button
 
 
@@ -48,18 +62,33 @@ def create_main_frame() -> QFrame:
     return frame
 
 
-def create_input_field(placeholder: str = "") -> QLineEdit:
-    """Создает поле ввода с темным фоном"""
+def create_input_field(placeholder: str = "", default_text: str = "") -> QLineEdit:
+    """
+    Создает поле ввода с темным фоном, плейсхолдером и дефолтным текстом.
+
+    Args:
+        placeholder: Текст-подсказка
+        default_text: Начальный текст
+
+    Returns:
+        QLineEdit: Стилизованное поле ввода
+    """
     field = QLineEdit()
+    field.setStyleSheet("""
+        background-color: #2A2A2A; 
+        color: white; 
+        padding: 4px;
+        border: 1px solid #444;
+        border-radius: 3px;
+        min-height: 22px;
+        max-height: 22px;
+    """)
+
     if placeholder:
         field.setPlaceholderText(placeholder)
-    field.setStyleSheet("""
-        background-color: #2C2C2C; 
-        color: white; 
-        padding: 8px;
-        border: 1px solid #444;
-        border-radius: 4px;
-    """)
+    if default_text:
+        field.setText(default_text)
+
     return field
 
 
@@ -101,24 +130,24 @@ def create_float_spinner(min_val: float = 0.0, max_val: float = 100.0,
     return spinner
 
 
-def create_group_box(title: str) -> QGroupBox:
-    """Создает группировочный бокс с заголовком"""
+def create_group_box(title: str, style: str = None) -> QGroupBox:
+    """
+    Создает группировочный бокс с заголовком и стилем.
+
+    Args:
+        title: Заголовок группы
+        style: Дополнительный CSS-стиль (если None, используется FORM_GROUP_STYLE)
+
+    Returns:
+        QGroupBox: Стилизованный объект QGroupBox
+    """
+    from src.utils.style_constants import FORM_GROUP_STYLE
+
     group = QGroupBox(title)
-    group.setStyleSheet("""
-        QGroupBox {
-            color: #FFA500;
-            font-weight: bold;
-            border: 1px solid #444;
-            border-radius: 4px;
-            margin-top: 15px;
-            padding-top: 15px;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px;
-        }
-    """)
+    if style:
+        group.setStyleSheet(style)
+    else:
+        group.setStyleSheet(FORM_GROUP_STYLE)
     return group
 
 

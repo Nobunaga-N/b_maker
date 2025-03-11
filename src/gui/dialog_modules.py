@@ -6,157 +6,130 @@
 from PyQt6.QtWidgets import (
     QDialog, QLabel, QVBoxLayout, QLineEdit, QPushButton,
     QGroupBox, QHBoxLayout, QSpinBox, QDoubleSpinBox,
-    QComboBox, QCheckBox, QTableWidget, QHeaderView,
-    QTableWidgetItem, QFileDialog, QMessageBox, QTabWidget,
-    QWidget, QFrame, QScrollArea, QFormLayout, QToolButton
+    QComboBox, QCheckBox, QFormLayout
 )
 from PyQt6.QtCore import Qt
-from typing import Dict, Any
-from src.utils.style_constants import DIALOG_STYLE
-from src.utils.ui_factory import create_spinbox_without_buttons, create_double_spinbox_without_buttons
+from typing import Dict, Any, Optional
 
-# Улучшенные версии базовых диалогов для модулей
+from src.utils.style_constants import MODULE_DIALOG_STYLE, MODULE_BUTTON_STYLE, FORM_GROUP_STYLE
+from src.utils.ui_factory import (
+    create_input_field,
+    create_spinbox_without_buttons, create_double_spinbox_without_buttons,
+    create_group_box
+)
+from src.utils.resources import Resources
 
-class ClickModuleDialog(QDialog):
+
+class BaseModuleDialog(QDialog):
     """
-    Улучшенный компактный диалог для настройки модуля клика.
+    Базовый класс для диалогов модулей.
+    Предоставляет общую структуру и стилизацию для всех диалогов настройки модулей.
+    """
+
+    def __init__(self, parent=None, title="Настройка модуля", width=350, height=300):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setModal(True)
+        self.resize(width, height)
+        self.setStyleSheet(MODULE_DIALOG_STYLE)
+        self.setup_base_ui()
+
+    def setup_base_ui(self):
+        """Настраивает базовый интерфейс диалога"""
+        self.main_layout = QVBoxLayout(self)
+        self.main_layout.setSpacing(8)
+        self.main_layout.setContentsMargins(10, 10, 10, 10)
+
+    def create_form_group(self, title: str) -> tuple:
+        """Создает группу с FormLayout для компактного размещения элементов формы"""
+        group = create_group_box(title)
+        form_layout = QFormLayout(group)
+        form_layout.setContentsMargins(6, 12, 6, 6)  # Увеличиваем верхний отступ для заголовка
+        form_layout.setSpacing(4)
+        self.main_layout.addWidget(group)
+        return group, form_layout
+
+    def add_buttons(self):
+        """Добавляет стандартные кнопки Отмена/Подтвердить"""
+        buttons_layout = QHBoxLayout()
+
+        # Создаем кнопки напрямую с правильным стилем
+        self.btn_cancel = QPushButton("Отмена")
+        self.btn_confirm = QPushButton("Подтвердить")
+
+        # Применяем нужный стиль для сохранения оранжевого цвета #FFA500
+        self.btn_cancel.setStyleSheet(MODULE_BUTTON_STYLE)
+        self.btn_confirm.setStyleSheet(MODULE_BUTTON_STYLE)
+
+        self.btn_cancel.clicked.connect(self.reject)
+        self.btn_confirm.clicked.connect(self.accept)
+
+        buttons_layout.addWidget(self.btn_cancel)
+        buttons_layout.addWidget(self.btn_confirm)
+
+        self.main_layout.addLayout(buttons_layout)
+
+    def get_data(self) -> Dict[str, Any]:
+        """
+        Базовый метод для получения данных из диалога.
+        Должен быть переопределен в дочерних классах.
+        """
+        return {}
+
+    def load_data(self, data: Dict[str, Any]):
+        """
+        Базовый метод для загрузки данных в диалог.
+        Должен быть переопределен в дочерних классах.
+        """
+        pass
+
+
+class ClickModuleDialog(BaseModuleDialog):
+    """
+    Оптимизированный диалог для настройки модуля клика.
     """
 
     def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Настройка клика")
-        self.setModal(True)
-        self.resize(350, 300)
+        super().__init__(parent, "Настройка клика", 350, 300)
         self.setup_ui()
 
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
-        layout = QVBoxLayout(self)
-        layout.setSpacing(8)
-        layout.setContentsMargins(10, 10, 10, 10)
-
-        # Улучшенный стиль
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #202020;
-                color: white;
-            }
-            QLabel {
-                color: white;
-            }
-            QGroupBox {
-                font-weight: bold;
-                color: #FFA500;
-                border: 1px solid #444;
-                border-radius: 4px;
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 6px;
-                padding: 0 3px;
-            }
-            QSpinBox, QDoubleSpinBox {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #444;
-                border-radius: 3px;
-                padding: 3px;
-                min-height: 22px;
-                max-height: 22px;
-            }
-            QLineEdit {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #444;
-                border-radius: 3px;
-                padding: 3px;
-                min-height: 22px;
-                max-height: 22px;
-            }
-            QPushButton {
-                background-color: #FFA500;
-                color: black;
-                border-radius: 3px;
-                padding: 5px 10px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #FFB347;
-            }
-        """)
-
-        # Группа координат (используем FormLayout для компактности)
-        coords_group = QGroupBox("Координаты клика")
-        coords_layout = QFormLayout(coords_group)
-        coords_layout.setContentsMargins(6, 12, 6, 6)
-        coords_layout.setSpacing(4)
+        # Группа координат
+        coords_group, coords_layout = self.create_form_group("Координаты клика")
 
         # Координата X
-        self.x_input = QSpinBox()
-        self.x_input.setRange(0, 5000)
-        self.x_input.setSingleStep(1)
-        self.x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+        self.x_input = create_spinbox_without_buttons(0, 5000, 0)
         coords_layout.addRow("Координата X:", self.x_input)
 
         # Координата Y
-        self.y_input = QSpinBox()
-        self.y_input.setRange(0, 5000)
-        self.y_input.setSingleStep(1)
-        self.y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+        self.y_input = create_spinbox_without_buttons(0, 5000, 0)
         coords_layout.addRow("Координата Y:", self.y_input)
 
-        layout.addWidget(coords_group)
-
         # Группа описаний
-        descriptions_group = QGroupBox("Описания")
-        descriptions_layout = QFormLayout(descriptions_group)
-        descriptions_layout.setContentsMargins(6, 12, 6, 6)
-        descriptions_layout.setSpacing(4)
+        desc_group, desc_layout = self.create_form_group("Описания")
 
-        self.description_input = QLineEdit()
-        self.description_input.setPlaceholderText("Описание для отображения на холсте")
-        descriptions_layout.addRow("Описание:", self.description_input)
+        self.description_input = create_input_field("Описание для отображения на холсте")
+        desc_layout.addRow("Описание:", self.description_input)
 
-        self.console_description_input = QLineEdit()
-        self.console_description_input.setPlaceholderText("Описание для вывода в консоль")
-        descriptions_layout.addRow("Описание для консоли:", self.console_description_input)
-
-        layout.addWidget(descriptions_group)
+        self.console_description_input = create_input_field("Описание для вывода в консоль")
+        desc_layout.addRow("Описание для консоли:", self.console_description_input)
 
         # Группа задержки
-        delay_group = QGroupBox("Задержка")
-        delay_layout = QFormLayout(delay_group)
-        delay_layout.setContentsMargins(6, 12, 6, 6)
-        delay_layout.setSpacing(4)
+        delay_group, delay_layout = self.create_form_group("Задержка")
 
-        self.sleep_input = QDoubleSpinBox()
-        self.sleep_input.setRange(0.0, 300.0)
-        self.sleep_input.setDecimals(1)
-        self.sleep_input.setSingleStep(0.1)
-        self.sleep_input.setSuffix(" сек")
-        self.sleep_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        self.sleep_input = create_double_spinbox_without_buttons(0.0, 300.0, 0.0, 1, " сек")
         delay_layout.addRow("Время задержки после клика:", self.sleep_input)
 
-        layout.addWidget(delay_group)
-
-        # Кнопки
-        buttons_layout = QHBoxLayout()
-        self.btn_cancel = QPushButton("Отмена")
-        self.btn_confirm = QPushButton("Подтвердить")
-        self.btn_cancel.clicked.connect(self.reject)
-        self.btn_confirm.clicked.connect(self.accept)
-        buttons_layout.addWidget(self.btn_cancel)
-        buttons_layout.addWidget(self.btn_confirm)
-
-        layout.addLayout(buttons_layout)
+        # Добавляем кнопки
+        self.add_buttons()
 
     def get_data(self) -> Dict[str, Any]:
         """
         Возвращает данные, введенные пользователем.
         """
         return {
+            "type": "click",
             "x": self.x_input.value(),
             "y": self.y_input.value(),
             "description": self.description_input.text().strip(),
@@ -164,159 +137,72 @@ class ClickModuleDialog(QDialog):
             "sleep": self.sleep_input.value()
         }
 
+    def load_data(self, data: Dict[str, Any]):
+        """
+        Загружает данные для редактирования.
+        """
+        if isinstance(data.get("x"), (int, float)):
+            self.x_input.setValue(int(data.get("x", 0)))
+        if isinstance(data.get("y"), (int, float)):
+            self.y_input.setValue(int(data.get("y", 0)))
+        if data.get("description") is not None:
+            self.description_input.setText(str(data.get("description", "")))
+        if data.get("console_description") is not None:
+            self.console_description_input.setText(str(data.get("console_description", "")))
+        if isinstance(data.get("sleep"), (int, float)):
+            self.sleep_input.setValue(float(data.get("sleep", 0.0)))
 
-class SwipeModuleDialog(QDialog):
+
+class SwipeModuleDialog(BaseModuleDialog):
     """
-    Улучшенный компактный диалог для настройки модуля свайпа.
+    Оптимизированный диалог для настройки модуля свайпа.
     """
 
     def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Настройка свайпа")
-        self.setModal(True)
-        self.resize(350, 350)
+        super().__init__(parent, "Настройка свайпа", 350, 350)
         self.setup_ui()
 
     def setup_ui(self):
         """Настраивает интерфейс диалога свайпа"""
-        layout = QVBoxLayout(self)
-        layout.setSpacing(8)
-        layout.setContentsMargins(10, 10, 10, 10)
-
-        # Улучшенный стиль (такой же, как у диалога клика)
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #202020;
-                color: white;
-            }
-            QLabel {
-                color: white;
-            }
-            QGroupBox {
-                font-weight: bold;
-                color: #FFA500;
-                border: 1px solid #444;
-                border-radius: 4px;
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 6px;
-                padding: 0 3px;
-            }
-            QSpinBox, QDoubleSpinBox {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #444;
-                border-radius: 3px;
-                padding: 3px;
-                min-height: 22px;
-                max-height: 22px;
-            }
-            QLineEdit {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #444;
-                border-radius: 3px;
-                padding: 3px;
-                min-height: 22px;
-                max-height: 22px;
-            }
-            QPushButton {
-                background-color: #FFA500;
-                color: black;
-                border-radius: 3px;
-                padding: 5px 10px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #FFB347;
-            }
-        """)
-
         # Координаты начала свайпа
-        start_group = QGroupBox("Начальные координаты")
-        start_layout = QFormLayout(start_group)
-        start_layout.setContentsMargins(6, 12, 6, 6)
-        start_layout.setSpacing(4)
+        start_group, start_layout = self.create_form_group("Начальные координаты")
 
         # X
-        self.start_x_input = QSpinBox()
-        self.start_x_input.setRange(0, 5000)
-        self.start_x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+        self.start_x_input = create_spinbox_without_buttons(0, 5000, 0)
         start_layout.addRow("Координата X:", self.start_x_input)
 
         # Y
-        self.start_y_input = QSpinBox()
-        self.start_y_input.setRange(0, 5000)
-        self.start_y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+        self.start_y_input = create_spinbox_without_buttons(0, 5000, 0)
         start_layout.addRow("Координата Y:", self.start_y_input)
 
-        layout.addWidget(start_group)
-
         # Координаты конца свайпа
-        end_group = QGroupBox("Конечные координаты")
-        end_layout = QFormLayout(end_group)
-        end_layout.setContentsMargins(6, 12, 6, 6)
-        end_layout.setSpacing(4)
+        end_group, end_layout = self.create_form_group("Конечные координаты")
 
         # X
-        self.end_x_input = QSpinBox()
-        self.end_x_input.setRange(0, 5000)
-        self.end_x_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+        self.end_x_input = create_spinbox_without_buttons(0, 5000, 0)
         end_layout.addRow("Координата X:", self.end_x_input)
 
         # Y
-        self.end_y_input = QSpinBox()
-        self.end_y_input.setRange(0, 5000)
-        self.end_y_input.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+        self.end_y_input = create_spinbox_without_buttons(0, 5000, 0)
         end_layout.addRow("Координата Y:", self.end_y_input)
 
-        layout.addWidget(end_group)
-
         # Описания
-        descriptions_group = QGroupBox("Описания")
-        descriptions_layout = QFormLayout(descriptions_group)
-        descriptions_layout.setContentsMargins(6, 12, 6, 6)
-        descriptions_layout.setSpacing(4)
+        desc_group, desc_layout = self.create_form_group("Описания")
 
-        self.description_input = QLineEdit()
-        self.description_input.setPlaceholderText("Описание для отображения на холсте")
-        descriptions_layout.addRow("Описание:", self.description_input)
+        self.description_input = create_input_field("Описание для отображения на холсте")
+        desc_layout.addRow("Описание:", self.description_input)
 
-        self.console_description_input = QLineEdit()
-        self.console_description_input.setPlaceholderText("Описание для вывода в консоль")
-        descriptions_layout.addRow("Описание для консоли:", self.console_description_input)
-
-        layout.addWidget(descriptions_group)
+        self.console_description_input = create_input_field("Описание для вывода в консоль")
+        desc_layout.addRow("Описание для консоли:", self.console_description_input)
 
         # Задержка
-        delay_group = QGroupBox("Задержка")
-        delay_layout = QFormLayout(delay_group)
-        delay_layout.setContentsMargins(6, 12, 6, 6)
-        delay_layout.setSpacing(4)
+        delay_group, delay_layout = self.create_form_group("Задержка")
 
-        self.sleep_input = QDoubleSpinBox()
-        self.sleep_input.setRange(0.0, 300.0)
-        self.sleep_input.setDecimals(1)
-        self.sleep_input.setSingleStep(0.1)
-        self.sleep_input.setSuffix(" сек")
-        self.sleep_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        self.sleep_input = create_double_spinbox_without_buttons(0.0, 300.0, 0.0, 1, " сек")
         delay_layout.addRow("Время задержки после свайпа:", self.sleep_input)
 
-        layout.addWidget(delay_group)
-
         # Кнопки
-        buttons_layout = QHBoxLayout()
-        self.btn_cancel = QPushButton("Отмена")
-        self.btn_confirm = QPushButton("Подтвердить")
-        self.btn_cancel.clicked.connect(self.reject)
-        self.btn_confirm.clicked.connect(self.accept)
-        buttons_layout.addWidget(self.btn_cancel)
-        buttons_layout.addWidget(self.btn_confirm)
-
-        layout.addLayout(buttons_layout)
+        self.add_buttons()
 
     def get_data(self) -> Dict[str, Any]:
         """Возвращает данные, заполненные пользователем"""
@@ -331,110 +217,50 @@ class SwipeModuleDialog(QDialog):
             "sleep": self.sleep_input.value()
         }
 
+    def load_data(self, data: Dict[str, Any]):
+        """
+        Загружает данные для редактирования.
+        """
+        if isinstance(data.get("x1"), (int, float)):
+            self.start_x_input.setValue(int(data.get("x1", 0)))
+        if isinstance(data.get("y1"), (int, float)):
+            self.start_y_input.setValue(int(data.get("y1", 0)))
+        if isinstance(data.get("x2"), (int, float)):
+            self.end_x_input.setValue(int(data.get("x2", 0)))
+        if isinstance(data.get("y2"), (int, float)):
+            self.end_y_input.setValue(int(data.get("y2", 0)))
+        if data.get("description") is not None:
+            self.description_input.setText(str(data.get("description", "")))
+        if data.get("console_description") is not None:
+            self.console_description_input.setText(str(data.get("console_description", "")))
+        if isinstance(data.get("sleep"), (int, float)):
+            self.sleep_input.setValue(float(data.get("sleep", 0.0)))
 
-class TimeSleepModuleDialog(QDialog):
+
+class TimeSleepModuleDialog(BaseModuleDialog):
     """
-    Улучшенный компактный диалог для настройки модуля паузы.
+    Оптимизированный диалог для настройки модуля паузы.
     """
 
     def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Настройка паузы")
-        self.setModal(True)
-        self.resize(300, 180)
+        super().__init__(parent, "Настройка паузы", 300, 180)
         self.setup_ui()
 
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
-        layout = QVBoxLayout(self)
-        layout.setSpacing(8)
-        layout.setContentsMargins(10, 10, 10, 10)
-
-        # Улучшенный стиль (такой же, как у других диалогов)
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #202020;
-                color: white;
-            }
-            QLabel {
-                color: white;
-            }
-            QGroupBox {
-                font-weight: bold;
-                color: #FFA500;
-                border: 1px solid #444;
-                border-radius: 4px;
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 6px;
-                padding: 0 3px;
-            }
-            QSpinBox, QDoubleSpinBox {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #444;
-                border-radius: 3px;
-                padding: 3px;
-                min-height: 22px;
-                max-height: 22px;
-            }
-            QLineEdit {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #444;
-                border-radius: 3px;
-                padding: 3px;
-                min-height: 22px;
-                max-height: 22px;
-            }
-            QPushButton {
-                background-color: #FFA500;
-                color: black;
-                border-radius: 3px;
-                padding: 5px 10px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #FFB347;
-            }
-        """)
-
         # Группа параметров паузы
-        delay_group = QGroupBox("Параметры паузы")
-        delay_layout = QFormLayout(delay_group)
-        delay_layout.setContentsMargins(6, 12, 6, 6)
-        delay_layout.setSpacing(4)
+        delay_group, delay_layout = self.create_form_group("Параметры паузы")
 
         # Время задержки
-        self.delay_input = QDoubleSpinBox()
-        self.delay_input.setRange(0.1, 300.0)
-        self.delay_input.setValue(1.0)
-        self.delay_input.setDecimals(1)
-        self.delay_input.setSingleStep(0.1)
-        self.delay_input.setSuffix(" сек")
-        self.delay_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        self.delay_input = create_double_spinbox_without_buttons(0.1, 300.0, 1.0, 1, " сек")
         delay_layout.addRow("Время задержки:", self.delay_input)
 
         # Описание
-        self.description_input = QLineEdit()
-        self.description_input.setPlaceholderText("Необязательное описание паузы")
+        self.description_input = create_input_field("Необязательное описание паузы")
         delay_layout.addRow("Описание:", self.description_input)
 
-        layout.addWidget(delay_group)
-
         # Кнопки
-        buttons_layout = QHBoxLayout()
-        self.btn_cancel = QPushButton("Отмена")
-        self.btn_confirm = QPushButton("Подтвердить")
-        self.btn_cancel.clicked.connect(self.reject)
-        self.btn_confirm.clicked.connect(self.accept)
-        buttons_layout.addWidget(self.btn_cancel)
-        buttons_layout.addWidget(self.btn_confirm)
-
-        layout.addLayout(buttons_layout)
+        self.add_buttons()
 
     def get_data(self) -> Dict[str, Any]:
         """
