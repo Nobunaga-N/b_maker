@@ -579,5 +579,31 @@ BUTTONS_PANEL_STYLE = """
     }
 """
 
+# Стиль для компактной секции настроек изображений
+COMPACT_IMAGE_SETTINGS_STYLE = """
+    QGroupBox {
+        font-weight: bold;
+        color: #FFA500;
+        border: 1px solid #444;
+        border-radius: 4px;
+        margin-top: 8px;
+        padding-top: 16px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 6px;
+        padding: 0 3px;
+        color: #FFA500;
+    }
+    QLabel {
+        color: white;
+        margin: 2px;
+    }
+    QHBoxLayout {
+        margin: 2px;
+        spacing: 4px;
+    }
+"""
+
 # Стиль для заголовка модуля активности
 ACTIVITY_MODULE_TITLE_STYLE = "color: #FFA500; font-size: 14px; font-weight: bold; margin-bottom: 8px;"

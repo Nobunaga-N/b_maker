@@ -19,13 +19,13 @@ from src.gui.modules.if_result_module import IfResultModuleDialog
 from src.gui.modules.elif_module import ElifModuleDialog
 from src.gui.modules.if_not_result_module import IfNotResultModuleDialog
 from src.utils.style_constants import (
-    SCRIPT_CANVAS_STYLE
+    SCRIPT_CANVAS_STYLE, COMPACT_IMAGE_SETTINGS_STYLE
 )
 from src.utils.resources import Resources
 from src.utils.ui_factory import (
     create_script_button, create_group_box, create_input_field,
     create_spinbox_without_buttons, create_title_label,
-    create_script_item_widget, add_script_item_buttons
+    create_script_item_widget, add_script_item_buttons, create_multiple_file_dialog
 )
 
 
@@ -48,7 +48,7 @@ class ImageSearchModuleDialog(QDialog):
         self.setWindowTitle("Настройка модуля поиска изображений")
         self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMinMaxButtonsHint)
         self.setModal(True)
-        self.resize(900, 700)
+        self.resize(1100, 800)  # Увеличиваем размер окна
 
         # Данные для холста скрипта
         self.script_items = []  # Элементы скрипта
@@ -165,20 +165,24 @@ class ImageSearchModuleDialog(QDialog):
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title_label)
 
-        # Используем сплиттер для разделения настроек изображений и холста
-        splitter = QSplitter(Qt.Orientation.Vertical)
-        splitter.setChildrenCollapsible(False)  # Запрещаем сжимать разделы до нуля
+        # Используем горизонтальный layout для списка изображений (слева) и настроек (справа)
+        main_content_layout = QHBoxLayout()
 
-        # === Верхняя часть: Настройки изображений и таймаута ===
-        self.setup_image_settings(splitter)
+        # === Левая часть: Список изображений ===
+        self.setup_images_list_panel(main_content_layout)
 
-        # === Нижняя часть: Холст скрипта и панель инструментов ===
-        self.setup_script_canvas(splitter)
+        # === Правая часть: Настройки изображений и холст скрипта ===
+        right_panel = QVBoxLayout()
 
-        # Устанавливаем начальное соотношение сплиттера (2:3)
-        splitter.setSizes([250, 400])
+        # Раздел настроек изображений
+        self.setup_compact_image_settings(right_panel)
 
-        layout.addWidget(splitter, 1)  # Растягиваем сплиттер на всю доступную высоту
+        # Холст скрипта занимает оставшееся пространство
+        self.setup_script_canvas(right_panel)
+
+        main_content_layout.addLayout(right_panel, 2)  # Правая часть занимает 2/3 ширины
+
+        layout.addLayout(main_content_layout, 1)  # Растягиваем по высоте
 
         # Кнопки подтверждения/отмены
         buttons_layout = QHBoxLayout()
@@ -191,64 +195,126 @@ class ImageSearchModuleDialog(QDialog):
         buttons_layout.addWidget(self.btn_confirm)
         layout.addLayout(buttons_layout)
 
-    def setup_image_settings(self, parent):
-        """Настраивает верхнюю часть диалога с настройками изображений"""
-        image_settings_widget = QWidget()
-        image_settings_layout = QVBoxLayout(image_settings_widget)
-        image_settings_layout.setContentsMargins(0, 0, 0, 0)
-        image_settings_layout.setSpacing(8)
-
-        # Группа настроек изображений
-        image_group = create_group_box("Настройка изображений для поиска")
-        image_layout = QFormLayout(image_group)  # Используем FormLayout для компактности
-        image_layout.setContentsMargins(8, 16, 8, 8)  # Увеличиваем верхний отступ для заголовка
-        image_layout.setSpacing(6)
-
-        # Основное изображение с кнопкой обзора в одной строке
-        img_layout = QHBoxLayout()
-        self.image_name = create_input_field("Введите имя изображения (например, victory.png)")
-        browse_btn = QPushButton("Обзор...")
-        browse_btn.clicked.connect(self.browse_image)
-        browse_btn.setFixedWidth(80)  # Делаем кнопку компактнее
-        img_layout.addWidget(self.image_name)
-        img_layout.addWidget(browse_btn)
-        image_layout.addRow("Изображение:", img_layout)
-
-        # Настройка таймаута
-        self.timeout_input = create_spinbox_without_buttons(1, 3600, 120, " сек")
-        image_layout.addRow("Таймаут ожидания:", self.timeout_input)
-
-        # Добавление дополнительных изображений
-        add_img_layout = QHBoxLayout()
-        self.additional_image = create_input_field("Имя дополнительного изображения")
-        add_img_btn = QPushButton("Добавить")
-        add_img_btn.clicked.connect(self.add_additional_image)
-        add_img_btn.setFixedWidth(80)  # Делаем кнопку компактнее
-        browse_additional_btn = QPushButton("Обзор...")
-        browse_additional_btn.clicked.connect(self.browse_additional_image)
-        browse_additional_btn.setFixedWidth(80)  # Делаем кнопку компактнее
-        add_img_layout.addWidget(self.additional_image)
-        add_img_layout.addWidget(browse_additional_btn)
-        add_img_layout.addWidget(add_img_btn)
-        image_layout.addRow("Дополнительное:", add_img_layout)
-
-        image_settings_layout.addWidget(image_group)
-
-        # Список добавленных изображений
+    def setup_images_list_panel(self, parent_layout):
+        """Настраивает панель со списком изображений"""
+        # Группа со списком изображений
         images_list_group = create_group_box("Список изображений для поиска")
         images_list_layout = QVBoxLayout(images_list_group)
-        images_list_layout.setContentsMargins(8, 16, 8, 8)  # Увеличиваем верхний отступ для заголовка
+        images_list_layout.setContentsMargins(8, 16, 8, 8)
 
+        # Таблица с изображениями
         self.images_list = QTableWidget(0, 2)
         self.images_list.setHorizontalHeaderLabels(["Имя изображения", ""])
         self.images_list.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.images_list.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
-        self.images_list.setColumnWidth(1, 80)  # Ширина столбца с кнопкой
-        self.images_list.verticalHeader().setVisible(False)  # Скрываем вертикальные заголовки
+        self.images_list.setColumnWidth(1, 80)  # Ширина столбца с кнопкой удаления
+        self.images_list.verticalHeader().setVisible(False)
+
+        # Увеличиваем высоту строк для лучшей читаемости
+        self.images_list.verticalHeader().setDefaultSectionSize(30)
+
         images_list_layout.addWidget(self.images_list)
 
-        image_settings_layout.addWidget(images_list_group)
-        parent.addWidget(image_settings_widget)
+        parent_layout.addWidget(images_list_group, 1)  # Левая часть занимает 1/3 ширины
+
+    def setup_compact_image_settings(self, parent_layout):
+        """Настраивает компактную панель настроек изображений"""
+        image_settings_group = create_group_box("Настройка изображений для поиска")
+        image_settings_group.setStyleSheet(COMPACT_IMAGE_SETTINGS_STYLE)
+        image_settings_layout = QVBoxLayout(image_settings_group)
+        image_settings_layout.setContentsMargins(8, 16, 8, 8)
+        image_settings_layout.setSpacing(6)
+
+        # Основное изображение с кнопкой "Обзор" в одной строке
+        img_layout = QHBoxLayout()
+        img_layout.setSpacing(5)
+
+        # Метка и поле ввода
+        img_label = QLabel("Изображение:")
+        img_label.setFixedWidth(80)
+        self.image_name = create_input_field("Введите имя изображения (например, victory.png)")
+
+        # Обработка ручного ввода по нажатию Enter
+        self.image_name.returnPressed.connect(self.add_image_from_input)
+
+        # Кнопка "Обзор"
+        browse_btn = QPushButton("Обзор...")
+        browse_btn.clicked.connect(self.browse_multiple_images)
+        browse_btn.setFixedWidth(80)
+
+        img_layout.addWidget(img_label)
+        img_layout.addWidget(self.image_name, 1)  # 1 - коэффициент растяжения
+        img_layout.addWidget(browse_btn)
+
+        image_settings_layout.addLayout(img_layout)
+
+        # Настройка таймаута
+        timeout_layout = QHBoxLayout()
+        timeout_label = QLabel("Таймаут ожидания:")
+        timeout_label.setFixedWidth(120)
+        self.timeout_input = create_spinbox_without_buttons(1, 3600, 120, " сек")
+
+        timeout_layout.addWidget(timeout_label)
+        timeout_layout.addWidget(self.timeout_input, 1)
+
+        image_settings_layout.addLayout(timeout_layout)
+
+        parent_layout.addWidget(image_settings_group)
+
+    def browse_multiple_images(self):
+        """Открывает диалог выбора нескольких изображений и сразу добавляет их в список"""
+        files = create_multiple_file_dialog("Выбрать изображения", "Изображения (*.png *.jpg *.jpeg)")
+
+        if files:
+            # Добавляем все выбранные файлы сразу в список
+            for file_path in files:
+                # Получаем только имя файла
+                file_name = os.path.basename(file_path)
+                self.add_image_to_list(file_name)
+
+            # Очищаем поле ввода после добавления
+            self.image_name.clear()
+
+    def add_image_from_input(self):
+        """Добавляет изображение из поля ввода в список"""
+        image_name = self.image_name.text().strip()
+        if image_name:
+            self.add_image_to_list(image_name)
+            self.image_name.clear()
+
+    def add_image_to_list(self, image_name):
+        """Добавляет изображение в список"""
+        # Проверка, есть ли уже такое изображение в списке
+        for row in range(self.images_list.rowCount()):
+            if self.images_list.item(row, 0).text() == image_name:
+                QMessageBox.warning(self, "Предупреждение", f"Изображение '{image_name}' уже добавлено в список.")
+                return
+
+        # Функция-замыкание для создания функции удаления с сохранением индекса строки
+        def create_delete_function(row_to_delete):
+            return lambda: self.remove_image(row_to_delete)
+
+        # Добавление изображения в таблицу
+        row_position = self.images_list.rowCount()
+        self.images_list.insertRow(row_position)
+        self.images_list.setItem(row_position, 0, QTableWidgetItem(image_name))
+
+        # Кнопка удаления
+        delete_btn = QPushButton("Удалить")
+        delete_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #FF4444;
+                color: white;
+                border-radius: 3px;
+                padding: 3px;
+            }
+            QPushButton:hover {
+                background-color: #FF6666;
+            }
+        """)
+
+        delete_btn.clicked.connect(create_delete_function(row_position))
+        self.images_list.setCellWidget(row_position, 1, delete_btn)
 
     def setup_script_canvas(self, parent):
         """Настраивает нижнюю часть диалога с холстом скрипта"""
@@ -317,67 +383,6 @@ class ImageSearchModuleDialog(QDialog):
 
         parent.addWidget(script_widget)
 
-    def browse_image(self):
-        """Открывает диалог выбора основного изображения"""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Выбрать изображение", "", "Изображения (*.png *.jpg *.jpeg)"
-        )
-        if file_path:
-            # Получаем только имя файла
-            file_name = os.path.basename(file_path)
-            self.image_name.setText(file_name)
-
-    def browse_additional_image(self):
-        """Открывает диалог выбора дополнительного изображения"""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self, "Выбрать дополнительное изображение", "", "Изображения (*.png *.jpg *.jpeg)"
-        )
-        if file_path:
-            # Получаем только имя файла
-            file_name = os.path.basename(file_path)
-            self.additional_image.setText(file_name)
-
-    def add_additional_image(self):
-        """Добавляет дополнительное изображение в список"""
-        image_name = self.additional_image.text().strip()
-        if not image_name:
-            return
-
-        # Проверка, есть ли уже такое изображение в списке
-        for row in range(self.images_list.rowCount()):
-            if self.images_list.item(row, 0).text() == image_name:
-                QMessageBox.warning(self, "Предупреждение", f"Изображение '{image_name}' уже добавлено в список.")
-                self.additional_image.clear()
-                return
-
-        # Функция-замыкание для создания функции удаления с сохранением индекса строки
-        def create_delete_function(row_to_delete):
-            return lambda: self.remove_image(row_to_delete)
-
-        # Добавление изображения в таблицу
-        row_position = self.images_list.rowCount()
-        self.images_list.insertRow(row_position)
-        self.images_list.setItem(row_position, 0, QTableWidgetItem(image_name))
-
-        # Кнопка удаления
-        delete_btn = QPushButton("Удалить")
-        delete_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #FF4444;
-                color: white;
-                border-radius: 3px;
-                padding: 3px;
-            }
-            QPushButton:hover {
-                background-color: #FF6666;
-            }
-        """)
-
-        delete_btn.clicked.connect(create_delete_function(row_position))
-        self.images_list.setCellWidget(row_position, 1, delete_btn)
-
-        self.additional_image.clear()
-
     def remove_image(self, row):
         """Удаляет изображение из списка"""
         if row < 0 or row >= self.images_list.rowCount():
@@ -397,19 +402,13 @@ class ImageSearchModuleDialog(QDialog):
                 delete_btn.clicked.connect(create_delete_function(i))
 
     def get_all_images(self):
-        """Возвращает список всех изображений (основное + дополнительные)"""
+        """Возвращает список всех изображений из таблицы"""
         images = []
 
-        # Добавляем основное изображение
-        main_image = self.image_name.text().strip()
-        if main_image:
-            images.append(main_image)
-
-        # Добавляем дополнительные изображения
+        # Собираем изображения из таблицы
         for row in range(self.images_list.rowCount()):
             image = self.images_list.item(row, 0).text()
-            if image and image not in images:
-                images.append(image)
+            images.append(image)
 
         return images
 
@@ -826,18 +825,14 @@ class ImageSearchModuleDialog(QDialog):
         if not data:
             return
 
-        # Загружаем основное изображение (первое из списка)
-        if "images" in data and data["images"]:
-            self.image_name.setText(data["images"][0])
-
-            # Загружаем дополнительные изображения
-            for i in range(1, len(data["images"])):
-                self.additional_image.setText(data["images"][i])
-                self.add_additional_image()
-
         # Загружаем таймаут
         if "timeout" in data:
             self.timeout_input.setValue(data["timeout"])
+
+        # Загружаем изображения
+        if "images" in data and data["images"]:
+            for image in data["images"]:
+                self.add_image_to_list(image)
 
         # Очищаем холст скрипта
         for item in self.script_items:

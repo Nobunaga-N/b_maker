@@ -452,3 +452,20 @@ def create_action_buttons_panel():
     layout.addWidget(confirm_btn)
 
     return panel, cancel_btn, confirm_btn
+
+
+def create_multiple_file_dialog(title="Выбрать файлы", filter="Изображения (*.png *.jpg *.jpeg)"):
+    """
+    Открывает диалог выбора нескольких файлов.
+
+    Args:
+        title: Заголовок диалога
+        filter: Фильтр файлов
+
+    Returns:
+        Список путей к выбранным файлам
+    """
+    from PyQt6.QtWidgets import QFileDialog
+
+    files, _ = QFileDialog.getOpenFileNames(None, title, "", filter)
+    return files
