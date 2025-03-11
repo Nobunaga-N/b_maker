@@ -422,5 +422,123 @@ TABLE_ACTION_BUTTON_STYLE = """
     }
 """
 
+# Стиль для элементов скрипта
+SCRIPT_ITEM_STYLE = """
+    QFrame {
+        background-color: #2A2A2A;
+        border: 1px solid #444;
+        border-radius: 3px;
+        margin: 2px;
+    }
+    QFrame:hover {
+        border: 1px solid #FFA500;
+    }
+"""
+
+# Стиль для заголовка элемента скрипта
+SCRIPT_ITEM_HEADER_STYLE = """
+    color: #FFA500; 
+    font-weight: bold;
+"""
+
+# Стиль для описания элемента скрипта
+SCRIPT_ITEM_DESCRIPTION_STYLE = """
+    color: #CCCCCC; 
+    font-size: 11px; 
+    margin-left: 24px;
+"""
+
+# Стиль для кнопок в элементе скрипта
+SCRIPT_ITEM_BUTTON_STYLE = """
+    QToolButton {
+        background-color: transparent;
+        border: none;
+        color: white;
+        min-width: 20px;
+        max-width: 20px;
+        min-height: 20px;
+        max-height: 20px;
+    }
+    QToolButton:hover {
+        background-color: rgba(255, 165, 0, 0.2);
+        border-radius: 2px;
+    }
+"""
+
+# Стиль для кнопки удаления в элементе скрипта
+SCRIPT_ITEM_DELETE_BUTTON_STYLE = """
+    QToolButton {
+        background-color: transparent;
+        border: none;
+        color: #FF4444;
+        min-width: 20px;
+        max-width: 20px;
+        min-height: 20px;
+        max-height: 20px;
+    }
+    QToolButton:hover {
+        background-color: rgba(255, 68, 68, 0.2);
+        border-radius: 2px;
+    }
+"""
+
+# Стиль для холста скрипта
+SCRIPT_CANVAS_STYLE = """
+    background-color: #252525; 
+    border-radius: 3px; 
+    border: 1px solid #444;
+"""
+
+# Стиль для диалогов скрипт-блоков
+SCRIPT_DIALOG_STYLE = """
+    QDialog {
+        background-color: #1A1A1A;
+        border: 2px solid #FF8C00;
+    }
+    QPushButton {
+        background-color: #FF8C00;
+        color: black;
+        border-radius: 4px;
+        padding: 8px 16px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #FFB347;
+    }
+    QGroupBox {
+        border: 1px solid #FF8C00;
+        color: #FFA500;
+        font-weight: bold;
+        margin-top: 15px;
+        padding-top: 15px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 10px;
+        padding: 0 5px;
+    }
+    QLabel {
+        color: white;
+    }
+    QLineEdit, QComboBox {
+        background-color: #2A2A2A;
+        color: white;
+        border: 1px solid #555;
+        border-radius: 3px;
+        padding: 4px;
+    }
+    QComboBox QAbstractItemView {
+        background-color: #2A2A2A;
+        color: white;
+        border: 1px solid #555;
+    }
+    QToolTip {
+        background-color: #2A2A2A;
+        color: white;
+        border: 1px solid #FFA500;
+        padding: 2px;
+    }
+"""
+
 # Стиль для заголовка модуля активности
 ACTIVITY_MODULE_TITLE_STYLE = "color: #FFA500; font-size: 14px; font-weight: bold; margin-bottom: 8px;"

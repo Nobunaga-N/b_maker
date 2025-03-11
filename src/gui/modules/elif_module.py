@@ -1,61 +1,30 @@
-# src/gui/modules/elif_module.py
+# src/gui/modules/elif_module.py - оптимизированная версия
 """
 Модуль для подмодуля ELIF, используемого в модуле поиска изображений.
 """
 
-from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
-    QComboBox, QLineEdit, QCheckBox, QGroupBox, QMessageBox
-)
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIcon
-
+from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QMessageBox
+from src.utils.ui_factory import create_group_box
 from src.gui.modules.if_result_module import IfResultCanvas
+from src.gui.modules.script_block_base import ScriptBlockDialog
 
 
-class ElifModuleDialog(QDialog):
+class ElifModuleDialog(ScriptBlockDialog):
     """
     Диалог для настройки подмодуля ELIF.
     Позволяет выбрать конкретное изображение, настроить сообщение и действия.
     """
 
     def __init__(self, images_list, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Настройка блока ELIF")
-        self.setModal(True)
-        self.resize(800, 600)
-
         self.images_list = images_list  # Список доступных изображений
-        self.setup_ui()
+        super().__init__("Настройка блока ELIF", parent)
 
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
-        layout = QVBoxLayout(self)
-
-        # Применяем специальный стиль для вложенного диалога
-        self.setStyleSheet("""
-                        QDialog {
-                            background-color: #1A1A1A; /* Немного темнее фон */
-                            border: 2px solid #FF8C00; /* Оранжевая рамка */
-                        }
-                        QPushButton {
-                            background-color: #FF8C00;
-                            color: black;
-                            border-radius: 4px;
-                            padding: 8px 16px;
-                            font-weight: bold;
-                        }
-                        QGroupBox {
-                            border: 1px solid #FF8C00;
-                        }
-                    """)
-
-        # Добавляем WindowMinMaxButtonsHint для стандартных кнопок окна
-        self.setWindowFlags(self.windowFlags() | Qt.WindowType.WindowMinMaxButtonsHint)
+        super().setup_ui()
 
         # --- 1. Настройки изображения и основных параметров ---
-        settings_group = QGroupBox("Настройки")
-        settings_layout = QVBoxLayout(settings_group)
+        settings_group, settings_layout = self.setup_settings_group()
 
         # Выбор изображения (для ELIF обязательно выбрать конкретное изображение)
         image_layout = QHBoxLayout()
@@ -65,42 +34,25 @@ class ElifModuleDialog(QDialog):
 
         image_layout.addWidget(image_label)
         image_layout.addWidget(self.image_combo, 1)
-        settings_layout.addLayout(image_layout)
 
-        # Сообщение в консоль
-        log_layout = QHBoxLayout()
-        log_label = QLabel("Сообщение в консоль:")
-        self.log_input = QLineEdit()
+        # Вставляем выбор изображения перед сообщением в консоль
+        settings_layout.insertLayout(0, image_layout)
+
+        # Устанавливаем текст по умолчанию
         self.log_input.setText("Найдено другое изображение!")
-        self.log_input.setPlaceholderText("Например: Найдено изображение поражения!")
-
-        log_layout.addWidget(log_label)
-        log_layout.addWidget(self.log_input, 1)
-        settings_layout.addLayout(log_layout)
-
-        layout.addWidget(settings_group)
 
         # --- 2. Холст для дополнительных действий ---
-        action_group = QGroupBox("Дополнительные действия")
+        self.setup_canvas()
+
+    def setup_canvas(self):
+        """Создает холст для действий"""
+        action_group = create_group_box("Дополнительные действия")
         action_layout = QVBoxLayout(action_group)
 
-        self.canvas = IfResultCanvas(self)  # Используем тот же холст, что и для IF Result
+        self.canvas = IfResultCanvas(self)
         action_layout.addWidget(self.canvas)
 
-        layout.addWidget(action_group)
-
-        # --- 3. Кнопки диалога ---
-        buttons_layout = QHBoxLayout()
-        self.cancel_btn = QPushButton("Отмена")
-        self.ok_btn = QPushButton("Подтвердить")
-
-        self.cancel_btn.clicked.connect(self.reject)
-        self.ok_btn.clicked.connect(self.accept)
-
-        buttons_layout.addWidget(self.cancel_btn)
-        buttons_layout.addWidget(self.ok_btn)
-
-        layout.addLayout(buttons_layout)
+        self.layout.addWidget(action_group)
 
     def get_data(self):
         """Возвращает данные, настроенные пользователем"""
@@ -111,27 +63,20 @@ class ElifModuleDialog(QDialog):
 
         image = self.image_combo.currentText()
 
-        data = {
+        data = super().get_data()
+        data.update({
             "type": "elif",
-            "image": image,
-            "log_event": self.log_input.text(),
-            "actions": self.canvas.get_modules_data()
-        }
+            "image": image
+        })
 
         return data
 
     def load_data(self, data):
         """Загружает данные для редактирования"""
+        super().load_data(data)
+
         # Изображение
         if data.get("image"):
             index = self.image_combo.findText(data["image"])
             if index >= 0:
                 self.image_combo.setCurrentIndex(index)
-
-        # Сообщение в консоль
-        if "log_event" in data:
-            self.log_input.setText(data["log_event"])
-
-        # Загружаем действия в холст
-        if "actions" in data:
-            self.canvas.load_modules_data(data["actions"])
