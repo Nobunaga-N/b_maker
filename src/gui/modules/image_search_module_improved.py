@@ -21,7 +21,7 @@ from src.gui.modules.if_result_module import IfResultModuleDialog
 from src.gui.modules.elif_module import ElifModuleDialog
 from src.gui.modules.if_not_result_module import IfNotResultModuleDialog
 from src.gui.modules.canvas_module import ModuleItem
-from src.utils.style_constants import FULL_DIALOG_STYLE
+
 
 
 class ScriptItemWidget(ModuleItem):

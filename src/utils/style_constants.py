@@ -46,120 +46,6 @@ DIALOG_STYLE = """
     }
 """
 
-# Стиль для чекбоксов
-CHECKBOX_STYLE = """
-    QCheckBox {
-        color: white;
-        spacing: 5px;
-    }
-    QCheckBox::indicator {
-        width: 15px;
-        height: 15px;
-    }
-    QCheckBox::indicator:unchecked {
-        border: 1px solid #555;
-        background-color: #2C2C2C;
-    }
-    QCheckBox::indicator:checked {
-        border: 1px solid #555;
-        background-color: #FFA500;
-    }
-"""
-
-# Стиль для табов и таблиц
-TAB_AND_TABLE_STYLE = """
-    QTabWidget::pane {
-        border: 1px solid #555;
-        border-radius: 4px;
-        background-color: #2C2C2C;
-    }
-    QTabBar::tab {
-        background-color: #3A3A3A;
-        color: white;
-        border: 1px solid #555;
-        border-bottom: none;
-        border-top-left-radius: 4px;
-        border-top-right-radius: 4px;
-        min-width: 8ex;
-        padding: 6px;
-    }
-    QTabBar::tab:selected {
-        background-color: #FFA500;
-    }
-    QTabBar::tab:!selected {
-        margin-top: 2px;
-    }
-    QTableWidget {
-        background-color: #3A3A3A;
-        color: white;
-        gridline-color: #555;
-    }
-    QHeaderView::section {
-        background-color: #3a3a3a;
-        color: white;
-        padding: 4px;
-        border: 1px solid #555;
-    }
-"""
-
-# Стиль для скролл-баров
-SCROLLBAR_STYLE = """
-    QScrollBar:vertical {
-        border: none;
-        background-color: #3A3A3A;
-        width: 12px;
-        margin: 0px;
-    }
-    QScrollBar::handle:vertical {
-        background-color: #FFA500;
-        min-height: 20px;
-        border-radius: 6px;
-    }
-    QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-        height: 0px;
-    }
-    QScrollBar:horizontal {
-        border: none;
-        background-color: #3A3A3A;
-        height: 12px;
-        margin: 0px;
-    }
-    QScrollBar::handle:horizontal {
-        background-color: #FFA500;
-        min-width: 20px;
-        border-radius: 6px;
-    }
-    QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-        width: 0px;
-    }
-"""
-
-# Стиль для выпадающих списков
-COMBOBOX_STYLE = """
-    QComboBox {
-        background-color: #3A3A3A;
-        color: white;
-        border: 1px solid #555;
-        border-radius: 4px;
-        padding: 5px;
-        min-width: 6em;
-    }
-    QComboBox::drop-down {
-        subcontrol-origin: padding;
-        subcontrol-position: top right;
-        width: 15px;
-        border-left-width: 1px;
-        border-left-color: #555;
-        border-left-style: solid;
-    }
-    QComboBox QAbstractItemView {
-        border: 1px solid #555;
-        selection-background-color: #FFA500;
-        background-color: #2C2C2C;
-        color: white;
-    }
-"""
-
 # Стиль для кнопки удаления
 DELETE_BUTTON_STYLE = """
     QPushButton {
@@ -186,16 +72,9 @@ MAIN_FRAME_STYLE = """
     border: 1px solid #444;
 """
 
-# В файле src/utils/style_constants.py добавьте или измените эти константы
-
-
-
 # Цвет акцентов (вместо оранжевого)
-ACCENT_COLOR = "#F0C14B"  # для совместимости со старым кодом
-ACCENT_COLOR_HOVER = "#DDAF37"  # для совместимости со старым кодом
-PRIMARY_COLOR = "#F0C14B"  # темно оранжевый
-PRIMARY_COLOR_HOVER = "#DDAF37"  # темно оранжевый с небольшим засветлением
-
+ACCENT_COLOR = "#FFA500"  # для совместимости со старым кодом
+ACCENT_COLOR_HOVER = "#FFB347"  # для совместимости со старым кодом
 
 # Обновленный стиль акцентных кнопок
 ACCENT_BUTTON_STYLE = f"""
@@ -262,8 +141,6 @@ SIDEBAR_ICON_STYLE = """
         border-radius: 4px;
     }
 """
-
-# Добавьте эти константы в src/utils/style_constants.py
 
 # Улучшенный стиль для диалогов модулей
 MODULE_DIALOG_STYLE = """
@@ -348,8 +225,6 @@ FORM_GROUP_STYLE = """
         color: white;
     }
 """
-
-# Добавьте эти константы в src/utils/style_constants.py
 
 # Стиль для элементов ModuleItem
 MODULE_ITEM_STYLE = """
@@ -518,8 +393,34 @@ SETTINGS_BUTTON_STYLE = """
     }
 """
 
+# Стиль для темных кнопок с белой рамкой
+DARK_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #222222;
+        color: white;
+        border: 1px solid white;
+        border-radius: 2px;
+        padding: 5px 10px;
+        margin-bottom: 5px;
+    }
+    QPushButton:hover {
+        background-color: #333333;
+    }
+"""
+
+# Стиль для кнопок в таблице
+TABLE_ACTION_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #222222;
+        color: white;
+        border: 1px solid white;
+        border-radius: 2px;
+        padding: 4px 8px;
+    }
+    QPushButton:hover {
+        background-color: #333333;
+    }
+"""
+
 # Стиль для заголовка модуля активности
 ACTIVITY_MODULE_TITLE_STYLE = "color: #FFA500; font-size: 14px; font-weight: bold; margin-bottom: 8px;"
-
-# Полный стиль для диалогов (комбинация стилей)
-FULL_DIALOG_STYLE = DIALOG_STYLE + CHECKBOX_STYLE + TAB_AND_TABLE_STYLE + SCROLLBAR_STYLE + COMBOBOX_STYLE

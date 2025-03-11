@@ -17,9 +17,7 @@ from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog, TimeSle
 from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
 from src.gui.custom_widgets import ActivityModuleDialog, ModuleListItem
 from src.utils.resources import Resources
-from src.utils.style_constants import (
-    TITLE_STYLE, MAIN_FRAME_STYLE, TABLE_STYLE,
-    MODULE_BUTTON_STYLE, CREATE_BOT_STYLE
+from src.utils.style_constants import (MAIN_FRAME_STYLE, TABLE_STYLE, CREATE_BOT_STYLE,DARK_BUTTON_STYLE, TABLE_ACTION_BUTTON_STYLE
 )
 from src.utils.ui_factory import (
     create_title_label, create_accent_button, create_input_field,
@@ -96,6 +94,14 @@ class CreateBotPage(QWidget):
         # Add to data list
         self.modules_data.insert(0, ModuleListItem("Activity", description, data))
 
+    def create_bot_button(self, text, icon_path=None):
+        """Создает кнопку с темным фоном, белым текстом и белой рамкой"""
+        button = QPushButton(text)
+        if icon_path:
+            button.setIcon(QIcon(icon_path))
+        button.setStyleSheet(DARK_BUTTON_STYLE)
+        return button
+
     def add_action_buttons_to_row(self, row, module_type):
         """Создает и добавляет кнопки действий для указанной строки"""
         actions_widget = QWidget()
@@ -103,9 +109,9 @@ class CreateBotPage(QWidget):
         actions_layout.setContentsMargins(0, 0, 0, 0)
         actions_layout.setSpacing(2)
 
-        # Создаем кнопку редактирования
+        # Создаем кнопку редактирования с нужным стилем
         edit_btn = QPushButton("Изменить")
-        edit_btn.setStyleSheet(MODULE_BUTTON_STYLE)
+        edit_btn.setStyleSheet(TABLE_ACTION_BUTTON_STYLE)
 
         # Используем замыкание для сохранения текущего row
         def create_edit_callback(r):
@@ -158,12 +164,10 @@ class CreateBotPage(QWidget):
         title_layout.addStretch()  # Растягивающийся спейсер
 
         # Кнопки для сохранения/загрузки
-        self.btn_save = create_accent_button("Сохранить бота")
-        self.btn_save.setIcon(QIcon(Resources.get_icon_path("save")))
-        title_layout.addWidget(self.btn_save)
+        self.btn_save = self.create_bot_button("Сохранить бота", Resources.get_icon_path("save"))
+        self.btn_test = self.create_bot_button("Тест бота", Resources.get_icon_path("test"))
 
-        self.btn_test = create_accent_button("Тест бота")
-        self.btn_test.setIcon(QIcon(Resources.get_icon_path("test")))
+        title_layout.addWidget(self.btn_save)
         title_layout.addWidget(self.btn_test)
 
         main_layout.addLayout(title_layout)
@@ -212,24 +216,19 @@ class CreateBotPage(QWidget):
         modules_layout.addWidget(modules_title)
 
         # Создаем кнопки модулей с иконками
-        self.btn_add_click = create_accent_button("Добавить клик")
-        self.btn_add_click.setIcon(QIcon(Resources.get_icon_path("click-white")))
+        self.btn_add_click = self.create_bot_button("Добавить клик", Resources.get_icon_path("click-white"))
         modules_layout.addWidget(self.btn_add_click)
 
-        self.btn_add_swipe = create_accent_button("Добавить свайп")
-        self.btn_add_swipe.setIcon(QIcon(Resources.get_icon_path("swipe")))
+        self.btn_add_swipe = self.create_bot_button("Добавить свайп", Resources.get_icon_path("swipe"))
         modules_layout.addWidget(self.btn_add_swipe)
 
-        self.btn_add_image_search = create_accent_button("Поиск по картинке")
-        self.btn_add_image_search.setIcon(QIcon(Resources.get_icon_path("search")))
+        self.btn_add_image_search = self.create_bot_button("Поиск по картинке", Resources.get_icon_path("search"))
         modules_layout.addWidget(self.btn_add_image_search)
 
-        self.btn_add_time_sleep = create_accent_button("Добавить паузу")
-        self.btn_add_time_sleep.setIcon(QIcon(Resources.get_icon_path("pause-white")))
+        self.btn_add_time_sleep = self.create_bot_button("Добавить паузу", Resources.get_icon_path("pause-white"))
         modules_layout.addWidget(self.btn_add_time_sleep)
 
-        self.btn_add_activity = create_accent_button("Настройка Activity")
-        self.btn_add_activity.setIcon(QIcon(Resources.get_icon_path("activity")))
+        self.btn_add_activity = self.create_bot_button("Настройка Activity", Resources.get_icon_path("activity"))
         modules_layout.addWidget(self.btn_add_activity)
 
         modules_layout.addStretch()
@@ -263,14 +262,9 @@ class CreateBotPage(QWidget):
         # Кнопки для управления порядком модулей
         buttons_layout = QHBoxLayout()
 
-        self.btn_move_up = create_accent_button("Вверх")
-        self.btn_move_up.setIcon(QIcon(Resources.get_icon_path("up")))
-
-        self.btn_move_down = create_accent_button("Вниз")
-        self.btn_move_down.setIcon(QIcon(Resources.get_icon_path("down")))
-
-        self.btn_delete_module = create_accent_button("Удалить")
-        self.btn_delete_module.setIcon(QIcon(Resources.get_icon_path("delete")))
+        self.btn_move_up = self.create_bot_button("Вверх", Resources.get_icon_path("up"))
+        self.btn_move_down = self.create_bot_button("Вниз", Resources.get_icon_path("down"))
+        self.btn_delete_module = self.create_bot_button("Удалить", Resources.get_icon_path("delete"))
 
         buttons_layout.addWidget(self.btn_move_up)
         buttons_layout.addWidget(self.btn_move_down)
