@@ -282,3 +282,98 @@ def create_double_spinbox_without_buttons(min_val: float = 0.0, max_val: float =
     # Отключаем кнопки программно
     spinner.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
     return spinner
+
+
+def create_tool_button(text, tooltip, callback=None, icon_path=None):
+    """
+    Создает компактную кнопку инструмента с текстом и подсказкой.
+
+    Args:
+        text: Текст кнопки
+        tooltip: Подсказка при наведении мыши
+        callback: Функция обратного вызова (опционально)
+        icon_path: Путь к иконке (опционально)
+
+    Returns:
+        QToolButton: Стилизованная кнопка инструмента
+    """
+    from PyQt6.QtWidgets import QToolButton
+    from PyQt6.QtGui import QIcon
+    from src.utils.style_constants import TOOL_BUTTON_STYLE
+
+    button = QToolButton()
+    button.setText(text)
+    button.setToolTip(tooltip)
+
+    if icon_path:
+        button.setIcon(QIcon(icon_path))
+
+    if callback:
+        button.clicked.connect(callback)
+
+    button.setStyleSheet(TOOL_BUTTON_STYLE)
+
+    return button
+
+
+def create_text_label(text, style=None):
+    """
+    Создает текстовую метку с заданным стилем.
+
+    Args:
+        text: Текст метки
+        style: CSS-стиль (опционально)
+
+    Returns:
+        QLabel: Стилизованная метка
+    """
+    from PyQt6.QtWidgets import QLabel
+
+    label = QLabel(text)
+
+    if style:
+        label.setStyleSheet(style)
+
+    return label
+
+
+def create_command_button(text, tooltip, icon_path=None, callback=None):
+    """
+    Создает кнопку команды для панелей инструментов.
+
+    Args:
+        text: Текст кнопки
+        tooltip: Подсказка при наведении мыши
+        icon_path: Путь к иконке (опционально)
+        callback: Функция обратного вызова (опционально)
+
+    Returns:
+        QPushButton: Стилизованная кнопка команды
+    """
+    from PyQt6.QtWidgets import QPushButton
+    from PyQt6.QtGui import QIcon
+
+    button = QPushButton(text)
+    button.setToolTip(tooltip)
+
+    if icon_path:
+        button.setIcon(QIcon(icon_path))
+
+    if callback:
+        button.clicked.connect(callback)
+
+    button.setStyleSheet("""
+        QPushButton {
+            background-color: #333;
+            color: white;
+            border-radius: 3px;
+            padding: 3px 6px;
+            font-size: 11px;
+        }
+        QPushButton:hover {
+            background-color: #444;
+            border: 1px solid #FFA500;
+        }
+    """)
+
+    return button

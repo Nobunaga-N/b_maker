@@ -9,6 +9,14 @@ from PyQt6.QtGui import QFont, QIcon
 import json
 import os
 
+from src.utils.style_constants import (
+    TITLE_STYLE, MAIN_FRAME_STYLE, TABLE_STYLE, SETTINGS_BUTTON_STYLE
+)
+from src.utils.ui_factory import (
+    create_title_label, create_accent_button, create_input_field, create_delete_button
+)
+from src.utils.resources import Resources
+
 
 class SettingsPage(QWidget):
     """
@@ -30,22 +38,18 @@ class SettingsPage(QWidget):
         main_layout.setSpacing(15)
 
         # Заголовок
-        title_label = QLabel("Настройки приложения")
-        title_label.setStyleSheet("color: #FFA500;")
-        title_label.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
+        title_label = create_title_label("Настройки приложения", 18)
         main_layout.addWidget(title_label)
 
         # Раздел игр и активностей
         games_frame = QFrame()
-        games_frame.setStyleSheet("background-color: #1E1E1E; border: 1px solid #333; border-radius: 5px;")
+        games_frame.setStyleSheet(MAIN_FRAME_STYLE)
         games_layout = QVBoxLayout(games_frame)
         games_layout.setContentsMargins(15, 15, 15, 15)
         games_layout.setSpacing(10)
 
         # Подзаголовок раздела
-        section_title = QLabel("Игры и активности")
-        section_title.setStyleSheet("color: #FFA500;")
-        section_title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
+        section_title = create_title_label("Игры и активности", 14)
         games_layout.addWidget(section_title)
 
         # Пояснение
@@ -58,28 +62,9 @@ class SettingsPage(QWidget):
         # Форма добавления
         form_layout = QHBoxLayout()
 
-        self.game_input = QLineEdit()
-        self.game_input.setPlaceholderText("Название игры (например, Beast Lord)")
-        self.game_input.setStyleSheet("color: #FFFFFF; background-color: #2C2C2C; padding: 8px; border-radius: 4px;")
-
-        self.activity_input = QLineEdit()
-        self.activity_input.setPlaceholderText("Активность (например, com.allstarunion.beastlord)")
-        self.activity_input.setStyleSheet(
-            "color: #FFFFFF; background-color: #2C2C2C; padding: 8px; border-radius: 4px;")
-
-        self.add_button = QPushButton("Добавить")
-        self.add_button.setStyleSheet("""
-            QPushButton {
-                background-color: #FFA500;
-                color: #000;
-                border-radius: 4px;
-                padding: 8px 16px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #FFB347;
-            }
-        """)
+        self.game_input = create_input_field("Название игры (например, Beast Lord)")
+        self.activity_input = create_input_field("Активность (например, com.allstarunion.beastlord)")
+        self.add_button = create_accent_button("Добавить")
         self.add_button.clicked.connect(self.add_game_activity)
 
         form_layout.addWidget(self.game_input, stretch=2)
@@ -91,6 +76,7 @@ class SettingsPage(QWidget):
         # Таблица игр и активностей
         self.table = QTableWidget(0, 3)  # 0 строк, 3 столбца (игра, активность, кнопка удаления)
         self.table.setHorizontalHeaderLabels(["Игра", "Активность", ""])
+        self.table.setStyleSheet(TABLE_STYLE)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)
@@ -98,44 +84,12 @@ class SettingsPage(QWidget):
         self.table.setColumnWidth(2, 100)  # Ширина столбца с кнопкой
         self.table.verticalHeader().setVisible(False)
         self.table.setShowGrid(True)
-        self.table.setStyleSheet("""
-            QTableWidget {
-                background-color: #2C2C2C;
-                color: white;
-                border: 1px solid #444;
-                gridline-color: #444;
-            }
-            QHeaderView::section {
-                background-color: #333333;
-                color: #FFA500;
-                padding: 4px;
-                border: 1px solid #444;
-                font-weight: bold;
-            }
-            QTableWidget::item {
-                padding: 5px;
-            }
-            QTableWidget::item:selected {
-                background-color: #444;
-            }
-        """)
+
         games_layout.addWidget(self.table)
 
         # Кнопка Сохранить
-        self.save_button = QPushButton("Сохранить настройки")
-        self.save_button.setStyleSheet("""
-            QPushButton {
-                background-color: #FFA500;
-                color: #000;
-                border-radius: 4px;
-                padding: 10px;
-                font-weight: bold;
-                margin-top: 10px;
-            }
-            QPushButton:hover {
-                background-color: #FFB347;
-            }
-        """)
+        self.save_button = create_accent_button("Сохранить настройки")
+        self.save_button.setStyleSheet(SETTINGS_BUTTON_STYLE)
         self.save_button.clicked.connect(self.save_games_activities)
         games_layout.addWidget(self.save_button)
 
@@ -176,21 +130,8 @@ class SettingsPage(QWidget):
         self.table.setItem(row, 0, game_item)
         self.table.setItem(row, 1, activity_item)
 
-        # Кнопка удаления
-        delete_button = QPushButton("Удалить")
-        delete_button.setStyleSheet("""
-            QPushButton {
-                background-color: #FF4444;
-                color: #FFF;
-                border-radius: 4px;
-            }
-            QPushButton:hover {
-                background-color: #FF6666;
-            }
-        """)
-        delete_button.clicked.connect(lambda: self.delete_game_activity(row))
-
-        self.table.setCellWidget(row, 2, delete_button)
+        # Создаем кнопку удаления
+        self.add_delete_button_to_row(row)
 
         # Добавляем в словарь
         self.games_activities[game] = activity
@@ -201,8 +142,42 @@ class SettingsPage(QWidget):
 
         print(f"Добавлена игра: {game} с активностью: {activity}")
 
+    def add_delete_button_to_row(self, row):
+        """
+        Создает и добавляет кнопку удаления в указанную строку таблицы.
+        Использует замыкание для правильного захвата переменной row.
+        """
+        # Создаем виджет-контейнер для кнопки
+        button_container = QWidget()
+        button_layout = QHBoxLayout(button_container)
+        button_layout.setContentsMargins(0, 0, 0, 0)
+        button_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # Создаем кнопку удаления
+        delete_button = create_delete_button("Удалить")
+
+        # Важно: используем замыкание, чтобы сохранить текущий row для callback
+        def create_delete_callback(r):
+            return lambda: self.delete_game_activity(r)
+
+        # Создаем callback, который захватывает текущее значение row
+        delete_callback = create_delete_callback(row)
+        delete_button.clicked.connect(delete_callback)
+
+        # Добавляем кнопку в контейнер
+        button_layout.addWidget(delete_button)
+
+        # Добавляем контейнер в ячейку таблицы
+        self.table.setCellWidget(row, 2, button_container)
+
     def delete_game_activity(self, row):
-        """Удаляет запись из таблицы и словаря"""
+        """Удаляет запись из таблицы и словаря по индексу строки"""
+        # Проверяем, существует ли такая строка
+        if row < 0 or row >= self.table.rowCount():
+            print(f"Ошибка: строка {row} не существует")
+            return
+
+        # Получаем название игры для удаления из словаря
         game = self.table.item(row, 0).text()
 
         reply = QMessageBox.question(
@@ -212,10 +187,27 @@ class SettingsPage(QWidget):
         )
 
         if reply == QMessageBox.StandardButton.Yes:
+            # Удаляем строку из таблицы
             self.table.removeRow(row)
+
+            # Удаляем из словаря
             if game in self.games_activities:
                 del self.games_activities[game]
+
+            # Обновляем индексы колбэков для всех кнопок удаления
+            self.update_delete_buttons()
+
             print(f"Удалена игра: {game}")
+
+    def update_delete_buttons(self):
+        """
+        Обновляет индексы для всех кнопок удаления.
+        Вызывается после удаления строки из таблицы.
+        """
+        # Для каждой строки в таблице
+        for i in range(self.table.rowCount()):
+            # Создаем новую кнопку удаления с правильным индексом
+            self.add_delete_button_to_row(i)
 
     def save_games_activities(self):
         """Сохраняет игры и активности в JSON файл"""
@@ -231,7 +223,8 @@ class SettingsPage(QWidget):
             os.makedirs('config', exist_ok=True)
 
             # Сохраняем в JSON
-            with open('config/games_activities.json', 'w', encoding='utf-8') as f:
+            config_path = Resources.get_config_path("games_activities")
+            with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(self.games_activities, f, ensure_ascii=False, indent=4)
 
             QMessageBox.information(self, "Успех", "Настройки успешно сохранены!")
@@ -243,8 +236,9 @@ class SettingsPage(QWidget):
     def load_games_activities(self):
         """Загружает игры и активности из JSON файла"""
         try:
-            if os.path.exists('config/games_activities.json'):
-                with open('config/games_activities.json', 'r', encoding='utf-8') as f:
+            config_path = Resources.get_config_path("games_activities")
+            if os.path.exists(config_path):
+                with open(config_path, 'r', encoding='utf-8') as f:
                     self.games_activities = json.load(f)
 
                 # Заполняем таблицу
@@ -267,18 +261,5 @@ class SettingsPage(QWidget):
         self.table.setItem(row, 0, game_item)
         self.table.setItem(row, 1, activity_item)
 
-        # Кнопка удаления
-        delete_button = QPushButton("Удалить")
-        delete_button.setStyleSheet("""
-            QPushButton {
-                background-color: #FF4444;
-                color: #FFF;
-                border-radius: 4px;
-            }
-            QPushButton:hover {
-                background-color: #FF6666;
-            }
-        """)
-        delete_button.clicked.connect(lambda: self.delete_game_activity(row))
-
-        self.table.setCellWidget(row, 2, delete_button)
+        # Используем общий метод для добавления кнопки удаления
+        self.add_delete_button_to_row(row)

@@ -12,11 +12,20 @@ import os
 import json
 from typing import Dict, List, Any, Optional
 
+from src.utils.style_constants import (
+    MODULE_ITEM_STYLE, TOOL_BUTTON_STYLE, CANVAS_MODULE_STYLE,
+    ACTIVITY_CANVAS_STYLE, ACTIVITY_DIALOG_STYLE, ACTIVITY_MODULE_TITLE_STYLE,
+    MODULE_BUTTON_STYLE
+)
+from src.utils.ui_factory import (
+    create_tool_button, create_accent_button, create_group_box,
+    create_double_spinbox_without_buttons, create_text_label, create_spinbox_without_buttons
+)
+from src.utils.resources import Resources
 from src.gui.modules.canvas_module import CanvasModule, ModuleItem
 from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog
 from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
-from src.utils.style_constants import FULL_DIALOG_STYLE
-from src.utils.ui_factory import create_spinbox_without_buttons, create_double_spinbox_without_buttons
+
 
 class ModuleListItem:
     """
@@ -28,6 +37,7 @@ class ModuleListItem:
         self.module_type = module_type
         self.display_text = display_text
         self.data = data
+
 
 class ModuleItem(QFrame):
     """
@@ -49,45 +59,8 @@ class ModuleItem(QFrame):
 
     def setup_ui(self):
         """Настраивает интерфейс элемента модуля"""
-        # Улучшенный стиль для модуля
-        self.setStyleSheet("""
-            ModuleItem {
-                background-color: #2A2A2A;
-                border: 1px solid #444;
-                border-radius: 3px;
-                margin: 2px;
-            }
-            ModuleItem:hover {
-                border: 1px solid #FFA500;
-            }
-            QLabel {
-                color: white;
-                padding: 2px;
-            }
-            QToolButton {
-                background-color: transparent;
-                border: none;
-                color: white;
-                icon-size: 16px;
-                min-width: 20px;
-                max-width: 20px;
-                min-height: 20px;
-                max-height: 20px;
-                padding: 1px;
-            }
-            QToolButton:hover {
-                background-color: rgba(255, 165, 0, 0.2);
-                border-radius: 2px;
-            }
-            /* Стиль для тултипов */
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-                opacity: 200;
-            }
-        """)
+        # Применяем стиль из констант
+        self.setStyleSheet(MODULE_ITEM_STYLE)
 
         # Основной лейаут с уменьшенными отступами
         main_layout = QVBoxLayout(self)
@@ -99,7 +72,6 @@ class ModuleItem(QFrame):
         top_layout.setContentsMargins(0, 0, 0, 0)
         top_layout.setSpacing(2)
 
-        # Место для номера (будет добавлен позже)
         # Создаем номер модуля как атрибут для обновления
         self.number_label = QLabel(f"{self.index + 1}.")
         self.number_label.setStyleSheet("color: #FFA500; font-weight: bold; min-width: 20px;")
@@ -113,11 +85,14 @@ class ModuleItem(QFrame):
         top_layout.addStretch(1)  # Растягиваем пространство между типом и кнопками
 
         # Кнопки управления (компактные)
-        # Обратите внимание: передаем "self" для кнопок, чтобы иметь правильный контекст
-        self.move_up_btn = self._create_tool_button("↑", "Переместить вверх", self._move_up_requested)
-        self.move_down_btn = self._create_tool_button("↓", "Переместить вниз", self._move_down_requested)
-        self.edit_btn = self._create_tool_button("🖉", "Редактировать", self._edit_requested)
-        self.delete_btn = self._create_tool_button("✕", "Удалить", self._delete_requested)
+        self.move_up_btn = create_tool_button("↑", "Переместить вверх",
+                                              lambda: self._move_up_requested())
+        self.move_down_btn = create_tool_button("↓", "Переместить вниз",
+                                                lambda: self._move_down_requested())
+        self.edit_btn = create_tool_button("🖉", "Редактировать",
+                                           lambda: self._edit_requested())
+        self.delete_btn = create_tool_button("✕", "Удалить",
+                                             lambda: self._delete_requested())
 
         top_layout.addWidget(self.move_up_btn)
         top_layout.addWidget(self.move_down_btn)
@@ -132,14 +107,6 @@ class ModuleItem(QFrame):
         desc_label.setStyleSheet("font-size: 11px; color: #CCCCCC; margin-left: 4px;")
         desc_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         main_layout.addWidget(desc_label)
-
-    def _create_tool_button(self, text, tooltip, slot):
-        """Создает компактную кнопку с текстом и подсказкой"""
-        button = QToolButton()
-        button.setText(text)
-        button.setToolTip(tooltip)
-        button.clicked.connect(slot)
-        return button
 
     def _move_up_requested(self):
         """Вспомогательный метод для эмиссии сигнала moveUpRequested"""
@@ -179,22 +146,8 @@ class ActivityCanvasModule(CanvasModule):
 
     def __init__(self, parent=None):
         super().__init__("", parent)  # Убираем заголовок, т.к. он уже есть в диалоге
-        self.setStyleSheet("""
-            ActivityCanvasModule {
-                background-color: #252525;
-                border: 1px solid #444;
-                border-radius: 4px;
-            }
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-                opacity: 200;
-            }
-        """)
-        # Словарь для хранения удаленных модулей (чтобы избежать утечек памяти)
-        self.deleted_modules = {}
+        self.setStyleSheet(ACTIVITY_CANVAS_STYLE)
+        self.modules = []  # Список модулей на холсте
 
     def create_tool_buttons(self, layout):
         """Creates tool buttons for the activity canvas"""
@@ -204,19 +157,22 @@ class ActivityCanvasModule(CanvasModule):
         toolbar.setSpacing(4)
 
         # Группа 1: Основные команды
-        basic_group = QGroupBox("Основные команды")
-        basic_group.setStyleSheet("QGroupBox { color: #FFA500; }")
+        basic_group = create_group_box("Основные команды")
+        basic_group.setStyleSheet(basic_group.styleSheet() + "QGroupBox { color: #FFA500; }")
         basic_layout = QHBoxLayout(basic_group)
         basic_layout.setContentsMargins(4, 16, 4, 4)  # Увеличиваем верхний отступ для заголовка
         basic_layout.setSpacing(4)
 
         # Кнопки для первой группы
-        self.btn_close_game = self._create_tool_button("close.game", "Закрыть игру", "stop-red.svg",
-                                                       self.add_close_game_module)
-        self.btn_restart_emulator = self._create_tool_button("restart.emulator", "Перезапустить эмулятор",
-                                                             "activity-blue.svg", self.add_restart_emulator_module)
-        self.btn_start_game = self._create_tool_button("start.game", "Запустить игру",
-                                                       "continue-green.svg", self.add_start_game_module)
+        self.btn_close_game = self._create_command_button("close.game", "Закрыть игру",
+                                                          Resources.get_icon_path("stop-red"),
+                                                          self.add_close_game_module)
+        self.btn_restart_emulator = self._create_command_button("restart.emulator", "Перезапустить эмулятор",
+                                                                Resources.get_icon_path("activity-blue"),
+                                                                self.add_restart_emulator_module)
+        self.btn_start_game = self._create_command_button("start.game", "Запустить игру",
+                                                          Resources.get_icon_path("continue-green"),
+                                                          self.add_start_game_module)
 
         basic_layout.addWidget(self.btn_close_game)
         basic_layout.addWidget(self.btn_restart_emulator)
@@ -224,19 +180,22 @@ class ActivityCanvasModule(CanvasModule):
         toolbar.addWidget(basic_group)
 
         # Группа 2: Управление выполнением
-        flow_group = QGroupBox("Управление выполнением")
-        flow_group.setStyleSheet("QGroupBox { color: #FFA500; }")
+        flow_group = create_group_box("Управление выполнением")
+        flow_group.setStyleSheet(flow_group.styleSheet() + "QGroupBox { color: #FFA500; }")
         flow_layout = QHBoxLayout(flow_group)
         flow_layout.setContentsMargins(4, 16, 4, 4)  # Увеличиваем верхний отступ для заголовка
         flow_layout.setSpacing(4)
 
         # Кнопки для второй группы
-        self.btn_time_sleep = self._create_tool_button("time.sleep", "Пауза",
-                                                       "pause-pink.svg", self.add_time_sleep_module)
-        self.btn_restart_from = self._create_tool_button("restart.from", "Перезапуск с позиции",
-                                                         "activity-blue.svg", self.add_restart_from_module)
-        self.btn_restart_from_last = self._create_tool_button("restart.from.last", "Последняя позиция",
-                                                              "activity-orange.svg", self.add_restart_from_last_module)
+        self.btn_time_sleep = self._create_command_button("time.sleep", "Пауза",
+                                                          Resources.get_icon_path("pause-pink"),
+                                                          self.add_time_sleep_module)
+        self.btn_restart_from = self._create_command_button("restart.from", "Перезапуск с позиции",
+                                                            Resources.get_icon_path("activity-blue"),
+                                                            self.add_restart_from_module)
+        self.btn_restart_from_last = self._create_command_button("restart.from.last", "Последняя позиция",
+                                                                 Resources.get_icon_path("activity-orange"),
+                                                                 self.add_restart_from_last_module)
 
         flow_layout.addWidget(self.btn_time_sleep)
         flow_layout.addWidget(self.btn_restart_from)
@@ -244,19 +203,22 @@ class ActivityCanvasModule(CanvasModule):
         toolbar.addWidget(flow_group)
 
         # Группа 3: Действия
-        actions_group = QGroupBox("Действия")
-        actions_group.setStyleSheet("QGroupBox { color: #FFA500; }")
+        actions_group = create_group_box("Действия")
+        actions_group.setStyleSheet(actions_group.styleSheet() + "QGroupBox { color: #FFA500; }")
         actions_layout = QHBoxLayout(actions_group)
         actions_layout.setContentsMargins(4, 16, 4, 4)  # Увеличиваем верхний отступ для заголовка
         actions_layout.setSpacing(4)
 
         # Кнопки для третьей группы
-        self.btn_click = self._create_tool_button("Клик", "Клик по координатам",
-                                                  "click-ping.svg", self.add_click_module)
-        self.btn_swipe = self._create_tool_button("Свайп", "Свайп по координатам",
-                                                  "swipe-blue.svg", self.add_swipe_module)
-        self.btn_image_search = self._create_tool_button("Поиск", "Поиск по картинке",
-                                                         "search-orange.svg", self.add_image_search_module)
+        self.btn_click = self._create_command_button("Клик", "Клик по координатам",
+                                                     Resources.get_icon_path("click-ping"),
+                                                     self.add_click_module)
+        self.btn_swipe = self._create_command_button("Свайп", "Свайп по координатам",
+                                                     Resources.get_icon_path("swipe-blue"),
+                                                     self.add_swipe_module)
+        self.btn_image_search = self._create_command_button("Поиск", "Поиск по картинке",
+                                                            Resources.get_icon_path("search-orange"),
+                                                            self.add_image_search_module)
 
         actions_layout.addWidget(self.btn_click)
         actions_layout.addWidget(self.btn_swipe)
@@ -266,12 +228,12 @@ class ActivityCanvasModule(CanvasModule):
         # Добавляем toolbar в основной layout
         layout.addLayout(toolbar)
 
-    def _create_tool_button(self, text, tooltip, icon_name, slot):
+    def _create_command_button(self, text, tooltip, icon_path, slot):
         """Создает компактную кнопку для панели инструментов"""
         button = QPushButton(text)
         button.setToolTip(tooltip)
-        if icon_name:
-            button.setIcon(QIcon(f"assets/icons/{icon_name}"))
+        if icon_path:
+            button.setIcon(QIcon(icon_path))
         button.clicked.connect(slot)
         button.setStyleSheet("""
             QPushButton {
@@ -397,8 +359,6 @@ class ActivityCanvasModule(CanvasModule):
             if reply == QMessageBox.StandardButton.Yes:
                 # Удаляем из холста и списка
                 self.canvas_layout.removeWidget(module)
-                # Сохраняем в словаре удаленных модулей
-                self.deleted_modules[id(module)] = module
                 # Скрываем модуль
                 module.hide()
                 # Удаляем из списка модулей
@@ -418,346 +378,252 @@ class ActivityCanvasModule(CanvasModule):
             module_type = module.module_type
             data = module.get_data()
 
-            if module_type == "close.game":
+            # Выбор правильного диалога в зависимости от типа модуля
+            if module_type in ["close.game", "restart.emulator", "start.game", "restart.from.last"]:
                 # Для простых модулей без настроек просто сообщаем пользователю
-                QMessageBox.information(self, "Информация", "Модуль закрытия игры не имеет дополнительных настроек.")
+                QMessageBox.information(
+                    self,
+                    "Информация",
+                    f"Модуль {module_type} не имеет дополнительных настроек."
+                )
                 return
-            elif module_type == "restart.emulator":
-                QMessageBox.information(self, "Информация",
-                                        "Модуль перезапуска эмулятора не имеет дополнительных настроек.")
-                return
-            elif module_type == "start.game":
-                QMessageBox.information(self, "Информация", "Модуль запуска игры не имеет дополнительных настроек.")
-                return
-            elif module_type == "restart.from.last":
-                QMessageBox.information(self, "Информация",
-                                        "Модуль перезапуска с последней позиции не имеет дополнительных настроек.")
-                return
-
             elif module_type == "time.sleep":
-                dialog = QDialog(self)
-                dialog.setWindowTitle("Изменить паузу")
-                dialog.setModal(True)
-                dialog.resize(300, 120)
-                dialog.setStyleSheet("""
-                    QDialog {
-                        background-color: #2A2A2A;
-                    }
-                    QLabel {
-                        color: white;
-                    }
-                    QDoubleSpinBox {
-                        background-color: #333;
-                        color: white;
-                        border: 1px solid #555;
-                        border-radius: 3px;
-                    }
-                    QPushButton {
-                        background-color: #FFA500;
-                        color: black;
-                        border-radius: 3px;
-                        padding: 4px 8px;
-                    }
-                    QPushButton:hover {
-                        background-color: #FFB347;
-                    }
-                    QToolTip {
-                        background-color: #2A2A2A;
-                        color: white;
-                        border: 1px solid #FFA500;
-                        padding: 2px;
-                    }
-                """)
-
-                layout = QVBoxLayout(dialog)
-                layout.setContentsMargins(10, 10, 10, 10)
-                layout.setSpacing(6)
-
-                # Spinner for time
-                input_layout = QHBoxLayout()
-                time_label = QLabel("Время задержки (сек):")
-                time_spinner = QDoubleSpinBox()
-                time_spinner.setRange(0.1, 300.0)
-                time_spinner.setValue(data.get("time", 1.0))
-                time_spinner.setDecimals(1)
-                time_spinner.setSingleStep(0.1)
-                time_spinner.setSuffix(" сек")
-                time_spinner.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
-
-                input_layout.addWidget(time_label)
-                input_layout.addWidget(time_spinner)
-
-                layout.addLayout(input_layout)
-
-                # Buttons
-                buttons_layout = QHBoxLayout()
-                cancel_btn = QPushButton("Отмена")
-                ok_btn = QPushButton("ОК")
-
-                cancel_btn.clicked.connect(dialog.reject)
-                ok_btn.clicked.connect(dialog.accept)
-
-                buttons_layout.addWidget(cancel_btn)
-                buttons_layout.addWidget(ok_btn)
-                buttons_layout.setContentsMargins(0, 8, 0, 0)
-
-                layout.addLayout(buttons_layout)
-
-                if dialog.exec():
-                    time_value = time_spinner.value()
-                    description = f"Пауза {time_value} сек (time.sleep)"
-                    data["time"] = time_value
-
-                    module.description = description
-                    module.set_data(data)
-
-                    # Перерисовываем все модули
-                    self._redraw_modules()
-
-                    # Испускаем сигналы
-                    self.moduleEdited.emit(index, module_type, description, data)
-                    self.canvasChanged.emit()
-
+                self._edit_time_sleep_module(module, data)
             elif module_type == "restart.from":
-                dialog = QDialog(self)
-                dialog.setWindowTitle("Изменить перезапуск со строки")
-                dialog.setModal(True)
-                dialog.resize(300, 120)
-                dialog.setStyleSheet("""
-                    QDialog {
-                        background-color: #2A2A2A;
-                    }
-                    QLabel {
-                        color: white;
-                    }
-                    QSpinBox {
-                        background-color: #333;
-                        color: white;
-                        border: 1px solid #555;
-                        border-radius: 3px;
-                    }
-                    QPushButton {
-                        background-color: #FFA500;
-                        color: black;
-                        border-radius: 3px;
-                        padding: 4px 8px;
-                    }
-                    QPushButton:hover {
-                        background-color: #FFB347;
-                    }
-                    QToolTip {
-                        background-color: #2A2A2A;
-                        color: white;
-                        border: 1px solid #FFA500;
-                        padding: 2px;
-                    }
-                """)
-
-                layout = QVBoxLayout(dialog)
-                layout.setContentsMargins(10, 10, 10, 10)
-                layout.setSpacing(6)
-
-                # Spinner for line number
-                input_layout = QHBoxLayout()
-                line_label = QLabel("Номер строки:")
-                line_spinner = QSpinBox()
-                line_spinner.setRange(1, 999)
-                line_spinner.setValue(data.get("line", 1))
-                line_spinner.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-
-                input_layout.addWidget(line_label)
-                input_layout.addWidget(line_spinner)
-
-                layout.addLayout(input_layout)
-
-                # Buttons
-                buttons_layout = QHBoxLayout()
-                cancel_btn = QPushButton("Отмена")
-                ok_btn = QPushButton("ОК")
-
-                cancel_btn.clicked.connect(dialog.reject)
-                ok_btn.clicked.connect(dialog.accept)
-
-                buttons_layout.addWidget(cancel_btn)
-                buttons_layout.addWidget(ok_btn)
-                buttons_layout.setContentsMargins(0, 8, 0, 0)
-
-                layout.addLayout(buttons_layout)
-
-                if dialog.exec():
-                    line_number = line_spinner.value()
-                    description = f"Перезапуск со строки {line_number} (restart.from)"
-                    data["line"] = line_number
-
-                    module.description = description
-                    module.set_data(data)
-
-                    # Перерисовываем все модули
-                    self._redraw_modules()
-
-                    # Испускаем сигналы
-                    self.moduleEdited.emit(index, module_type, description, data)
-                    self.canvasChanged.emit()
-
+                self._edit_restart_from_module(module, data)
             elif module_type == "Клик":
-                dialog = ClickModuleDialog(self)
-                # Устанавливаем более компактный размер диалога
-                dialog.resize(380, 320)
-
-                # Применяем более компактный стиль
-                dialog.setStyleSheet(dialog.styleSheet() + """
-                    QDialog {
-                        background-color: #2A2A2A;
-                    }
-                    QGroupBox {
-                        margin-top: 8px;
-                        padding-top: 8px;
-                    }
-                    QSpinBox, QDoubleSpinBox {
-                        min-height: 20px;
-                        max-height: 24px;
-                    }
-                    QLineEdit {
-                        min-height: 20px;
-                        max-height: 24px;
-                    }
-                    QToolTip {
-                        background-color: #2A2A2A;
-                        color: white;
-                        border: 1px solid #FFA500;
-                        padding: 2px;
-                    }
-                """)
-
-                # Заполняем данными из существующего модуля
-                if isinstance(data.get("x"), (int, float)):
-                    dialog.x_input.setValue(int(data.get("x", 0)))
-                if isinstance(data.get("y"), (int, float)):
-                    dialog.y_input.setValue(int(data.get("y", 0)))
-                if data.get("description") is not None:
-                    dialog.description_input.setText(str(data.get("description", "")))
-                if data.get("console_description") is not None:
-                    dialog.console_description_input.setText(str(data.get("console_description", "")))
-                if isinstance(data.get("sleep"), (int, float)):
-                    dialog.sleep_input.setValue(float(data.get("sleep", 0.0)))
-
-                if dialog.exec():
-                    new_data = dialog.get_data()
-                    description = f"Клик по координатам ({new_data['x']}, {new_data['y']})"
-                    if new_data.get('description'):
-                        description += f" - {new_data['description']}"
-                    if new_data.get('sleep') > 0:
-                        description += f" с задержкой {new_data['sleep']} сек"
-
-                    # Обновляем данные и описание модуля
-                    module.description = description
-                    module.set_data(new_data)
-
-                    # Перерисовываем модули
-                    self._redraw_modules()
-
-                    # Испускаем сигналы
-                    self.moduleEdited.emit(index, module_type, description, new_data)
-                    self.canvasChanged.emit()
-
+                self._edit_click_module(module, data)
             elif module_type == "Свайп":
-                dialog = SwipeModuleDialog(self)
-                # Устанавливаем более компактный размер диалога
-                dialog.resize(380, 380)
-
-                # Применяем более компактный стиль
-                dialog.setStyleSheet(dialog.styleSheet() + """
-                    QDialog {
-                        background-color: #2A2A2A;
-                    }
-                    QGroupBox {
-                        margin-top: 8px;
-                        padding-top: 8px;
-                    }
-                    QSpinBox, QDoubleSpinBox {
-                        min-height: 20px;
-                        max-height: 24px;
-                    }
-                    QLineEdit {
-                        min-height: 20px;
-                        max-height: 24px;
-                    }
-                    QToolTip {
-                        background-color: #2A2A2A;
-                        color: white;
-                        border: 1px solid #FFA500;
-                        padding: 2px;
-                    }
-                """)
-
-                # Заполняем данными из существующего модуля
-                if isinstance(data.get("x1"), (int, float)):
-                    dialog.start_x_input.setValue(int(data.get("x1", 0)))
-                if isinstance(data.get("y1"), (int, float)):
-                    dialog.start_y_input.setValue(int(data.get("y1", 0)))
-                if isinstance(data.get("x2"), (int, float)):
-                    dialog.end_x_input.setValue(int(data.get("x2", 0)))
-                if isinstance(data.get("y2"), (int, float)):
-                    dialog.end_y_input.setValue(int(data.get("y2", 0)))
-                if data.get("description") is not None:
-                    dialog.description_input.setText(str(data.get("description", "")))
-                if data.get("console_description") is not None:
-                    dialog.console_description_input.setText(str(data.get("console_description", "")))
-                if isinstance(data.get("sleep"), (int, float)):
-                    dialog.sleep_input.setValue(float(data.get("sleep", 0.0)))
-
-                if dialog.exec():
-                    new_data = dialog.get_data()
-                    description = f"Свайп ({new_data['x1']}, {new_data['y1']}) → ({new_data['x2']}, {new_data['y2']})"
-                    if new_data.get('description'):
-                        description += f" - {new_data['description']}"
-                    if new_data.get('sleep') > 0:
-                        description += f" с задержкой {new_data['sleep']} сек"
-
-                    # Обновляем данные и описание модуля
-                    module.description = description
-                    module.set_data(new_data)
-
-                    # Перерисовываем модули
-                    self._redraw_modules()
-
-                    # Испускаем сигналы
-                    self.moduleEdited.emit(index, module_type, description, new_data)
-                    self.canvasChanged.emit()
-
+                self._edit_swipe_module(module, data)
             elif module_type == "Поиск картинки":
-                dialog = ImageSearchModuleDialog(self)
-                # Устанавливаем более компактный размер диалога
-                dialog.resize(800, 600)
-
-                # Применяем стиль с улучшенными тултипами
-                dialog.setStyleSheet(dialog.styleSheet() + """
-                    QToolTip {
-                        background-color: #2A2A2A;
-                        color: white;
-                        border: 1px solid #FFA500;
-                        padding: 2px;
-                    }
-                """)
-
-                if dialog.exec():
-                    new_data = dialog.get_data()
-                    images_str = ", ".join(new_data.get("images", []))
-                    description = f"Поиск изображений: {images_str} (таймаут: {new_data.get('timeout', 120)} сек)"
-
-                    # Обновляем данные и описание модуля
-                    module.description = description
-                    module.set_data(new_data)
-
-                    # Перерисовываем модули
-                    self._redraw_modules()
-
-                    # Испускаем сигналы
-                    self.moduleEdited.emit(index, module_type, description, new_data)
-                    self.canvasChanged.emit()
-
+                self._edit_image_search_module(module, data)
             else:
                 print(f"Редактирование модуля типа '{module_type}' не реализовано")
+
+    def _edit_time_sleep_module(self, module, data):
+        """Редактирует модуль паузы"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Изменить паузу")
+        dialog.setModal(True)
+        dialog.resize(300, 120)
+        dialog.setStyleSheet(ACTIVITY_DIALOG_STYLE)
+
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(6)
+
+        # Spinner for time
+        input_layout = QHBoxLayout()
+        time_label = QLabel("Время задержки (сек):")
+        time_spinner = create_double_spinbox_without_buttons(0.1, 300.0, data.get("time", 1.0), 1, " сек")
+
+        input_layout.addWidget(time_label)
+        input_layout.addWidget(time_spinner)
+        layout.addLayout(input_layout)
+
+        # Кнопки
+        buttons_layout = QHBoxLayout()
+        cancel_btn = QPushButton("Отмена")
+        ok_btn = QPushButton("ОК")
+
+        # Применяем стиль для кнопок
+        cancel_btn.setStyleSheet(MODULE_BUTTON_STYLE)
+        ok_btn.setStyleSheet(MODULE_BUTTON_STYLE)
+
+        cancel_btn.clicked.connect(dialog.reject)
+        ok_btn.clicked.connect(dialog.accept)
+
+        buttons_layout.addWidget(cancel_btn)
+        buttons_layout.addWidget(ok_btn)
+        buttons_layout.setContentsMargins(0, 8, 0, 0)
+
+        layout.addLayout(buttons_layout)
+
+        if dialog.exec():
+            time_value = time_spinner.value()
+            description = f"Пауза {time_value} сек (time.sleep)"
+            data["time"] = time_value
+
+            module.description = description
+            module.set_data(data)
+
+            # Перерисовываем все модули
+            self._redraw_modules()
+
+            # Испускаем сигналы
+            self.moduleEdited.emit(module.index, module.module_type, description, data)
+            self.canvasChanged.emit()
+
+    def _edit_restart_from_module(self, module, data):
+        """Редактирует модуль restart.from"""
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Изменить перезапуск со строки")
+        dialog.setModal(True)
+        dialog.resize(300, 120)
+        dialog.setStyleSheet(ACTIVITY_DIALOG_STYLE)
+
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSpacing(6)
+
+        # Спиннер для номера строки
+        input_layout = QHBoxLayout()
+        line_label = QLabel("Номер строки:")
+        line_spinner = create_spinbox_without_buttons(1, 999, data.get("line", 1))
+
+        input_layout.addWidget(line_label)
+        input_layout.addWidget(line_spinner)
+        layout.addLayout(input_layout)
+
+        # Кнопки
+        buttons_layout = QHBoxLayout()
+        cancel_btn = QPushButton("Отмена")
+        ok_btn = QPushButton("ОК")
+
+        # Применяем стиль для кнопок
+        cancel_btn.setStyleSheet(MODULE_BUTTON_STYLE)
+        ok_btn.setStyleSheet(MODULE_BUTTON_STYLE)
+
+        cancel_btn.clicked.connect(dialog.reject)
+        ok_btn.clicked.connect(dialog.accept)
+
+        buttons_layout.addWidget(cancel_btn)
+        buttons_layout.addWidget(ok_btn)
+        buttons_layout.setContentsMargins(0, 8, 0, 0)
+
+        layout.addLayout(buttons_layout)
+
+        if dialog.exec():
+            line_number = line_spinner.value()
+            description = f"Перезапуск со строки {line_number} (restart.from)"
+            data["line"] = line_number
+
+            module.description = description
+            module.set_data(data)
+
+            # Перерисовываем все модули
+            self._redraw_modules()
+
+            # Испускаем сигналы
+            self.moduleEdited.emit(module.index, module.module_type, description, data)
+            self.canvasChanged.emit()
+
+    def _edit_click_module(self, module, data):
+        """Редактирует модуль клика"""
+        dialog = ClickModuleDialog(self)
+        # Устанавливаем более компактный размер диалога
+        dialog.resize(380, 320)
+
+        # Применяем более компактный стиль
+        dialog.setStyleSheet(dialog.styleSheet() + """
+            QToolTip {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #FFA500;
+                padding: 2px;
+            }
+        """)
+
+        # Заполняем данными из существующего модуля
+        dialog.load_data(data)
+
+        if dialog.exec():
+            new_data = dialog.get_data()
+
+            # Формируем описание
+            description = f"Клик по координатам ({new_data['x']}, {new_data['y']})"
+            if new_data.get('description'):
+                description += f" - {new_data['description']}"
+            if new_data.get('sleep') > 0:
+                description += f" с задержкой {new_data['sleep']} сек"
+
+            # Обновляем данные и описание модуля
+            module.description = description
+            module.set_data(new_data)
+
+            # Перерисовываем модули
+            self._redraw_modules()
+
+            # Испускаем сигналы
+            self.moduleEdited.emit(module.index, module.module_type, description, new_data)
+            self.canvasChanged.emit()
+
+    def _edit_swipe_module(self, module, data):
+        """Редактирует модуль свайпа"""
+        dialog = SwipeModuleDialog(self)
+        # Устанавливаем более компактный размер диалога
+        dialog.resize(380, 380)
+
+        # Применяем более компактный стиль
+        dialog.setStyleSheet(dialog.styleSheet() + """
+            QToolTip {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #FFA500;
+                padding: 2px;
+            }
+        """)
+
+        # Заполняем данными из существующего модуля
+        dialog.load_data(data)
+
+        if dialog.exec():
+            new_data = dialog.get_data()
+
+            # Формируем описание
+            description = f"Свайп ({new_data['x1']}, {new_data['y1']}) → ({new_data['x2']}, {new_data['y2']})"
+            if new_data.get('description'):
+                description += f" - {new_data['description']}"
+            if new_data.get('sleep') > 0:
+                description += f" с задержкой {new_data['sleep']} сек"
+
+            # Обновляем данные и описание модуля
+            module.description = description
+            module.set_data(new_data)
+
+            # Перерисовываем модули
+            self._redraw_modules()
+
+            # Испускаем сигналы
+            self.moduleEdited.emit(module.index, module.module_type, description, new_data)
+            self.canvasChanged.emit()
+
+    def _edit_image_search_module(self, module, data):
+        """Редактирует модуль поиска картинки"""
+        dialog = ImageSearchModuleDialog(self)
+        # Устанавливаем размер диалога
+        dialog.resize(800, 600)
+
+        # Применяем стиль с улучшенными тултипами
+        dialog.setStyleSheet(dialog.styleSheet() + """
+            QToolTip {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #FFA500;
+                padding: 2px;
+            }
+        """)
+
+        # Загружаем данные модуля
+        dialog.load_data(data)
+
+        if dialog.exec():
+            new_data = dialog.get_data()
+
+            # Формируем описание модуля
+            images_str = ", ".join(new_data.get("images", []))
+            description = f"Поиск: {images_str} (таймаут: {new_data.get('timeout', 120)} сек)"
+
+            # Обновляем данные и описание модуля
+            module.description = description
+            module.set_data(new_data)
+
+            # Перерисовываем модули
+            self._redraw_modules()
+
+            # Испускаем сигналы
+            self.moduleEdited.emit(module.index, module.module_type, description, new_data)
+            self.canvasChanged.emit()
 
     def add_close_game_module(self):
         """Adds a close.game module to the canvas"""
@@ -783,35 +649,7 @@ class ActivityCanvasModule(CanvasModule):
         dialog.setWindowTitle("Добавить паузу")
         dialog.setModal(True)
         dialog.resize(300, 120)
-        dialog.setStyleSheet("""
-            QDialog {
-                background-color: #2A2A2A;
-            }
-            QLabel {
-                color: white;
-            }
-            QDoubleSpinBox {
-                background-color: #333;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 3px;
-            }
-            QPushButton {
-                background-color: #FFA500;
-                color: black;
-                border-radius: 3px;
-                padding: 4px 8px;
-            }
-            QPushButton:hover {
-                background-color: #FFB347;
-            }
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-            }
-        """)
+        dialog.setStyleSheet(ACTIVITY_DIALOG_STYLE)
 
         layout = QVBoxLayout(dialog)
         layout.setContentsMargins(10, 10, 10, 10)
@@ -820,23 +658,20 @@ class ActivityCanvasModule(CanvasModule):
         # Spinner for time
         input_layout = QHBoxLayout()
         time_label = QLabel("Время задержки (сек):")
-        time_spinner = QDoubleSpinBox()
-        time_spinner.setRange(0.1, 300.0)
-        time_spinner.setValue(1.0)
-        time_spinner.setDecimals(1)
-        time_spinner.setSingleStep(0.1)
-        time_spinner.setSuffix(" сек")
-        time_spinner.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)  # Отключаем кнопки
+        time_spinner = create_double_spinbox_without_buttons(0.1, 300.0, 1.0, 1, " сек")
 
         input_layout.addWidget(time_label)
         input_layout.addWidget(time_spinner)
-
         layout.addLayout(input_layout)
 
         # Buttons
         buttons_layout = QHBoxLayout()
         cancel_btn = QPushButton("Отмена")
         ok_btn = QPushButton("ОК")
+
+        # Применяем стиль для кнопок
+        cancel_btn.setStyleSheet(MODULE_BUTTON_STYLE)
+        ok_btn.setStyleSheet(MODULE_BUTTON_STYLE)
 
         cancel_btn.clicked.connect(dialog.reject)
         ok_btn.clicked.connect(dialog.accept)
@@ -859,35 +694,7 @@ class ActivityCanvasModule(CanvasModule):
         dialog.setWindowTitle("Перезапуск со строки")
         dialog.setModal(True)
         dialog.resize(300, 120)
-        dialog.setStyleSheet("""
-            QDialog {
-                background-color: #2A2A2A;
-            }
-            QLabel {
-                color: white;
-            }
-            QSpinBox {
-                background-color: #333;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 3px;
-            }
-            QPushButton {
-                background-color: #FFA500;
-                color: black;
-                border-radius: 3px;
-                padding: 4px 8px;
-            }
-            QPushButton:hover {
-                background-color: #FFB347;
-            }
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-            }
-        """)
+        dialog.setStyleSheet(ACTIVITY_DIALOG_STYLE)
 
         layout = QVBoxLayout(dialog)
         layout.setContentsMargins(10, 10, 10, 10)
@@ -896,20 +703,20 @@ class ActivityCanvasModule(CanvasModule):
         # Spinner for line number
         input_layout = QHBoxLayout()
         line_label = QLabel("Номер строки:")
-        line_spinner = QSpinBox()
-        line_spinner.setRange(1, 999)
-        line_spinner.setValue(1)
-        line_spinner.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)  # Отключаем кнопки
+        line_spinner = create_spinbox_without_buttons(1, 999, 1)
 
         input_layout.addWidget(line_label)
         input_layout.addWidget(line_spinner)
-
         layout.addLayout(input_layout)
 
         # Buttons
         buttons_layout = QHBoxLayout()
         cancel_btn = QPushButton("Отмена")
         ok_btn = QPushButton("ОК")
+
+        # Применяем стиль для кнопок
+        cancel_btn.setStyleSheet(MODULE_BUTTON_STYLE)
+        ok_btn.setStyleSheet(MODULE_BUTTON_STYLE)
 
         cancel_btn.clicked.connect(dialog.reject)
         ok_btn.clicked.connect(dialog.accept)
@@ -940,21 +747,6 @@ class ActivityCanvasModule(CanvasModule):
 
         # Применяем более компактный стиль и исправляем тултипы
         dialog.setStyleSheet(dialog.styleSheet() + """
-            QDialog {
-                background-color: #2A2A2A;
-            }
-            QGroupBox {
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-            QSpinBox, QDoubleSpinBox {
-                min-height: 20px;
-                max-height: 24px;
-            }
-            QLineEdit {
-                min-height: 20px;
-                max-height: 24px;
-            }
             QToolTip {
                 background-color: #2A2A2A;
                 color: white;
@@ -981,21 +773,6 @@ class ActivityCanvasModule(CanvasModule):
 
         # Применяем более компактный стиль и исправляем тултипы
         dialog.setStyleSheet(dialog.styleSheet() + """
-            QDialog {
-                background-color: #2A2A2A;
-            }
-            QGroupBox {
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-            QSpinBox, QDoubleSpinBox {
-                min-height: 20px;
-                max-height: 24px;
-            }
-            QLineEdit {
-                min-height: 20px;
-                max-height: 24px;
-            }
             QToolTip {
                 background-color: #2A2A2A;
                 color: white;
@@ -1039,32 +816,16 @@ class ActivityCanvasModule(CanvasModule):
 
             self.add_module("Поиск картинки", description, data)
 
-    # Очистка ресурсов при уничтожении объекта
-    def __del__(self):
-        """Безопасное освобождение ресурсов при уничтожении объекта"""
-        try:
-            # Проверяем, что словарь все еще существует
-            if hasattr(self, 'deleted_modules'):
-                # Очищаем словарь без вызова deleteLater()
-                self.deleted_modules.clear()
-        except Exception:
-            # Игнорируем любые исключения при уничтожении объекта
-            pass
-
     def clear(self):
         """Очищает холст безопасным способом"""
         # Удаляем модули с холста
         for module in self.modules:
             self.canvas_layout.removeWidget(module)
-            # Скрываем модуль вместо удаления
+            # Скрываем модуль
             module.hide()
 
         # Очищаем список модулей
         self.modules.clear()
-
-        # Очищаем словарь удаленных модулей для предотвращения утечек памяти
-        if hasattr(self, 'deleted_modules'):
-            self.deleted_modules.clear()
 
         # Испускаем сигнал об изменении холста
         self.canvasChanged.emit()
@@ -1094,82 +855,12 @@ class ActivityModuleDialog(QDialog):
         layout.setSpacing(8)  # Уменьшаем промежутки между элементами
 
         # Apply general style
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #202020;
-                color: white;
-            }
-            QLabel {
-                color: white;
-            }
-            QGroupBox {
-                font-weight: bold;
-                color: #FFA500;
-                border: 1px solid #555;
-                border-radius: 4px;
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 8px;
-                padding: 0 4px;
-            }
-            QLineEdit, QSpinBox, QDoubleSpinBox {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 3px;
-                padding: 4px;
-                selection-background-color: #FFA500;
-            }
-            QComboBox {
-                background-color: #2A2A2A;
-                color: white; /* Явное указание белого цвета текста */
-                border: 1px solid #555;
-                border-radius: 3px;
-                padding: 4px;
-                selection-background-color: #FFA500;
-            }
-            /* Стиль для выпадающего списка */
-            QComboBox QAbstractItemView {
-                background-color: #2A2A2A;
-                color: white; /* Явное указание белого цвета текста в выпадающем списке */
-                border: 1px solid #555;
-                selection-background-color: #FFA500;
-            }
-            QPushButton {
-                background-color: #FFA500;
-                color: black;
-                border-radius: 3px;
-                padding: 4px 8px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #FFB347;
-            }
-            QCheckBox {
-                color: white;
-                spacing: 5px;
-            }
-            QCheckBox::indicator {
-                width: 14px;
-                height: 14px;
-            }
-            /* Стиль для тултипов */
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-                opacity: 200;
-            }
-        """)
+        self.setStyleSheet(ACTIVITY_DIALOG_STYLE)
 
         # Заголовок
         title_label = QLabel("Настройка проверки активности игры")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title_label.setStyleSheet("color: #FFA500; font-size: 14px; font-weight: bold; margin-bottom: 8px;")
+        title_label.setStyleSheet(ACTIVITY_MODULE_TITLE_STYLE)
         layout.addWidget(title_label)
 
         # Создаем компоновку с разделением на две колонки
@@ -1179,35 +870,44 @@ class ActivityModuleDialog(QDialog):
         left_column = QVBoxLayout()
 
         # Параметры запуска - группа
-        launch_group = QGroupBox("Параметры запуска")
+        launch_group = create_group_box("Параметры запуска")
         launch_layout = QFormLayout(launch_group)  # Используем FormLayout для компактности
         launch_layout.setContentsMargins(8, 12, 8, 8)
         launch_layout.setSpacing(6)
 
         # Игра
         self.game_combo = QComboBox()
+        self.game_combo.setStyleSheet("""
+            QComboBox {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #555;
+                border-radius: 3px;
+                padding: 4px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #555;
+            }
+        """)
         self.game_combo.currentIndexChanged.connect(self.update_activity_info)
         launch_layout.addRow("Игра:", self.game_combo)
 
         # Активность
         self.activity_info = QLineEdit()
         self.activity_info.setReadOnly(True)
-        self.activity_info.setStyleSheet("background-color: #333; color: white;")  # Явно задаем цвет текста
+        self.activity_info.setStyleSheet("background-color: #333; color: white;")
         launch_layout.addRow("Активность:", self.activity_info)
 
         # Задержка
-        self.time_sleep_input = QDoubleSpinBox()
-        self.time_sleep_input.setRange(0.0, 300.0)
-        self.time_sleep_input.setValue(1.0)
-        self.time_sleep_input.setSingleStep(0.1)
-        self.time_sleep_input.setDecimals(1)
-        self.time_sleep_input.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
+        self.time_sleep_input = create_double_spinbox_without_buttons(0.0, 300.0, 1.0, 1, " сек")
         launch_layout.addRow("Задержка перед запуском (сек):", self.time_sleep_input)
 
         left_column.addWidget(launch_group)
 
         # Статус модуля - группа
-        status_group = QGroupBox("Статус модуля")
+        status_group = create_group_box("Статус модуля")
         status_layout = QVBoxLayout(status_group)
         status_layout.setContentsMargins(8, 12, 8, 8)
         status_layout.setSpacing(6)
@@ -1215,6 +915,16 @@ class ActivityModuleDialog(QDialog):
         # Включить проверку
         self.enable_check = QCheckBox("Включить постоянную проверку активности")
         self.enable_check.setChecked(True)
+        self.enable_check.setStyleSheet("""
+            QCheckBox {
+                color: white;
+                spacing: 5px;
+            }
+            QCheckBox::indicator {
+                width: 14px;
+                height: 14px;
+            }
+        """)
         status_layout.addWidget(self.enable_check)
 
         # Диапазон строк
@@ -1222,6 +932,13 @@ class ActivityModuleDialog(QDialog):
         line_range_label = QLabel("Диапазон строк:")
         self.line_range_input = QLineEdit()
         self.line_range_input.setPlaceholderText("Например: 1-50,60-100")
+        self.line_range_input.setStyleSheet("""
+            background-color: #2A2A2A;
+            color: white;
+            border: 1px solid #555;
+            border-radius: 3px;
+            padding: 4px;
+        """)
         line_range_layout.addWidget(line_range_label)
         line_range_layout.addWidget(self.line_range_input, 1)
         status_layout.addLayout(line_range_layout)
@@ -1229,7 +946,7 @@ class ActivityModuleDialog(QDialog):
         left_column.addWidget(status_group)
 
         # Действие при вылете игры
-        action_group = QGroupBox("Действие при вылете игры")
+        action_group = create_group_box("Действие при вылете игры")
         action_layout = QVBoxLayout(action_group)
         action_layout.setContentsMargins(8, 12, 8, 8)
         action_layout.setSpacing(6)
@@ -1238,6 +955,20 @@ class ActivityModuleDialog(QDialog):
         action_combo_layout = QHBoxLayout()
         action_label = QLabel("Действие:")
         self.action_combo = QComboBox()
+        self.action_combo.setStyleSheet("""
+            QComboBox {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #555;
+                border-radius: 3px;
+                padding: 4px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #555;
+            }
+        """)
         self.action_combo.addItems([
             "continue_bot - Перезапустить игру и продолжить",
             "activity.running.clear(0) - Закрыть эмулятор",
@@ -1258,8 +989,7 @@ class ActivityModuleDialog(QDialog):
         right_column = QVBoxLayout()
 
         # Canvas для continue_bot
-        right_label = QLabel("Редактор логики обработки вылета игры")
-        right_label.setStyleSheet("color: #FFA500; font-weight: bold;")
+        right_label = create_text_label("Редактор логики обработки вылета игры", "color: #FFA500; font-weight: bold;")
         right_column.addWidget(right_label)
 
         self.continue_canvas = ActivityCanvasModule(self)
@@ -1276,6 +1006,11 @@ class ActivityModuleDialog(QDialog):
         buttons_layout = QHBoxLayout()
         self.btn_cancel = QPushButton("Отмена")
         self.btn_confirm = QPushButton("Подтвердить")
+
+        # Применяем стиль для кнопок
+        self.btn_cancel.setStyleSheet(MODULE_BUTTON_STYLE)
+        self.btn_confirm.setStyleSheet(MODULE_BUTTON_STYLE)
+
         self.btn_cancel.clicked.connect(self.reject)
         self.btn_confirm.clicked.connect(self.accept)
         buttons_layout.addWidget(self.btn_cancel)

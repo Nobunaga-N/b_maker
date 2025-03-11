@@ -349,5 +349,177 @@ FORM_GROUP_STYLE = """
     }
 """
 
+# Добавьте эти константы в src/utils/style_constants.py
+
+# Стиль для элементов ModuleItem
+MODULE_ITEM_STYLE = """
+    ModuleItem {
+        background-color: #2A2A2A;
+        border: 1px solid #444;
+        border-radius: 3px;
+        margin: 2px;
+    }
+    ModuleItem:hover {
+        border: 1px solid #FFA500;
+    }
+    QLabel {
+        color: white;
+        padding: 2px;
+    }
+    QToolButton {
+        background-color: transparent;
+        border: none;
+        color: white;
+        icon-size: 16px;
+        min-width: 20px;
+        max-width: 20px;
+        min-height: 20px;
+        max-height: 20px;
+        padding: 1px;
+    }
+    QToolButton:hover {
+        background-color: rgba(255, 165, 0, 0.2);
+        border-radius: 2px;
+    }
+"""
+
+# Стиль для кнопок инструментов
+TOOL_BUTTON_STYLE = """
+    QToolButton {
+        background-color: transparent;
+        border: none;
+        color: white;
+        min-width: 20px;
+        max-width: 20px;
+        min-height: 20px;
+        max-height: 20px;
+    }
+    QToolButton:hover {
+        background-color: rgba(255, 165, 0, 0.2);
+        border-radius: 2px;
+    }
+"""
+
+# Стиль для холста модулей
+CANVAS_MODULE_STYLE = """
+    background-color: #252525;
+    border-radius: 3px;
+    border: 1px solid #444;
+"""
+
+# Стиль для холста модулей активности
+ACTIVITY_CANVAS_STYLE = """
+    background-color: #252525;
+    border-radius: 4px;
+    border: 1px solid #444;
+"""
+
+# Стиль для диалога активности
+ACTIVITY_DIALOG_STYLE = """
+    QDialog {
+        background-color: #2A2A2A;
+        color: white;
+    }
+    QLabel {
+        color: white;
+    }
+    QGroupBox {
+        font-weight: bold;
+        color: #FFA500;
+        border: 1px solid #555;
+        border-radius: 4px;
+        margin-top: 15px;
+        padding-top: 15px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 10px;
+        padding: 0 5px;
+    }
+    QLineEdit, QSpinBox, QDoubleSpinBox {
+        background-color: #333;
+        color: white;
+        border: 1px solid #555;
+        border-radius: 3px;
+    }
+    QComboBox {
+        background-color: #333;
+        color: white; 
+        border: 1px solid #555;
+        border-radius: 3px;
+        padding: 4px;
+    }
+    QPushButton {
+        background-color: #FFA500;
+        color: black;
+        border-radius: 3px;
+        padding: 5px 10px;
+        font-weight: bold;
+    }
+    QPushButton:hover {
+        background-color: #FFB347;
+    }
+    QCheckBox {
+        color: white;
+        spacing: 5px;
+    }
+    QCheckBox::indicator {
+        width: 14px;
+        height: 14px;
+    }
+    QToolTip {
+        background-color: #2A2A2A;
+        color: white;
+        border: 1px solid #FFA500;
+        padding: 2px;
+        opacity: 200;
+    }
+"""
+
+# Стиль для страницы создания бота
+CREATE_BOT_STYLE = """
+    QWidget#createBotPage {
+        background-color: #000000;
+    }
+"""
+
+# Стиль для таблицы (холста) модулей
+TABLE_STYLE = """
+    QTableWidget {
+        background-color: #2C2C2C;
+        color: white;
+        gridline-color: #444;
+        border: none;
+    }
+    QHeaderView::section {
+        background-color: #3A3A3A;
+        color: #FFA500;
+        padding: 5px;
+        border: 1px solid #444;
+    }
+    QTableWidget::item:selected {
+        background-color: #FFA500;
+        color: white;
+    }
+"""
+
+# Стиль для кнопки сохранения в настройках
+SETTINGS_BUTTON_STYLE = """
+    QPushButton {
+        background-color: #FFA500;
+        color: #000;
+        border-radius: 4px;
+        padding: 10px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+    QPushButton:hover {
+        background-color: #FFB347;
+    }
+"""
+
+# Стиль для заголовка модуля активности
+ACTIVITY_MODULE_TITLE_STYLE = "color: #FFA500; font-size: 14px; font-weight: bold; margin-bottom: 8px;"
+
 # Полный стиль для диалогов (комбинация стилей)
 FULL_DIALOG_STYLE = DIALOG_STYLE + CHECKBOX_STYLE + TAB_AND_TABLE_STYLE + SCROLLBAR_STYLE + COMBOBOX_STYLE
