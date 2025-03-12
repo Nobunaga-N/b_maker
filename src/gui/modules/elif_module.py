@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QMessag
 from src.utils.ui_factory import create_group_box
 from src.gui.modules.if_result_module import IfResultCanvas
 from src.gui.modules.script_block_base import ScriptBlockDialog
-
+from src.utils.style_constants import SCRIPT_SUBMODULE_CANVAS_STYLE
 
 class ElifModuleDialog(ScriptBlockDialog):
     """
@@ -50,12 +50,21 @@ class ElifModuleDialog(ScriptBlockDialog):
 
     def setup_canvas(self):
         """Создает холст для действий"""
+        # Создаем группу без отступов по бокам
         action_group = create_group_box("Дополнительные действия")
         action_layout = QVBoxLayout(action_group)
+        # Уменьшаем отступы группы, чтобы она имела такие же границы, как заголовок
+        action_layout.setContentsMargins(0, 16, 0, 0)  # Только верхний отступ для заголовка группы
 
         self.canvas = IfResultCanvas(self)
+        self.canvas.setStyleSheet(SCRIPT_SUBMODULE_CANVAS_STYLE)
+
+        # Настраиваем layout холста, убирая лишние отступы
+        self.canvas.setContentsMargins(0, 0, 0, 0)
         action_layout.addWidget(self.canvas)
 
+        # Убираем боковые отступы при добавлении группы в основной layout
+        self.layout.setContentsMargins(10, 10, 10, 10)  # Одинаковые отступы для всего диалога
         self.layout.addWidget(action_group)
 
     def get_data(self):

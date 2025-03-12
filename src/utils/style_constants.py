@@ -630,7 +630,8 @@ SCRIPT_SUBMODULE_CANVAS_STYLE = """
     background-color: #283A5A;
     border-radius: 4px;
     border: 1px solid #4C7BD9;
-    padding: 5px;
+    padding: 0;  /* Убираем внутренние отступы */
+    margin: 0;   /* Убираем внешние отступы */
 """
 
 # Стиль для элемента в холсте подмодуля
