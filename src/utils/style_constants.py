@@ -680,5 +680,102 @@ SCRIPT_SUBMODULE_BUTTON_STYLE = """
     }
 """
 
+# Стиль для компактных кнопок в табличном интерфейсе
+COMPACT_BUTTON_STYLE = """
+    QToolButton {
+        background-color: #FFA500;
+        border-radius: 4px;
+        padding: 2px;
+        min-width: 24px;
+        max-width: 24px;
+        min-height: 24px;
+        max-height: 24px;
+    }
+    QToolButton:hover {
+        background-color: #FFB347;
+    }
+"""
+
+# Стиль для компактных красных кнопок (Stop)
+COMPACT_STOP_BUTTON_STYLE = """
+    QToolButton {
+        background-color: #FF4444;
+        border-radius: 4px;
+        padding: 2px;
+        min-width: 24px;
+        max-width: 24px;
+        min-height: 24px;
+        max-height: 24px;
+    }
+    QToolButton:hover {
+        background-color: #FF6666;
+    }
+"""
+
+# Стиль для компактных синих кнопок (Console)
+COMPACT_CONSOLE_BUTTON_STYLE = """
+    QToolButton {
+        background-color: #4477FF;
+        border-radius: 4px;
+        padding: 2px;
+        min-width: 24px;
+        max-width: 24px;
+        min-height: 24px;
+        max-height: 24px;
+    }
+    QToolButton:hover {
+        background-color: #5588FF;
+    }
+"""
+
+# Стиль для настроечной панели
+SETTINGS_PANEL_STYLE = """
+    QFrame {
+        background-color: #2A2A2A;
+        border: 1px solid #444;
+        border-radius: 4px;
+        padding: 10px;
+    }
+"""
+
+# Стиль для панели инструментов в верхней части
+TOOLBAR_STYLE = """
+    QFrame {
+        background-color: #252525;
+        border-bottom: 1px solid #333;
+        padding: 4px;
+    }
+    QLabel {
+        color: white;
+        font-weight: bold;
+    }
+"""
+
+# Улучшенный стиль для древовидного представления
+TREE_VIEW_STYLE = """
+    QTreeView {
+        background-color: #2C2C2C;
+        color: white;
+        border: none;
+        outline: none;
+    }
+    QTreeView::item {
+        padding: 4px 0;
+    }
+    QTreeView::item:selected {
+        background-color: #3A6EA5;
+    }
+    QTreeView::branch:has-children:!has-siblings:closed,
+    QTreeView::branch:closed:has-children:has-siblings {
+        border-image: none;
+        image: url(assets/icons/expand.svg);
+    }
+    QTreeView::branch:open:has-children:!has-siblings,
+    QTreeView::branch:open:has-children:has-siblings {
+        border-image: none;
+        image: url(assets/icons/collapse.svg);
+    }
+"""
+
 # Стиль для заголовка модуля активности
 ACTIVITY_MODULE_TITLE_STYLE = "color: #FFA500; font-size: 14px; font-weight: bold; margin-bottom: 8px;"
