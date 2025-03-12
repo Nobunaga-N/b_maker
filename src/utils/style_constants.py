@@ -554,7 +554,7 @@ COMPACT_IMAGE_SETTINGS_STYLE = """
     }
 """
 
-# Стиль для диалогов скрипт-блоков с синей темой (заменит SCRIPT_DIALOG_STYLE)
+# Стиль для диалогов скрипт-блоков с синей темой
 SCRIPT_DIALOG_BLUE_STYLE = """
     QDialog {
         background-color: #1E2B3C;
