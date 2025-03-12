@@ -10,9 +10,9 @@ from typing import List, Dict, Any, Optional, Tuple
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QFrame, QSplitter,
-    QMessageBox, QFileDialog, QPushButton, QTreeWidgetItem
+    QMessageBox, QFileDialog, QPushButton, QDialog, QTreeWidgetItem
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
 from PyQt6.QtGui import QIcon, QFont, QColor, QBrush
 
 from src.utils.resources import Resources
@@ -60,8 +60,9 @@ class ManagerPage(QWidget):
         self.splitter.addWidget(self.manager_frame)
         self.splitter.addWidget(self.bots_frame)
 
-        # Устанавливаем начальные размеры
-        self.splitter.setSizes([800, 350])
+        # Устанавливаем начальные размеры для соотношения 2:1
+        # Список ботов должен занимать 1/3 пространства
+        self.splitter.setSizes([800, 400])
 
         # Добавляем разделитель на страницу
         main_layout.addWidget(self.splitter)
@@ -90,12 +91,15 @@ class ManagerPage(QWidget):
         # Кнопки управления
         self.btn_settings = create_accent_button("Настройки", Resources.get_icon_path("settings"))
         self.btn_settings.setToolTip("Настройки параметров выбранного бота")
+        self.btn_settings.setMinimumWidth(120)
 
         self.btn_start_queue = create_accent_button("Запустить", Resources.get_icon_path("play-all"))
         self.btn_start_queue.setToolTip("Запустить очередь ботов")
+        self.btn_start_queue.setMinimumWidth(120)
 
         self.btn_clear_queue = create_accent_button("Очистить", Resources.get_icon_path("clear-all"))
         self.btn_clear_queue.setToolTip("Очистить очередь ботов")
+        self.btn_clear_queue.setMinimumWidth(120)
 
         header_layout.addWidget(self.btn_settings)
         header_layout.addWidget(self.btn_start_queue)
@@ -423,6 +427,7 @@ class ManagerPage(QWidget):
             # Загружаем текущие параметры в диалог
             current_data = {
                 "scheduled_time": item.text(4),
+                "use_schedule": True,  # По умолчанию включаем, так как это уже запланированный бот
                 "cycles": int(item.text(5)) if item.text(5).isdigit() else 0,
                 "work_time": int(item.text(6)) if item.text(6).isdigit() else 0,
                 "threads": int(item.text(3)) if item.text(3).isdigit() else 1,
@@ -449,21 +454,8 @@ class ManagerPage(QWidget):
                 emu_list = self.controller.parse_emulators_string(new_data["emulators"])
 
                 # Создаём child-элементы (эмуляторы)
-                font = QFont("Segoe UI", 11)
                 for emu_id in emu_list:
-                    # [0="", 1="Эмулятор X", 2="off", 3="", 4="", 5="", 6=""]
-                    child = QTreeWidgetItem(["", f"Эмулятор {emu_id}", "off", "", "", "", ""])
-                    for col in range(self.queue_tree.columnCount()):
-                        child.setFont(col, font)
-                        child.setForeground(col, QBrush(QColor("white")))
-
-                    # Добавляем иконку для эмулятора
-                    child.setIcon(1, QIcon(Resources.get_icon_path("emulator")))
-
-                    item.addChild(child)
-
-                    # Добавляем данные для идентификации эмулятора при контекстном меню
-                    child.setData(0, Qt.ItemDataRole.UserRole, emu_id)
+                    self.queue_tree.add_emulator_to_bot(item, emu_id)
 
                 # Раскрываем узел для показа дочерних элементов
                 item.setExpanded(True)
