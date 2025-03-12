@@ -1,4 +1,5 @@
-# src/gui/dialogs/bot_settings_dialog.py
+# src/gui/dialogs/bot_settings_dialog.py - полное исправление
+
 """
 Модуль содержит класс диалога настроек бота.
 Позволяет настраивать параметры запуска бота: отложенный старт,
@@ -35,6 +36,25 @@ class BotSettingsDialog(QDialog):
         self.setStyleSheet(MODULE_DIALOG_STYLE)
         self.setup_ui()
 
+        # Устанавливаем начальный стиль для чекбокса
+        self.enable_schedule.setStyleSheet("""
+            QCheckBox {
+                color: white;
+                spacing: 5px;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                border: 1px solid #888;
+                border-radius: 3px;
+                background-color: #333;
+            }
+            QCheckBox::indicator:unchecked {
+                background-color: #333;
+                border: 1px solid #FFA500;
+            }
+        """)
+
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
         layout = QVBoxLayout(self)
@@ -44,7 +64,7 @@ class BotSettingsDialog(QDialog):
         form_layout = QFormLayout()
         form_layout.setVerticalSpacing(10)
 
-        # Группа планирования запуска
+        # Группа планирования запуска с улучшенным стилем
         schedule_group = QGroupBox("Планирование запуска")
         schedule_group.setStyleSheet("""
             QGroupBox {
@@ -64,15 +84,34 @@ class BotSettingsDialog(QDialog):
         """)
         schedule_layout = QVBoxLayout(schedule_group)
 
-        # Включение/выключение планирования
+        # Добавляем небольшую верхнюю прокладку для чекбокса
+        schedule_layout.setContentsMargins(8, 16, 8, 8)
+        schedule_layout.setSpacing(8)
+
+        # Включение/выключение планирования с улучшенной видимостью
         self.enable_schedule = QCheckBox("Использовать отложенный запуск")
         self.enable_schedule.setChecked(False)
+        # Стиль устанавливается в __init__ и toggle_schedule
         self.enable_schedule.toggled.connect(self.toggle_schedule)
         schedule_layout.addWidget(self.enable_schedule)
 
         # Контейнер для даты/времени
         self.schedule_container = QWidget()
+        self.schedule_container.setObjectName("scheduleContainer")
         schedule_container_layout = QFormLayout(self.schedule_container)
+        schedule_container_layout.setVerticalSpacing(8)
+
+        # Улучшенный внешний вид контейнера для даты/времени
+        self.schedule_container.setStyleSheet("""
+            #scheduleContainer {
+                background-color: #2A2A2A;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            QLabel {
+                color: white;
+            }
+        """)
 
         # Отложенный старт (дата и время)
         self.scheduled_time = QDateTimeEdit()
@@ -131,7 +170,11 @@ class BotSettingsDialog(QDialog):
                 padding: 2px;
             }
         """)
-        schedule_container_layout.addRow("Запланирован на:", self.scheduled_time)
+
+        # Улучшенный и более понятный текст метки
+        start_time_label = QLabel("Запланирован на:")
+        start_time_label.setStyleSheet("color: white; font-weight: bold;")
+        schedule_container_layout.addRow(start_time_label, self.scheduled_time)
 
         # Добавляем контейнер в группу планирования
         schedule_layout.addWidget(self.schedule_container)
@@ -245,10 +288,55 @@ class BotSettingsDialog(QDialog):
     def toggle_schedule(self, enabled):
         """Включает или выключает панель планирования"""
         self.schedule_container.setVisible(enabled)
+
+        # Обеспечиваем видимость чекбокса - изменяем его стилизацию
+        # Это решает проблему, когда чекбокс становится невидимым на черном фоне
+        if enabled:
+            # Стиль для включенного состояния
+            self.enable_schedule.setStyleSheet("""
+                QCheckBox {
+                    color: white;
+                    spacing: 5px;
+                    font-weight: bold;
+                }
+                QCheckBox::indicator {
+                    width: 16px;
+                    height: 16px;
+                    border: 1px solid #FFA500;
+                    border-radius: 3px;
+                    background-color: #444;
+                }
+                QCheckBox::indicator:checked {
+                    background-color: #FFA500;
+                    border: 1px solid white;
+                }
+            """)
+        else:
+            # Стиль для выключенного состояния - с более заметным индикатором
+            self.enable_schedule.setStyleSheet("""
+                QCheckBox {
+                    color: white;
+                    spacing: 5px;
+                }
+                QCheckBox::indicator {
+                    width: 16px;
+                    height: 16px;
+                    border: 1px solid #888;
+                    border-radius: 3px;
+                    background-color: #333;
+                }
+                QCheckBox::indicator:unchecked {
+                    background-color: #333;
+                    border: 1px solid #FFA500;
+                }
+            """)
+
         # Если панель стала видимой, обновляем время на текущее + 1 час
         if enabled:
             self.scheduled_time.setDateTime(QDateTime.currentDateTime().addSecs(3600))
-        self.adjustSize()  # Подгоняем размер диалога под содержимое
+
+        # Подгоняем размер диалога под содержимое
+        self.adjustSize()
 
     def get_data(self):
         """Возвращает данные, введенные пользователем"""
@@ -277,6 +365,7 @@ class BotSettingsDialog(QDialog):
         use_schedule = data.get("use_schedule", False)
         self.enable_schedule.setChecked(use_schedule)
         self.schedule_container.setVisible(use_schedule)
+        self.toggle_schedule(use_schedule)  # Это важно для применения правильного стиля чекбокса
 
         # Устанавливаем дату и время, если они есть
         if "scheduled_time" in data and data["scheduled_time"]:

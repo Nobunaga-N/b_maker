@@ -7,12 +7,13 @@
 from PyQt6.QtWidgets import (
     QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox, QAbstractItemView,
     QHeaderView, QPushButton, QHBoxLayout, QWidget, QVBoxLayout,
-    QToolButton, QLabel
+    QToolButton, QLabel, QFrame
 )
 from PyQt6.QtCore import Qt, QPoint, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont, QColor, QBrush, QKeyEvent
 
 from src.utils.resources import Resources
+from src.utils.style_constants import DARK_BUTTON_STYLE
 
 
 class ManagerQueueWidget(QTreeWidget):
@@ -184,57 +185,110 @@ class ManagerQueueWidget(QTreeWidget):
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
 
-        # После создания строк добавляем кнопки навигации
-        self.itemChanged.connect(self.on_item_changed)
+        # Добавляем навигационную панель внизу
+        self.setup_navigation_panel()
 
-    def add_bot_to_queue(self, bot_name, game_name, threads=1, scheduled_time=None):
+    def setup_navigation_panel(self):
         """
-        Добавляет нового бота в очередь.
-
-        Args:
-            bot_name: Имя бота
-            game_name: Имя игры
-            threads: Количество потоков (по умолчанию 1)
-            scheduled_time: Запланированное время запуска (по умолчанию текущее время + 1 час)
-
-        Returns:
-            QTreeWidgetItem: Созданный элемент бота
+        Создает и настраивает навигационную панель с кнопками перемещения вверх/вниз.
+        Эта панель размещается внизу виджета.
         """
-        from PyQt6.QtCore import QDateTime
+        # Родительский виджет ManagerQueueWidget использует QTreeWidget,
+        # который не поддерживает прямое добавление других виджетов
+        # Поэтому мы должны создать панель отдельно и добавить ее через родительский лейаут
+        if self.parent_window:
+            # Создаем рамку для навигационной панели
+            self.nav_panel = QFrame(self.parent_window)
+            self.nav_panel.setFrameShape(QFrame.Shape.StyledPanel)
+            self.nav_panel.setStyleSheet("""
+                QFrame {
+                    background-color: #252525;
+                    border-top: 1px solid #444;
+                    border-radius: 4px;
+                    margin-top: 5px;
+                }
+            """)
 
-        # Устанавливаем время запуска (по умолчанию текущее время + 1 час)
-        if scheduled_time is None:
-            next_hour = QDateTime.currentDateTime().addSecs(3600)
-            scheduled_time = next_hour.toString("dd.MM.yyyy HH:mm")
+            # Создаем лейаут для навигационной панели
+            nav_layout = QHBoxLayout(self.nav_panel)
+            nav_layout.setContentsMargins(5, 5, 5, 5)
+            nav_layout.setSpacing(5)
 
-        # Создаем элемент с данными бота
-        # [0=№, 1=Бот, 2=Игра, 3=Потоки, 4=Запланирован, 5=Циклы, 6=Время раб.]
-        index = self.topLevelItemCount() + 1
-        queue_item = QTreeWidgetItem([
-            str(index), bot_name, game_name, str(threads),
-            scheduled_time, "0", "0"
-        ])
+            # Создаем метку с подсказкой
+            nav_label = QLabel("Перемещение выбранного элемента:")
+            nav_label.setStyleSheet("color: white;")
+            nav_layout.addWidget(nav_label)
 
-        # Устанавливаем белый цвет и увеличенный шрифт
-        font = QFont("Segoe UI", 11, QFont.Weight.Bold)  # Bold для ботов
-        for col in range(self.columnCount()):
-            queue_item.setFont(col, font)
-            queue_item.setForeground(col, QBrush(QColor("white")))
+            # Создаем кнопки перемещения
+            self.btn_move_up = QPushButton("Вверх")
+            self.btn_move_up.setIcon(QIcon(Resources.get_icon_path("up")))
+            self.btn_move_up.setToolTip("Переместить выбранный элемент вверх")
+            self.btn_move_up.setStyleSheet(DARK_BUTTON_STYLE)
+            self.btn_move_up.clicked.connect(self.move_selected_item_up)
 
-        # Устанавливаем цвет фона для бота
-        for col in range(self.columnCount()):
-            queue_item.setBackground(col, QBrush(QColor("#3A3A3D")))
+            self.btn_move_down = QPushButton("Вниз")
+            self.btn_move_down.setIcon(QIcon(Resources.get_icon_path("down")))
+            self.btn_move_down.setToolTip("Переместить выбранный элемент вниз")
+            self.btn_move_down.setStyleSheet(DARK_BUTTON_STYLE)
+            self.btn_move_down.clicked.connect(self.move_selected_item_down)
 
-        # Добавляем элемент в дерево
-        self.addTopLevelItem(queue_item)
+            # Добавляем кнопки в лейаут
+            nav_layout.addWidget(self.btn_move_up)
+            nav_layout.addWidget(self.btn_move_down)
+            nav_layout.addStretch(1)  # Добавляем растяжку справа
 
-        # Добавляем кнопки навигации для бота
-        self.add_navigation_buttons_to_bot(queue_item)
+            # Находим родительский лейаут QTreeWidget и добавляем навигационную панель
+            if isinstance(self.parent_window.layout(), QVBoxLayout):
+                # Ищем индекс текущего виджета в родительском лейауте
+                for i in range(self.parent_window.layout().count()):
+                    if self.parent_window.layout().itemAt(i).widget() == self:
+                        # Добавляем навигационную панель после текущего виджета
+                        self.parent_window.layout().insertWidget(i + 1, self.nav_panel)
+                        break
 
-        # Добавляем контекстное меню
-        queue_item.setToolTip(0, "Нажмите правой кнопкой для управления ботом")
+    def move_selected_item_up(self):
+        """Перемещает выбранный элемент вверх"""
+        item = self.currentItem()
+        if not item:
+            QMessageBox.warning(self, "Внимание", "Выберите элемент для перемещения")
+            return
 
-        return queue_item
+        # Определяем, является ли элемент ботом или эмулятором
+        if item.parent() is None:
+            # Это бот (top-level item)
+            bot_idx = self.indexOfTopLevelItem(item)
+            if bot_idx > 0:  # Проверяем, не первый ли элемент
+                self.move_bot_up(bot_idx)
+        else:
+            # Это эмулятор (child item)
+            parent = item.parent()
+            emu_idx = parent.indexOfChild(item)
+            parent_idx = self.indexOfTopLevelItem(parent)
+
+            if emu_idx > 0:  # Проверяем, не первый ли эмулятор
+                self.move_emulator_up(parent_idx, emu_idx)
+
+    def move_selected_item_down(self):
+        """Перемещает выбранный элемент вниз"""
+        item = self.currentItem()
+        if not item:
+            QMessageBox.warning(self, "Внимание", "Выберите элемент для перемещения")
+            return
+
+        # Определяем, является ли элемент ботом или эмулятором
+        if item.parent() is None:
+            # Это бот (top-level item)
+            bot_idx = self.indexOfTopLevelItem(item)
+            if bot_idx < self.topLevelItemCount() - 1:  # Проверяем, не последний ли элемент
+                self.move_bot_down(bot_idx)
+        else:
+            # Это эмулятор (child item)
+            parent = item.parent()
+            emu_idx = parent.indexOfChild(item)
+            parent_idx = self.indexOfTopLevelItem(parent)
+
+            if emu_idx < parent.childCount() - 1:  # Проверяем, не последний ли эмулятор
+                self.move_emulator_down(parent_idx, emu_idx)
 
     def add_emulator_to_bot(self, parent_item, emu_id):
         """
@@ -268,9 +322,6 @@ class ManagerQueueWidget(QTreeWidget):
         # Добавляем данные для идентификации эмулятора при контекстном меню
         child.setData(0, Qt.ItemDataRole.UserRole, emu_id)
 
-        # Добавляем кнопки навигации для эмулятора
-        self.add_navigation_buttons_to_emulator(child)
-
         # Добавляем контекстное меню
         child.setToolTip(1, "Двойной клик для открытия консоли, правый клик для меню управления")
 
@@ -278,225 +329,6 @@ class ManagerQueueWidget(QTreeWidget):
         parent_item.setExpanded(True)
 
         return child
-
-    def add_navigation_buttons_to_bot(self, item):
-        """Добавляет кнопки навигации (вверх/вниз) к элементу бота"""
-        if not item or item.parent():  # Проверяем, что это бот (не эмулятор)
-            return
-
-        # Получаем индекс элемента
-        item_idx = self.indexOfTopLevelItem(item)
-
-        # Создаем виджет с кнопками
-        nav_widget = QWidget()
-        nav_layout = QHBoxLayout(nav_widget)
-        nav_layout.setContentsMargins(2, 2, 2, 2)
-        nav_layout.setSpacing(2)
-
-        # Кнопка "Вверх"
-        btn_up = QToolButton()
-        btn_up.setIcon(QIcon(Resources.get_icon_path("up")))
-        btn_up.setToolTip("Переместить бота вверх")
-        btn_up.setFixedSize(20, 20)
-        btn_up.setStyleSheet("""
-            QToolButton {
-                background-color: #3A6EA5;
-                border: none;
-                border-radius: 2px;
-            }
-            QToolButton:hover {
-                background-color: #4A7EB5;
-            }
-            QToolButton:disabled {
-                background-color: #555555;
-            }
-        """)
-
-        # Отключаем кнопку "Вверх" для первого элемента
-        btn_up.setEnabled(item_idx > 0)
-
-        # Кнопка "Вниз"
-        btn_down = QToolButton()
-        btn_down.setIcon(QIcon(Resources.get_icon_path("down")))
-        btn_down.setToolTip("Переместить бота вниз")
-        btn_down.setFixedSize(20, 20)
-        btn_down.setStyleSheet("""
-            QToolButton {
-                background-color: #3A6EA5;
-                border: none;
-                border-radius: 2px;
-            }
-            QToolButton:hover {
-                background-color: #4A7EB5;
-            }
-            QToolButton:disabled {
-                background-color: #555555;
-            }
-        """)
-
-        # Отключаем кнопку "Вниз" для последнего элемента
-        btn_down.setEnabled(item_idx < self.topLevelItemCount() - 1)
-
-        # Создаем замыкания для обработчиков событий с актуальным индексом
-        def create_move_up_callback(idx):
-            return lambda: self.move_bot_up(idx)
-
-        def create_move_down_callback(idx):
-            return lambda: self.move_bot_down(idx)
-
-        # Подключаем обработчики
-        btn_up.clicked.connect(create_move_up_callback(item_idx))
-        btn_down.clicked.connect(create_move_down_callback(item_idx))
-
-        # Добавляем кнопки в layout
-        nav_layout.addWidget(btn_up)
-        nav_layout.addWidget(btn_down)
-        nav_layout.addStretch()
-
-        # Устанавливаем виджет в последний столбец
-        self.setItemWidget(item, 6, nav_widget)
-
-    def add_navigation_buttons_to_emulator(self, item):
-        """Добавляет кнопки навигации (вверх/вниз) к элементу эмулятора"""
-        if not item or not item.parent():  # Проверяем, что это эмулятор (есть родитель)
-            return
-
-        parent = item.parent()
-
-        # Получаем индекс элемента среди дочерних элементов родителя
-        item_idx = parent.indexOfChild(item)
-
-        # Создаем виджет с кнопками
-        nav_widget = QWidget()
-        nav_layout = QHBoxLayout(nav_widget)
-        nav_layout.setContentsMargins(2, 2, 2, 2)
-        nav_layout.setSpacing(2)
-
-        # Кнопка "Вверх"
-        btn_up = QToolButton()
-        btn_up.setIcon(QIcon(Resources.get_icon_path("up")))
-        btn_up.setToolTip("Переместить эмулятор вверх")
-        btn_up.setFixedSize(20, 20)
-        btn_up.setStyleSheet("""
-            QToolButton {
-                background-color: #3A6EA5;
-                border: none;
-                border-radius: 2px;
-            }
-            QToolButton:hover {
-                background-color: #4A7EB5;
-            }
-            QToolButton:disabled {
-                background-color: #555555;
-            }
-        """)
-
-        # Отключаем кнопку "Вверх" для первого элемента
-        btn_up.setEnabled(item_idx > 0)
-
-        # Кнопка "Вниз"
-        btn_down = QToolButton()
-        btn_down.setIcon(QIcon(Resources.get_icon_path("down")))
-        btn_down.setToolTip("Переместить эмулятор вниз")
-        btn_down.setFixedSize(20, 20)
-        btn_down.setStyleSheet("""
-            QToolButton {
-                background-color: #3A6EA5;
-                border: none;
-                border-radius: 2px;
-            }
-            QToolButton:hover {
-                background-color: #4A7EB5;
-            }
-            QToolButton:disabled {
-                background-color: #555555;
-            }
-        """)
-
-        # Отключаем кнопку "Вниз" для последнего элемента
-        btn_down.setEnabled(item_idx < parent.childCount() - 1)
-
-        # Получаем индекс родительского элемента
-        parent_idx = self.indexOfTopLevelItem(parent)
-
-        # Создаем замыкания для обработчиков событий с актуальными индексами
-        def create_move_up_callback(parent_idx, idx):
-            return lambda: self.move_emulator_up(parent_idx, idx)
-
-        def create_move_down_callback(parent_idx, idx):
-            return lambda: self.move_emulator_down(parent_idx, idx)
-
-        # Подключаем обработчики
-        btn_up.clicked.connect(create_move_up_callback(parent_idx, item_idx))
-        btn_down.clicked.connect(create_move_down_callback(parent_idx, item_idx))
-
-        # Добавляем кнопки в layout
-        nav_layout.addWidget(btn_up)
-        nav_layout.addWidget(btn_down)
-        nav_layout.addStretch()
-
-        # Устанавливаем виджет в последний столбец
-        self.setItemWidget(item, 6, nav_widget)
-
-    def move_bot_up(self, bot_idx):
-        """Перемещает бота вверх по списку"""
-        if bot_idx <= 0 or bot_idx >= self.topLevelItemCount():
-            return
-
-        # Получаем элементы, которые нужно поменять местами
-        current_item = self.topLevelItem(bot_idx)
-        previous_item = self.topLevelItem(bot_idx - 1)
-
-        if not current_item or not previous_item:
-            return
-
-        # Удаляем элементы из дерева (но не удаляем сами объекты)
-        current_temp = self.takeTopLevelItem(bot_idx)
-        previous_temp = self.takeTopLevelItem(bot_idx - 1)
-
-        # Вставляем элементы обратно в дерево в нужном порядке
-        self.insertTopLevelItem(bot_idx - 1, current_temp)
-        self.insertTopLevelItem(bot_idx, previous_temp)
-
-        # Обновляем нумерацию и кнопки навигации
-        self._renumber_items()
-        self._update_navigation_buttons()
-
-        # Выделяем перемещенный элемент
-        self.setCurrentItem(current_temp)
-
-        # Испускаем сигнал о перемещении
-        self.botMoveUpRequested.emit(bot_idx)
-
-    def move_bot_down(self, bot_idx):
-        """Перемещает бота вниз по списку"""
-        if bot_idx < 0 or bot_idx >= self.topLevelItemCount() - 1:
-            return
-
-        # Получаем элементы, которые нужно поменять местами
-        current_item = self.topLevelItem(bot_idx)
-        next_item = self.topLevelItem(bot_idx + 1)
-
-        if not current_item or not next_item:
-            return
-
-        # Удаляем элементы из дерева (но не удаляем сами объекты)
-        next_temp = self.takeTopLevelItem(bot_idx + 1)
-        current_temp = self.takeTopLevelItem(bot_idx)
-
-        # Вставляем элементы обратно в дерево в нужном порядке
-        self.insertTopLevelItem(bot_idx, next_temp)
-        self.insertTopLevelItem(bot_idx + 1, current_temp)
-
-        # Обновляем нумерацию и кнопки навигации
-        self._renumber_items()
-        self._update_navigation_buttons()
-
-        # Выделяем перемещенный элемент
-        self.setCurrentItem(current_temp)
-
-        # Испускаем сигнал о перемещении
-        self.botMoveDownRequested.emit(bot_idx)
 
     def move_emulator_up(self, parent_idx, emu_idx):
         """Перемещает эмулятор вверх в пределах родительского бота"""
@@ -538,10 +370,6 @@ class ManagerQueueWidget(QTreeWidget):
 
         current_emu.setData(0, Qt.ItemDataRole.UserRole, previous_id)
         previous_emu.setData(0, Qt.ItemDataRole.UserRole, current_id)
-
-        # Обновляем кнопки навигации для всех эмуляторов
-        for i in range(parent_item.childCount()):
-            self.add_navigation_buttons_to_emulator(parent_item.child(i))
 
         # Восстанавливаем состояние раскрытия родителя
         parent_item.setExpanded(is_expanded)
@@ -591,24 +419,12 @@ class ManagerQueueWidget(QTreeWidget):
         current_emu.setData(0, Qt.ItemDataRole.UserRole, next_id)
         next_emu.setData(0, Qt.ItemDataRole.UserRole, current_id)
 
-        # Обновляем кнопки навигации для всех эмуляторов
-        for i in range(parent_item.childCount()):
-            self.add_navigation_buttons_to_emulator(parent_item.child(i))
-
         # Восстанавливаем состояние раскрытия родителя
         parent_item.setExpanded(is_expanded)
 
         # Испускаем сигнал о перемещении
         emu_id = current_id if current_id is not None else 0
         self.emulatorMoveDownRequested.emit(parent_idx, emu_id)
-
-    def on_item_changed(self, item, column):
-        """Обрабатывает изменение элемента (для добавления кнопок навигации)"""
-        # Проверяем, что это элемент верхнего уровня (бот)
-        if item.parent() is None:
-            self.add_navigation_buttons_to_bot(item)
-        else:
-            self.add_navigation_buttons_to_emulator(item)
 
     def _renumber_items(self):
         """
@@ -617,18 +433,6 @@ class ManagerQueueWidget(QTreeWidget):
         for i in range(self.topLevelItemCount()):
             it = self.topLevelItem(i)
             it.setText(0, str(i + 1))
-
-    def _update_navigation_buttons(self):
-        """Обновляет кнопки навигации для всех элементов"""
-        # Обновляем кнопки для ботов
-        for i in range(self.topLevelItemCount()):
-            bot_item = self.topLevelItem(i)
-            self.add_navigation_buttons_to_bot(bot_item)
-
-            # Обновляем кнопки для эмуляторов этого бота
-            for j in range(bot_item.childCount()):
-                emu_item = bot_item.child(j)
-                self.add_navigation_buttons_to_emulator(emu_item)
 
     def keyPressEvent(self, event: QKeyEvent):
         """
@@ -705,6 +509,110 @@ class ManagerQueueWidget(QTreeWidget):
             elif action == restart_action:
                 self.emulatorRestartRequested.emit(emu_id)
 
+    def add_bot_to_queue(self, bot_name, game_name, threads=1, scheduled_time=None):
+        """
+        Добавляет нового бота в очередь.
+
+        Args:
+            bot_name: Имя бота
+            game_name: Имя игры
+            threads: Количество потоков (по умолчанию 1)
+            scheduled_time: Запланированное время запуска (по умолчанию текущее время + 1 час)
+
+        Returns:
+            QTreeWidgetItem: Созданный элемент бота
+        """
+        from PyQt6.QtCore import QDateTime
+
+        # Устанавливаем время запуска (по умолчанию текущее время + 1 час)
+        if scheduled_time is None:
+            next_hour = QDateTime.currentDateTime().addSecs(3600)
+            scheduled_time = next_hour.toString("dd.MM.yyyy HH:mm")
+
+        # Создаем элемент с данными бота
+        # [0=№, 1=Бот, 2=Игра, 3=Потоки, 4=Запланирован, 5=Циклы, 6=Время раб.]
+        index = self.topLevelItemCount() + 1
+        queue_item = QTreeWidgetItem([
+            str(index), bot_name, game_name, str(threads),
+            scheduled_time, "0", "0"
+        ])
+
+        # Устанавливаем белый цвет и увеличенный шрифт
+        font = QFont("Segoe UI", 11, QFont.Weight.Bold)  # Bold для ботов
+        for col in range(self.columnCount()):
+            queue_item.setFont(col, font)
+            queue_item.setForeground(col, QBrush(QColor("white")))
+
+        # Устанавливаем цвет фона для бота
+        for col in range(self.columnCount()):
+            queue_item.setBackground(col, QBrush(QColor("#3A3A3D")))
+
+        # Добавляем элемент в дерево
+        self.addTopLevelItem(queue_item)
+
+        # Добавляем контекстное меню
+        queue_item.setToolTip(0, "Нажмите правой кнопкой для управления ботом")
+
+        return queue_item
+
+    def move_bot_up(self, bot_idx):
+        """Перемещает бота вверх по списку"""
+        if bot_idx <= 0 or bot_idx >= self.topLevelItemCount():
+            return
+
+        # Получаем элементы, которые нужно поменять местами
+        current_item = self.topLevelItem(bot_idx)
+        previous_item = self.topLevelItem(bot_idx - 1)
+
+        if not current_item or not previous_item:
+            return
+
+        # Удаляем элементы из дерева (но не удаляем сами объекты)
+        current_temp = self.takeTopLevelItem(bot_idx)
+        previous_temp = self.takeTopLevelItem(bot_idx - 1)
+
+        # Вставляем элементы обратно в дерево в нужном порядке
+        self.insertTopLevelItem(bot_idx - 1, current_temp)
+        self.insertTopLevelItem(bot_idx, previous_temp)
+
+        # Обновляем нумерацию
+        self._renumber_items()
+
+        # Выделяем перемещенный элемент
+        self.setCurrentItem(current_temp)
+
+        # Испускаем сигнал о перемещении
+        self.botMoveUpRequested.emit(bot_idx)
+
+    def move_bot_down(self, bot_idx):
+        """Перемещает бота вниз по списку"""
+        if bot_idx < 0 or bot_idx >= self.topLevelItemCount() - 1:
+            return
+
+        # Получаем элементы, которые нужно поменять местами
+        current_item = self.topLevelItem(bot_idx)
+        next_item = self.topLevelItem(bot_idx + 1)
+
+        if not current_item or not next_item:
+            return
+
+        # Удаляем элементы из дерева (но не удаляем сами объекты)
+        next_temp = self.takeTopLevelItem(bot_idx + 1)
+        current_temp = self.takeTopLevelItem(bot_idx)
+
+        # Вставляем элементы обратно в дерево в нужном порядке
+        self.insertTopLevelItem(bot_idx, next_temp)
+        self.insertTopLevelItem(bot_idx + 1, current_temp)
+
+        # Обновляем нумерацию
+        self._renumber_items()
+
+        # Выделяем перемещенный элемент
+        self.setCurrentItem(current_temp)
+
+        # Испускаем сигнал о перемещении
+        self.botMoveDownRequested.emit(bot_idx)
+
     def remove_selected_bot(self):
         """
         Удаляет выбранного бота из очереди.
@@ -728,7 +636,6 @@ class ManagerQueueWidget(QTreeWidget):
             if idx >= 0:
                 self.takeTopLevelItem(idx)
                 self._renumber_items()
-                self._update_navigation_buttons()
                 self.botStopRequested.emit(bot_name)
                 print(f"Бот {bot_name} удалён из очереди.")
 
