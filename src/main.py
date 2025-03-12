@@ -79,13 +79,24 @@ def main() -> None:
     if os.path.exists(icon_path):
         app.setWindowIcon(QIcon(icon_path))
 
+    # Применение глобального стиля для QToolTip
+    app.setStyleSheet("""
+        QToolTip {
+            background-color: #2A2A2A;
+            color: white;
+            border: 1px solid #FFA500;
+            padding: 2px;
+        }
+    """)
+
     # Загрузка стиля приложения
     style_path = Resources.get_style_path(DEFAULT_STYLE)
     if os.path.exists(style_path):
         logger.info(f"Загрузка стиля: {style_path}")
         with open(style_path, "r", encoding="utf-8") as f:
             qss = f.read()
-            app.setStyleSheet(qss)
+            # Добавляем к существующему стилю, чтобы сохранить стиль для QToolTip
+            app.setStyleSheet(app.styleSheet() + qss)
     else:
         logger.warning(f"Файл стилей не найден: {style_path}")
 

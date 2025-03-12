@@ -393,7 +393,6 @@ SETTINGS_BUTTON_STYLE = """
     }
 """
 
-# Стиль для темных кнопок с белой рамкой
 DARK_BUTTON_STYLE = """
     QPushButton {
         background-color: #222222;
@@ -401,10 +400,16 @@ DARK_BUTTON_STYLE = """
         border: 1px solid white;
         border-radius: 2px;
         padding: 5px 10px;
-        margin-bottom: 5px;
+        margin: 0px;  /* Убираем margin */
     }
     QPushButton:hover {
         background-color: #333333;
+    }
+    QToolTip {
+        background-color: #2A2A2A;
+        color: white;
+        border: 1px solid #FFA500;
+        padding: 2px;
     }
 """
 
@@ -774,6 +779,15 @@ TREE_VIEW_STYLE = """
     QTreeView::branch:open:has-children:has-siblings {
         border-image: none;
         image: url(assets/icons/collapse.svg);
+    }
+"""
+
+TOOLTIP_STYLE = """
+    QToolTip {
+        background-color: #2A2A2A;
+        color: white;
+        border: 1px solid #FFA500;
+        padding: 2px;
     }
 """
 

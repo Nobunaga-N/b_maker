@@ -16,7 +16,7 @@ from PyQt6.QtCore import Qt, pyqtSignal, QSize
 from PyQt6.QtGui import QIcon, QFont, QColor, QBrush
 
 from src.utils.resources import Resources
-from src.utils.style_constants import MAIN_FRAME_STYLE, DARK_BUTTON_STYLE
+from src.utils.style_constants import MAIN_FRAME_STYLE, DARK_BUTTON_STYLE, TOOLTIP_STYLE
 from src.utils.ui_factory import create_title_label, create_accent_button
 from src.gui.widgets import ManagerQueueWidget, BotListWidget
 from src.gui.dialogs import BotSettingsDialog
@@ -54,6 +54,8 @@ class ManagerPage(QWidget):
         # Создаем разделитель для возможности изменения размеров областей
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
 
+
+
         # Создаем фреймы для менеджера и списка ботов
         self.manager_frame = self._create_manager_frame()
         self.bots_frame = self._create_bots_frame()
@@ -80,6 +82,8 @@ class ManagerPage(QWidget):
         # Устанавливаем факторы растяжения
         self.splitter.setStretchFactor(0, 3)  # Менеджер (индекс 0) - фактор 3
         self.splitter.setStretchFactor(1, 1)  # Список ботов (индекс 1) - фактор 1
+
+        self.setStyleSheet(self.styleSheet() + TOOLTIP_STYLE)
 
         # Устанавливаем начальные размеры с более экстремальным соотношением (4:1)
         # для компенсации возможных отличий в минимальных размерах
@@ -208,11 +212,6 @@ class ManagerPage(QWidget):
         nav_layout.setContentsMargins(5, 5, 5, 5)
         nav_layout.setSpacing(5)
 
-        # Добавляем метку навигации
-        nav_label = QLabel("Перемещение выбранного элемента:")
-        nav_label.setStyleSheet("color: white;")
-        nav_layout.addWidget(nav_label)
-
         # Добавляем кнопки навигации
         self.btn_move_up = QPushButton("Вверх")
         self.btn_move_up.setIcon(QIcon(Resources.get_icon_path("up")))
@@ -246,84 +245,81 @@ class ManagerPage(QWidget):
         bots_layout.setContentsMargins(10, 10, 10, 10)
         bots_layout.setSpacing(5)
 
-        # Заголовок с кнопками управления
+        # Заголовок
         header_layout = QHBoxLayout()
         header_layout.setSpacing(5)
 
         bots_title = create_title_label("Список ботов", 14)  # Уменьшаем размер заголовка
         header_layout.addWidget(bots_title)
 
-        header_layout.addStretch(1)  # Растягиваем пространство между заголовком и кнопками
+        header_layout.addStretch(1)  # Растягиваем пространство между заголовком и кнопкой создания
 
         # Кнопка создания нового бота
-        self.btn_create_bot = create_accent_button("Создать", Resources.get_icon_path("add"))  # Меньше текста
+        self.btn_create_bot = create_accent_button("Создать", Resources.get_icon_path("add"))
         self.btn_create_bot.setToolTip("Создать нового бота")
-        self.btn_create_bot.setFixedWidth(90)  # Ограничиваем ширину кнопки
         header_layout.addWidget(self.btn_create_bot)
 
         bots_layout.addLayout(header_layout)
 
-        # Список ботов
+        # ---- Центральная часть с списком ботов и кнопками ----
+        content_layout = QVBoxLayout()
+        content_layout.setSpacing(0)  # Убираем промежутки
+        content_layout.setContentsMargins(0, 0, 0, 0)  # Убираем отступы
+
+        # Список ботов (занимает всю доступную высоту)
         self.bot_list = BotListWidget(self)
-        bots_layout.addWidget(self.bot_list, 1)  # Растягиваем по вертикали
+        content_layout.addWidget(self.bot_list, 1)  # 1 = растягивается
 
-        # Кнопки управления ботами (в горизонтальном ряду)
-        # Создаем более компактные кнопки
-        buttons_layout = QHBoxLayout()
-        buttons_layout.setSpacing(2)
+        # ---- Кнопки управления ----
+        # Создаем виджет для кнопок, чтобы они не растягивались с изменением размера окна
+        buttons_widget = QWidget()
+        buttons_layout = QVBoxLayout(buttons_widget)
+        buttons_layout.setContentsMargins(0, 5, 0, 0)  # Только верхний отступ
+        buttons_layout.setSpacing(5)  # Небольшие промежутки между кнопками
 
-        # Создаем кнопки для управления списком ботов
-        self.btn_edit_bot = QPushButton("")  # Только иконка, без текста
+        # Создаем полноценные кнопки с фиксированной высотой
+        self.btn_edit_bot = QPushButton("Редактировать")
         self.btn_edit_bot.setIcon(QIcon(Resources.get_icon_path("edit")))
         self.btn_edit_bot.setToolTip("Редактировать выбранного бота")
-        self.btn_edit_bot.setFixedSize(32, 32)  # Делаем кнопки квадратными и компактными
+        self.btn_edit_bot.setStyleSheet(DARK_BUTTON_STYLE)
+        self.btn_edit_bot.setFixedHeight(30)  # Фиксированная высота кнопки
 
-        self.btn_add_to_manager = QPushButton("")
+        self.btn_add_to_manager = QPushButton("В менеджер")
         self.btn_add_to_manager.setIcon(QIcon(Resources.get_icon_path("add-to-queue")))
         self.btn_add_to_manager.setToolTip("Добавить выбранного бота в менеджер")
-        self.btn_add_to_manager.setFixedSize(32, 32)
+        self.btn_add_to_manager.setStyleSheet(DARK_BUTTON_STYLE)
+        self.btn_add_to_manager.setFixedHeight(30)  # Фиксированная высота кнопки
 
-        self.btn_delete_bot = QPushButton("")
+        self.btn_delete_bot = QPushButton("Удалить")
         self.btn_delete_bot.setIcon(QIcon(Resources.get_icon_path("delete")))
         self.btn_delete_bot.setToolTip("Удалить выбранного бота")
-        self.btn_delete_bot.setFixedSize(32, 32)
+        self.btn_delete_bot.setStyleSheet(DARK_BUTTON_STYLE)
+        self.btn_delete_bot.setFixedHeight(30)  # Фиксированная высота кнопки
 
-        self.btn_export_bot = QPushButton("")
+        self.btn_export_bot = QPushButton("Экспорт")
         self.btn_export_bot.setIcon(QIcon(Resources.get_icon_path("export")))
         self.btn_export_bot.setToolTip("Экспортировать выбранного бота")
-        self.btn_export_bot.setFixedSize(32, 32)
+        self.btn_export_bot.setStyleSheet(DARK_BUTTON_STYLE)
+        self.btn_export_bot.setFixedHeight(30)  # Фиксированная высота кнопки
 
-        self.btn_import_bot = QPushButton("")
+        self.btn_import_bot = QPushButton("Импорт")
         self.btn_import_bot.setIcon(QIcon(Resources.get_icon_path("import")))
         self.btn_import_bot.setToolTip("Импортировать бота")
-        self.btn_import_bot.setFixedSize(32, 32)
+        self.btn_import_bot.setStyleSheet(DARK_BUTTON_STYLE)
+        self.btn_import_bot.setFixedHeight(30)  # Фиксированная высота кнопки
 
-        # Применяем стиль для иконок
-        button_style = """
-            QPushButton {
-                background-color: #333;
-                border: 1px solid #555;
-                border-radius: 3px;
-            }
-            QPushButton:hover {
-                background-color: #444;
-                border: 1px solid #FFA500;
-            }
-        """
-        self.btn_edit_bot.setStyleSheet(button_style)
-        self.btn_add_to_manager.setStyleSheet(button_style)
-        self.btn_delete_bot.setStyleSheet(button_style)
-        self.btn_export_bot.setStyleSheet(button_style)
-        self.btn_import_bot.setStyleSheet(button_style)
-
+        # Добавляем кнопки в вертикальный лейаут
         buttons_layout.addWidget(self.btn_edit_bot)
         buttons_layout.addWidget(self.btn_add_to_manager)
         buttons_layout.addWidget(self.btn_delete_bot)
         buttons_layout.addWidget(self.btn_export_bot)
         buttons_layout.addWidget(self.btn_import_bot)
-        buttons_layout.addStretch(1)  # Добавляем гибкий элемент для выравнивания
 
-        bots_layout.addLayout(buttons_layout)
+        # Добавляем виджет с кнопками в общий лейаут, но без растяжения
+        content_layout.addWidget(buttons_widget, 0)  # 0 = не растягивается
+
+        # Добавляем контент в основной лейаут
+        bots_layout.addLayout(content_layout, 1)  # 1 = растягивается
 
         return bots_frame
 
