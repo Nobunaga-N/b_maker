@@ -1,4 +1,4 @@
-# src/gui/dialogs/bot_settings_dialog.py - полное исправление
+# src/gui/dialogs/bot_settings_dialog.py
 
 """
 Модуль содержит класс диалога настроек бота.
@@ -7,14 +7,13 @@
 """
 
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QSpinBox, QFrame, QFormLayout, QPushButton, QDateTimeEdit,
-    QCheckBox, QGroupBox, QWidget
+    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDateTimeEdit,
+    QCheckBox, QGroupBox, QWidget, QFormLayout, QFrame
 )
-from PyQt6.QtCore import Qt, QDateTime, QTime, QDate
+from PyQt6.QtCore import Qt, QDateTime
 
 from src.utils.style_constants import (
-    BASE_DIALOG_STYLE, BASE_BUTTON_STYLE, COLOR_PRIMARY, COLOR_BG_DARK_3
+    COLOR_PRIMARY, COLOR_BG_DARK_3, COLOR_TEXT, BASE_BUTTON_STYLE, BASE_DIALOG_STYLE
 )
 from src.utils.ui_factory import (
     create_input_field, create_spinbox_without_buttons,
@@ -40,7 +39,7 @@ class BotSettingsDialog(QDialog):
         # Устанавливаем начальный стиль для чекбокса
         self.enable_schedule.setStyleSheet(f"""
             QCheckBox {{
-                color: white;
+                color: {COLOR_TEXT};
                 spacing: 5px;
             }}
             QCheckBox::indicator {{
@@ -87,15 +86,15 @@ class BotSettingsDialog(QDialog):
         schedule_container_layout.setVerticalSpacing(8)
 
         # Улучшенный внешний вид контейнера для даты/времени
-        self.schedule_container.setStyleSheet("""
-            #scheduleContainer {
-                background-color: #2A2A2A;
+        self.schedule_container.setStyleSheet(f"""
+            #scheduleContainer {{
+                background-color: {COLOR_BG_DARK_3};
                 border-radius: 4px;
                 padding: 4px;
-            }
-            QLabel {
-                color: white;
-            }
+            }}
+            QLabel {{
+                color: {COLOR_TEXT};
+            }}
         """)
 
         # Отложенный старт (дата и время)
@@ -103,62 +102,55 @@ class BotSettingsDialog(QDialog):
         self.scheduled_time.setDisplayFormat("dd.MM.yyyy HH:mm")
         self.scheduled_time.setDateTime(QDateTime.currentDateTime().addSecs(3600))  # По умолчанию +1 час
         self.scheduled_time.setCalendarPopup(True)
-        self.scheduled_time.setStyleSheet("""
-            QDateTimeEdit {
-                background-color: #3A3A3A;
-                color: white;
+        self.scheduled_time.setStyleSheet(f"""
+            QDateTimeEdit {{
+                background-color: {COLOR_BG_DARK_3};
+                color: {COLOR_TEXT};
                 border: 1px solid #555;
                 border-radius: 3px;
                 padding: 4px;
-            }
+            }}
             /* Стиль для календаря и связанных элементов */
-            QCalendarWidget {
+            QCalendarWidget {{
                 background-color: #2D2D30;
-                color: white;
-            }
-            QCalendarWidget QToolButton {
-                color: white;
+                color: {COLOR_TEXT};
+            }}
+            QCalendarWidget QToolButton {{
+                color: {COLOR_TEXT};
                 background-color: #3A3A3D;
                 border: 1px solid #505054;
                 border-radius: 3px;
-            }
-            QCalendarWidget QMenu {
-                color: white;
+            }}
+            QCalendarWidget QMenu {{
+                color: {COLOR_TEXT};
                 background-color: #2D2D30;
-            }
-            QCalendarWidget QSpinBox {
-                color: white;
+            }}
+            QCalendarWidget QSpinBox {{
+                color: {COLOR_TEXT};
                 background-color: #3A3A3D;
                 selection-background-color: #3A6EA5;
-                selection-color: white;
-            }
-            QCalendarWidget QTableView {
+                selection-color: {COLOR_TEXT};
+            }}
+            QCalendarWidget QTableView {{
                 alternate-background-color: #3E3E42;
-            }
-            QCalendarWidget QAbstractItemView:enabled {
-                color: white;
+            }}
+            QCalendarWidget QAbstractItemView:enabled {{
+                color: {COLOR_TEXT};
                 background-color: #2D2D30;
                 selection-background-color: #3A6EA5;
-                selection-color: white;
-            }
-            QCalendarWidget QAbstractItemView:disabled {
+                selection-color: {COLOR_TEXT};
+            }}
+            QCalendarWidget QAbstractItemView:disabled {{
                 color: #777777;
-            }
-            QCalendarWidget QWidget { 
+            }}
+            QCalendarWidget QWidget {{ 
                 background-color: #2D2D30;
-                color: white;
-            }
-            QToolTip {
-                background-color: #2D2D30;
-                color: white;
-                border: 1px solid #3E3E42;
-                padding: 2px;
-            }
+                color: {COLOR_TEXT};
+            }}
         """)
 
         # Улучшенный и более понятный текст метки
-        start_time_label = QLabel("Запланирован на:")
-        start_time_label.setStyleSheet("color: white; font-weight: bold;")
+        start_time_label = create_label("Запланирован на:", style="color: white; font-weight: bold;")
         schedule_container_layout.addRow(start_time_label, self.scheduled_time)
 
         # Добавляем контейнер в группу планирования
@@ -171,23 +163,7 @@ class BotSettingsDialog(QDialog):
         layout.addWidget(schedule_group)
 
         # Группа выполнения
-        execution_group = QGroupBox("Параметры выполнения")
-        execution_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                color: #FFA500;
-                border: 1px solid #444;
-                border-radius: 4px;
-                margin-top: 8px;
-                padding-top: 16px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 6px;
-                padding: 0 3px;
-                color: #FFA500;
-            }
-        """)
+        execution_group = create_group_box("Параметры выполнения")
         execution_layout = QFormLayout(execution_group)
 
         # Количество циклов
@@ -204,23 +180,7 @@ class BotSettingsDialog(QDialog):
         layout.addWidget(execution_group)
 
         # Группа эмуляторов
-        emulators_group = QGroupBox("Настройки эмуляторов")
-        emulators_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                color: #FFA500;
-                border: 1px solid #444;
-                border-radius: 4px;
-                margin-top: 8px;
-                padding-top: 16px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 6px;
-                padding: 0 3px;
-                color: #FFA500;
-            }
-        """)
+        emulators_group = create_group_box("Настройки эмуляторов")
         emulators_layout = QFormLayout(emulators_group)
 
         # Количество потоков
@@ -237,20 +197,20 @@ class BotSettingsDialog(QDialog):
         layout.addWidget(emulators_group)
 
         # Добавляем информационную подсказку по формату
-        info_label = QLabel(
+        info_label = create_label(
             "Формат списка эмуляторов: одиночные ID через запятую (например: 0,1,2), "
             "диапазоны через двоеточие (например: 0:3 для 0,1,2,3), "
-            "или их комбинации (например: 0:2,5,7:9)."
+            "или их комбинации (например: 0:2,5,7:9).",
+            style="color: #aaaaaa; font-size: 10px;"
         )
         info_label.setWordWrap(True)
-        info_label.setStyleSheet("color: #aaaaaa; font-size: 10px;")
         layout.addWidget(info_label)
 
         # Добавляем разделительную линию
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.HLine)
         separator.setFrameShadow(QFrame.Shadow.Sunken)
-        separator.setStyleSheet("background-color: #555;")
+        separator.setStyleSheet(f"background-color: #555;")
         layout.addWidget(separator)
 
         # Кнопки OK и Cancel
@@ -275,42 +235,42 @@ class BotSettingsDialog(QDialog):
         # Это решает проблему, когда чекбокс становится невидимым на черном фоне
         if enabled:
             # Стиль для включенного состояния
-            self.enable_schedule.setStyleSheet("""
-                QCheckBox {
-                    color: white;
+            self.enable_schedule.setStyleSheet(f"""
+                QCheckBox {{
+                    color: {COLOR_TEXT};
                     spacing: 5px;
                     font-weight: bold;
-                }
-                QCheckBox::indicator {
+                }}
+                QCheckBox::indicator {{
                     width: 16px;
                     height: 16px;
-                    border: 1px solid #FFA500;
+                    border: 1px solid {COLOR_PRIMARY};
                     border-radius: 3px;
                     background-color: #444;
-                }
-                QCheckBox::indicator:checked {
-                    background-color: #FFA500;
-                    border: 1px solid white;
-                }
+                }}
+                QCheckBox::indicator:checked {{
+                    background-color: {COLOR_PRIMARY};
+                    border: 1px solid {COLOR_TEXT};
+                }}
             """)
         else:
             # Стиль для выключенного состояния - с более заметным индикатором
-            self.enable_schedule.setStyleSheet("""
-                QCheckBox {
-                    color: white;
+            self.enable_schedule.setStyleSheet(f"""
+                QCheckBox {{
+                    color: {COLOR_TEXT};
                     spacing: 5px;
-                }
-                QCheckBox::indicator {
+                }}
+                QCheckBox::indicator {{
                     width: 16px;
                     height: 16px;
                     border: 1px solid #888;
                     border-radius: 3px;
-                    background-color: #333;
-                }
-                QCheckBox::indicator:unchecked {
-                    background-color: #333;
-                    border: 1px solid #FFA500;
-                }
+                    background-color: {COLOR_BG_DARK_3};
+                }}
+                QCheckBox::indicator:unchecked {{
+                    background-color: {COLOR_BG_DARK_3};
+                    border: 1px solid {COLOR_PRIMARY};
+                }}
             """)
 
         # Если панель стала видимой, обновляем время на текущее + 1 час
