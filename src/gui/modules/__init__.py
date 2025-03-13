@@ -6,9 +6,7 @@
 
 # Экспортируем основные классы для удобного импорта
 from src.gui.modules.canvas_module import CanvasModule, ModuleItem
-from src.gui.modules.if_result_module import IfResultCanvas, IfResultModuleDialog
-from src.gui.modules.elif_module import ElifModuleDialog
-from src.gui.modules.if_not_result_module import IfNotResultModuleDialog
+from src.gui.modules.condition_modules import IfResultModuleDialog, ElifModuleDialog, IfNotResultModuleDialog, IfResultCanvas
 from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
 
 # Определяем версию пакета

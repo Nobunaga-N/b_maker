@@ -15,9 +15,7 @@ from PyQt6.QtGui import QIcon
 import os
 from typing import Dict, List, Any, Optional
 
-from src.gui.modules.if_result_module import IfResultModuleDialog
-from src.gui.modules.elif_module import ElifModuleDialog
-from src.gui.modules.if_not_result_module import IfNotResultModuleDialog
+from src.gui.modules.condition_modules import IfResultModuleDialog, ElifModuleDialog, IfNotResultModuleDialog
 from src.utils.style_constants import (
     SCRIPT_CANVAS_STYLE, COMPACT_IMAGE_SETTINGS_STYLE,
     COLOR_BG_DARK_2, COLOR_TEXT, COLOR_PRIMARY, COLOR_BORDER, IMAGE_SEARCH_DIALOG_STYLE
