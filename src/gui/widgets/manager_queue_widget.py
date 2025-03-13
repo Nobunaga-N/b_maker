@@ -185,66 +185,16 @@ class ManagerQueueWidget(QTreeWidget):
         self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
 
-        # Добавляем навигационную панель внизу
-        self.setup_navigation_panel()
+        # Убрали вызов setup_navigation_panel(), так как эти кнопки уже есть в manager_page.py
+        # self.setup_navigation_panel()
 
+    # Оставляем метод setup_navigation_panel() для совместимости, но не вызываем его
     def setup_navigation_panel(self):
         """
         Создает и настраивает навигационную панель с кнопками перемещения вверх/вниз.
         Эта панель размещается внизу виджета.
         """
-        # Родительский виджет ManagerQueueWidget использует QTreeWidget,
-        # который не поддерживает прямое добавление других виджетов
-        # Поэтому мы должны создать панель отдельно и добавить ее через родительский лейаут
-        if self.parent_window:
-            # Создаем рамку для навигационной панели
-            self.nav_panel = QFrame(self.parent_window)
-            self.nav_panel.setFrameShape(QFrame.Shape.StyledPanel)
-            self.nav_panel.setStyleSheet("""
-                QFrame {
-                    background-color: #252525;
-                    border-top: 1px solid #444;
-                    border-radius: 4px;
-                    margin-top: 5px;
-                }
-            """)
-
-            # Создаем лейаут для навигационной панели
-            nav_layout = QHBoxLayout(self.nav_panel)
-            nav_layout.setContentsMargins(5, 5, 5, 5)
-            nav_layout.setSpacing(5)
-
-            # Создаем метку с подсказкой
-            nav_label = QLabel("Перемещение выбранного элемента:")
-            nav_label.setStyleSheet("color: white;")
-            nav_layout.addWidget(nav_label)
-
-            # Создаем кнопки перемещения
-            self.btn_move_up = QPushButton("Вверх")
-            self.btn_move_up.setIcon(QIcon(Resources.get_icon_path("up")))
-            self.btn_move_up.setToolTip("Переместить выбранный элемент вверх")
-            self.btn_move_up.setStyleSheet(DARK_BUTTON_STYLE)
-            self.btn_move_up.clicked.connect(self.move_selected_item_up)
-
-            self.btn_move_down = QPushButton("Вниз")
-            self.btn_move_down.setIcon(QIcon(Resources.get_icon_path("down")))
-            self.btn_move_down.setToolTip("Переместить выбранный элемент вниз")
-            self.btn_move_down.setStyleSheet(DARK_BUTTON_STYLE)
-            self.btn_move_down.clicked.connect(self.move_selected_item_down)
-
-            # Добавляем кнопки в лейаут
-            nav_layout.addWidget(self.btn_move_up)
-            nav_layout.addWidget(self.btn_move_down)
-            nav_layout.addStretch(1)  # Добавляем растяжку справа
-
-            # Находим родительский лейаут QTreeWidget и добавляем навигационную панель
-            if isinstance(self.parent_window.layout(), QVBoxLayout):
-                # Ищем индекс текущего виджета в родительском лейауте
-                for i in range(self.parent_window.layout().count()):
-                    if self.parent_window.layout().itemAt(i).widget() == self:
-                        # Добавляем навигационную панель после текущего виджета
-                        self.parent_window.layout().insertWidget(i + 1, self.nav_panel)
-                        break
+        pass  # Метод теперь ничего не делает, так как кнопки уже есть в manager_page.py
 
     def move_selected_item_up(self):
         """Перемещает выбранный элемент вверх"""
