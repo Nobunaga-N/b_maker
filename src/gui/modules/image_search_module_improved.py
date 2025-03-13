@@ -6,26 +6,25 @@
 
 from PyQt6.QtWidgets import (
     QDialog, QLabel, QVBoxLayout,QPushButton, QHBoxLayout, QTableWidget, QHeaderView,
-    QTableWidgetItem, QFileDialog, QMessageBox,
-    QWidget, QFrame, QSplitter, QScrollArea, QFormLayout
+    QTableWidgetItem, QMessageBox,
+    QWidget, QFrame, QScrollArea
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QIcon
+
 
 import os
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any
 
 from src.gui.modules.condition_modules import IfResultModuleDialog, ElifModuleDialog, IfNotResultModuleDialog
 from src.utils.style_constants import (
     SCRIPT_CANVAS_STYLE, COMPACT_IMAGE_SETTINGS_STYLE,
-    COLOR_BG_DARK_2, COLOR_TEXT, COLOR_PRIMARY, COLOR_BORDER, IMAGE_SEARCH_DIALOG_STYLE
+    IMAGE_SEARCH_DIALOG_STYLE
 )
-from src.utils.resources import Resources
 from src.utils.ui_factory import (
     create_script_button, create_group_box, create_input_field,
     create_spinbox_without_buttons, create_title_label,
     create_script_item_widget, add_script_item_buttons,
-    create_multiple_file_dialog, create_button, create_delete_button
+    create_multiple_file_dialog, create_delete_button
 )
 
 

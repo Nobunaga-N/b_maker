@@ -1,16 +1,14 @@
 # src/gui/create_bot_page.py
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
-    QComboBox, QFrame, QScrollArea, QTabWidget, QSplitter, QTableWidget,
-    QTableWidgetItem, QToolBar, QToolButton, QMessageBox, QFileDialog,
-    QHeaderView, QSpinBox, QDialog, QTextEdit, QCheckBox, QGroupBox, QDoubleSpinBox
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QComboBox, QSplitter, QTableWidget,
+    QTableWidgetItem, QMessageBox, QHeaderView
 )
-from PyQt6.QtCore import Qt, QSize, pyqtSignal
-from PyQt6.QtGui import QIcon, QFont, QColor, QAction, QBrush
+from PyQt6.QtCore import Qt, pyqtSignal
 
 import os
 import json
-from typing import Dict, List, Any, Optional
+from typing import Dict, Any
 
 from src.utils.file_manager import create_bot_environment
 from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog, TimeSleepModuleDialog
@@ -18,12 +16,11 @@ from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
 from src.gui.custom_widgets import ActivityModuleDialog, ModuleListItem
 from src.utils.resources import Resources
 from src.utils.style_constants import (
-    MAIN_FRAME_STYLE, BASE_TABLE_STYLE, CREATE_BOT_STYLE, DARK_BUTTON_STYLE
+    CREATE_BOT_STYLE
 )
 from src.utils.ui_factory import (
-    create_title_label, create_accent_button, create_dark_button,
-    create_input_field, create_frame, create_spinbox_without_buttons,
-    create_double_spinbox_without_buttons, create_group_box, create_table
+    create_title_label, create_dark_button,
+    create_input_field, create_frame, create_table
 )
 from src.utils.module_handler import ModuleHandler
 
@@ -96,10 +93,6 @@ class CreateBotPage(QWidget):
         # Add to data list
         self.modules_data.insert(0, ModuleListItem("Activity", description, data))
 
-    def create_bot_button(self, text, icon_path=None):
-        """Создает кнопку с темным фоном, белым текстом и белой рамкой"""
-        return create_dark_button(text, icon_path)
-
     def add_action_buttons_to_row(self, row, module_type):
         """Создает и добавляет кнопки действий для указанной строки"""
         actions_widget = QWidget()
@@ -161,8 +154,8 @@ class CreateBotPage(QWidget):
         title_layout.addStretch()  # Растягивающийся спейсер
 
         # Кнопки для сохранения/загрузки
-        self.btn_save = self.create_bot_button("Сохранить бота", Resources.get_icon_path("save"))
-        self.btn_test = self.create_bot_button("Тест бота", Resources.get_icon_path("test"))
+        self.btn_save = create_dark_button("Сохранить бота", Resources.get_icon_path("save"))
+        self.btn_test = create_dark_button("Тест бота", Resources.get_icon_path("test"))
 
         title_layout.addWidget(self.btn_save)
         title_layout.addWidget(self.btn_test)
@@ -171,8 +164,7 @@ class CreateBotPage(QWidget):
 
     def setup_bot_info(self, main_layout):
         """Настраивает поля для ввода информации о боте"""
-        bot_info_frame = QFrame()
-        bot_info_frame.setStyleSheet(MAIN_FRAME_STYLE)
+        bot_info_frame = create_frame()
         bot_info_layout = QHBoxLayout(bot_info_frame)
 
         # Название бота
@@ -189,11 +181,18 @@ class CreateBotPage(QWidget):
         game_label.setStyleSheet("color: white;")
         self.game_combo = QComboBox()
         self.game_combo.setStyleSheet("""
-            background-color: #2C2C2C; 
-            color: white; 
-            padding: 8px;
-            border: 1px solid #444;
-            border-radius: 4px;
+            QComboBox {
+                background-color: #2A2A2A; 
+                color: white; 
+                padding: 8px;
+                border: 1px solid #444;
+                border-radius: 4px;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2A2A2A;
+                color: white;
+                border: 1px solid #555;
+            }
         """)
         game_layout.addWidget(game_label)
         game_layout.addWidget(self.game_combo, 1)
@@ -212,19 +211,19 @@ class CreateBotPage(QWidget):
         modules_layout.addWidget(modules_title)
 
         # Создаем кнопки модулей с иконками
-        self.btn_add_click = self.create_bot_button("Добавить клик", Resources.get_icon_path("click-white"))
+        self.btn_add_click = create_dark_button("Добавить клик", Resources.get_icon_path("click-white"))
         modules_layout.addWidget(self.btn_add_click)
 
-        self.btn_add_swipe = self.create_bot_button("Добавить свайп", Resources.get_icon_path("swipe"))
+        self.btn_add_swipe = create_dark_button("Добавить свайп", Resources.get_icon_path("swipe"))
         modules_layout.addWidget(self.btn_add_swipe)
 
-        self.btn_add_image_search = self.create_bot_button("Поиск по картинке", Resources.get_icon_path("search"))
+        self.btn_add_image_search = create_dark_button("Поиск по картинке", Resources.get_icon_path("search"))
         modules_layout.addWidget(self.btn_add_image_search)
 
-        self.btn_add_time_sleep = self.create_bot_button("Добавить паузу", Resources.get_icon_path("pause-white"))
+        self.btn_add_time_sleep = create_dark_button("Добавить паузу", Resources.get_icon_path("pause-white"))
         modules_layout.addWidget(self.btn_add_time_sleep)
 
-        self.btn_add_activity = self.create_bot_button("Настройка Activity", Resources.get_icon_path("activity"))
+        self.btn_add_activity = create_dark_button("Настройка Activity", Resources.get_icon_path("activity"))
         modules_layout.addWidget(self.btn_add_activity)
 
         modules_layout.addStretch()
@@ -232,8 +231,7 @@ class CreateBotPage(QWidget):
 
     def setup_canvas_panel(self, splitter):
         """Настраивает холст с таблицей модулей"""
-        canvas_panel = QFrame()
-        canvas_panel.setStyleSheet(MAIN_FRAME_STYLE)
+        canvas_panel = create_frame()
         canvas_layout = QVBoxLayout(canvas_panel)
 
         canvas_title = create_title_label("Рабочий холст", 16)
@@ -256,9 +254,9 @@ class CreateBotPage(QWidget):
         # Кнопки для управления порядком модулей
         buttons_layout = QHBoxLayout()
 
-        self.btn_move_up = self.create_bot_button("Вверх", Resources.get_icon_path("up"))
-        self.btn_move_down = self.create_bot_button("Вниз", Resources.get_icon_path("down"))
-        self.btn_delete_module = self.create_bot_button("Удалить", Resources.get_icon_path("delete"))
+        self.btn_move_up = create_dark_button("Вверх", Resources.get_icon_path("up"))
+        self.btn_move_down = create_dark_button("Вниз", Resources.get_icon_path("down"))
+        self.btn_delete_module = create_dark_button("Удалить", Resources.get_icon_path("delete"))
 
         buttons_layout.addWidget(self.btn_move_up)
         buttons_layout.addWidget(self.btn_move_down)
@@ -296,7 +294,6 @@ class CreateBotPage(QWidget):
 
     def add_click_module(self):
         """Добавляет модуль клика в холст"""
-
         def callback(module_type, description, data):
             self.add_module_to_table(module_type, description, data)
 
@@ -308,7 +305,6 @@ class CreateBotPage(QWidget):
 
     def add_swipe_module(self):
         """Добавляет модуль свайпа в холст"""
-
         def callback(module_type, description, data):
             self.add_module_to_table(module_type, description, data)
 
@@ -320,7 +316,6 @@ class CreateBotPage(QWidget):
 
     def add_image_search_module(self):
         """Добавляет модуль поиска изображения в холст"""
-
         def callback(module_type, description, data):
             self.add_module_to_table("Поиск картинки", description, data)
 
@@ -332,7 +327,6 @@ class CreateBotPage(QWidget):
 
     def add_time_sleep_module(self):
         """Добавляет модуль time.sleep в холст"""
-
         def callback(module_type, description, data):
             self.add_module_to_table("Пауза", description, data)
 

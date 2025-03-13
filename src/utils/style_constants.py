@@ -918,6 +918,30 @@ MAIN_WINDOW_STYLE = f"""
     }}
 """
 
+# Дополнительные стили для manager_page.py
+MANAGER_TABLE_HEADER_STYLE = """
+    QHeaderView::section {
+        background-color: #333333;
+        color: #FFA500;
+        font-weight: bold;
+        font-size: 12px;
+        padding: 4px;
+    }
+"""
+
+MANAGER_QUEUE_STYLE = """
+    background-color: #2D2D30;
+    alternate-row-colors: true;
+    gridline-color: #444444;
+"""
+
+MANAGER_NAV_PANEL_STYLE = """
+    background-color: #252525;
+    border-top: 1px solid #444;
+    border-radius: 4px;
+    margin-top: 5px;
+"""
+
 # Стиль для заголовка модуля активности
 ACTIVITY_MODULE_TITLE_STYLE = f"color: {COLOR_PRIMARY}; font-size: 14px; {FONT_WEIGHT_BOLD} margin-bottom: 8px;"
 

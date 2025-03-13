@@ -5,14 +5,13 @@
 
 from PyQt6.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QSpinBox, QDoubleSpinBox,
-    QGroupBox, QFrame, QTableWidget, QHeaderView, QComboBox,
-    QCheckBox, QToolButton, QFileDialog
+    QGroupBox, QFrame, QTableWidget, QComboBox,
+    QToolButton, QFileDialog
 )
 from PyQt6.QtGui import QIcon, QFont
-from PyQt6.QtCore import Qt
+
 
 from src.utils.style_constants import (
-    COLOR_PRIMARY, COLOR_BG_DARK_2, COLOR_TEXT, COLOR_BORDER,
     TITLE_STYLE, BASE_BUTTON_STYLE, DARK_BUTTON_STYLE,
     DELETE_BUTTON_STYLE, TOOL_BUTTON_STYLE,
     BASE_INPUT_STYLE, BASE_SPINBOX_STYLE, MAIN_FRAME_STYLE,
