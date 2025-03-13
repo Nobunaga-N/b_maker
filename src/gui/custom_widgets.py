@@ -147,7 +147,6 @@ class ActivityCanvasModule(CanvasModule):
     def __init__(self, parent=None):
         super().__init__("", parent)  # Убираем заголовок, т.к. он уже есть в диалоге
         self.setStyleSheet(ACTIVITY_CANVAS_STYLE)
-        self.modules = []  # Список модулей на холсте
 
     def create_tool_buttons(self, layout):
         """Creates tool buttons for the activity canvas"""
@@ -241,31 +240,8 @@ class ActivityCanvasModule(CanvasModule):
 
     def add_module(self, module_type: str, description: str, data: dict = None):
         """Переопределяем метод для добавления нумерации модулей"""
-        # Используем количество модулей в качестве индекса для нового модуля
-        index = len(self.modules)
-
-        # Создаем более компактный ModuleItem с нумерацией
-        module_item = ModuleItem(index, module_type, description)
-
-        # Устанавливаем данные модуля
-        if data:
-            module_item.set_data(data)
-
-        # Подключаем сигналы
-        module_item.editRequested.connect(self.edit_module)
-        module_item.deleteRequested.connect(self.delete_module)
-        module_item.moveUpRequested.connect(self.move_module_up)
-        module_item.moveDownRequested.connect(self.move_module_down)
-
-        # Добавляем в список и на холст
-        self.modules.append(module_item)
-
-        # Вставляем перед растягивающимся элементом
-        self.canvas_layout.insertWidget(self.canvas_layout.count() - 1, module_item)
-
-        # Испускаем сигнал
-        self.moduleAdded.emit(module_type, description, data or {})
-        self.canvasChanged.emit()
+        # Вызываем родительский метод для добавления модуля
+        index = super().add_module(module_type, description, data)
 
         # Обновляем нумерацию всех модулей
         self._update_module_numbers()
@@ -280,340 +256,27 @@ class ActivityCanvasModule(CanvasModule):
 
     def _redraw_modules(self):
         """Переопределяем метод перерисовки для обновления нумерации"""
-        # Удаляем все виджеты с холста
-        for module in self.modules:
-            self.canvas_layout.removeWidget(module)
-
-        # Добавляем виджеты обратно в правильном порядке
-        for module in self.modules:
-            self.canvas_layout.insertWidget(self.canvas_layout.count() - 1, module)
+        # Вызываем родительский метод
+        super()._redraw_modules()
 
         # Обновляем нумерацию всех модулей
         self._update_module_numbers()
 
-    def move_module_up(self, index: int):
-        """Перемещает модуль вверх"""
-        # Проверяем, что индекс валидный и не первый элемент
-        if index <= 0 or index >= len(self.modules):
-            return
+    def clear(self):
+        """Очищает холст безопасным способом"""
+        # Удаляем все модули с холста
+        for module in self.modules:
+            self.canvas_layout.removeWidget(module)
+            # Скрываем модуль вместо удаления для безопасности
+            module.hide()
 
-        # Сохраняем модули, которые будем менять местами
-        current_module = self.modules[index]
-        previous_module = self.modules[index - 1]
-
-        # Меняем местами в списке модулей
-        self.modules[index] = previous_module
-        self.modules[index - 1] = current_module
-
-        # Перерисовываем все модули для отображения изменений
-        self._redraw_modules()
+        # Очищаем список модулей
+        self.modules.clear()
 
         # Испускаем сигнал об изменении холста
         self.canvasChanged.emit()
 
-    def move_module_down(self, index: int):
-        """Перемещает модуль вниз"""
-        # Проверяем, что индекс валидный и не последний элемент
-        if index < 0 or index >= len(self.modules) - 1:
-            return
-
-        # Сохраняем модули, которые будем менять местами
-        current_module = self.modules[index]
-        next_module = self.modules[index + 1]
-
-        # Меняем местами в списке модулей
-        self.modules[index] = next_module
-        self.modules[index + 1] = current_module
-
-        # Перерисовываем все модули для отображения изменений
-        self._redraw_modules()
-
-        # Испускаем сигнал об изменении холста
-        self.canvasChanged.emit()
-
-    def delete_module(self, index: int):
-        """Удаляет модуль с указанным индексом из холста"""
-        if 0 <= index < len(self.modules):
-            # Получаем виджет модуля
-            module = self.modules[index]
-
-            # Спрашиваем подтверждение
-            reply = QMessageBox.question(
-                self,
-                "Удаление модуля",
-                f"Вы уверены, что хотите удалить модуль '{module.module_type}'?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
-
-            if reply == QMessageBox.StandardButton.Yes:
-                # Удаляем из холста и списка
-                self.canvas_layout.removeWidget(module)
-                # Скрываем модуль
-                module.hide()
-                # Удаляем из списка модулей
-                self.modules.pop(index)
-
-                # Перерисовываем все модули, что также обновит нумерацию
-                self._redraw_modules()
-
-                # Испускаем сигнал об удалении
-                self.moduleDeleted.emit(index)
-                self.canvasChanged.emit()
-
-    def edit_module(self, index: int):
-        """Редактирует модуль на холсте"""
-        if 0 <= index < len(self.modules):
-            module = self.modules[index]
-            module_type = module.module_type
-            data = module.get_data()
-
-            # Выбор правильного диалога в зависимости от типа модуля
-            if module_type in ["close.game", "restart.emulator", "start.game", "restart.from.last"]:
-                # Для простых модулей без настроек просто сообщаем пользователю
-                QMessageBox.information(
-                    self,
-                    "Информация",
-                    f"Модуль {module_type} не имеет дополнительных настроек."
-                )
-                return
-            elif module_type == "time.sleep":
-                self._edit_time_sleep_module(module, data)
-            elif module_type == "restart.from":
-                self._edit_restart_from_module(module, data)
-            elif module_type == "Клик":
-                self._edit_click_module(module, data)
-            elif module_type == "Свайп":
-                self._edit_swipe_module(module, data)
-            elif module_type == "Поиск картинки":
-                self._edit_image_search_module(module, data)
-            else:
-                print(f"Редактирование модуля типа '{module_type}' не реализовано")
-
-    def _edit_time_sleep_module(self, module, data):
-        """Редактирует модуль паузы"""
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Изменить паузу")
-        dialog.setModal(True)
-        dialog.resize(300, 120)
-        dialog.setStyleSheet(ACTIVITY_DIALOG_STYLE)
-
-        layout = QVBoxLayout(dialog)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(6)
-
-        # Spinner for time
-        input_layout = QHBoxLayout()
-        time_label = QLabel("Время задержки (сек):")
-        time_spinner = create_double_spinbox_without_buttons(0.1, 300.0, data.get("time", 1.0), 1, " сек")
-
-        input_layout.addWidget(time_label)
-        input_layout.addWidget(time_spinner)
-        layout.addLayout(input_layout)
-
-        # Кнопки
-        buttons_layout = QHBoxLayout()
-        cancel_btn = QPushButton("Отмена")
-        ok_btn = QPushButton("ОК")
-
-        # Применяем стиль для кнопок
-        cancel_btn.setStyleSheet(MODULE_BUTTON_STYLE)
-        ok_btn.setStyleSheet(MODULE_BUTTON_STYLE)
-
-        cancel_btn.clicked.connect(dialog.reject)
-        ok_btn.clicked.connect(dialog.accept)
-
-        buttons_layout.addWidget(cancel_btn)
-        buttons_layout.addWidget(ok_btn)
-        buttons_layout.setContentsMargins(0, 8, 0, 0)
-
-        layout.addLayout(buttons_layout)
-
-        if dialog.exec():
-            time_value = time_spinner.value()
-            description = f"Пауза {time_value} сек (time.sleep)"
-            data["time"] = time_value
-
-            module.description = description
-            module.set_data(data)
-
-            # Перерисовываем все модули
-            self._redraw_modules()
-
-            # Испускаем сигналы
-            self.moduleEdited.emit(module.index, module.module_type, description, data)
-            self.canvasChanged.emit()
-
-    def _edit_restart_from_module(self, module, data):
-        """Редактирует модуль restart.from"""
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Изменить перезапуск со строки")
-        dialog.setModal(True)
-        dialog.resize(300, 120)
-        dialog.setStyleSheet(ACTIVITY_DIALOG_STYLE)
-
-        layout = QVBoxLayout(dialog)
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(6)
-
-        # Спиннер для номера строки
-        input_layout = QHBoxLayout()
-        line_label = QLabel("Номер строки:")
-        line_spinner = create_spinbox_without_buttons(1, 999, data.get("line", 1))
-
-        input_layout.addWidget(line_label)
-        input_layout.addWidget(line_spinner)
-        layout.addLayout(input_layout)
-
-        # Кнопки
-        buttons_layout = QHBoxLayout()
-        cancel_btn = QPushButton("Отмена")
-        ok_btn = QPushButton("ОК")
-
-        # Применяем стиль для кнопок
-        cancel_btn.setStyleSheet(MODULE_BUTTON_STYLE)
-        ok_btn.setStyleSheet(MODULE_BUTTON_STYLE)
-
-        cancel_btn.clicked.connect(dialog.reject)
-        ok_btn.clicked.connect(dialog.accept)
-
-        buttons_layout.addWidget(cancel_btn)
-        buttons_layout.addWidget(ok_btn)
-        buttons_layout.setContentsMargins(0, 8, 0, 0)
-
-        layout.addLayout(buttons_layout)
-
-        if dialog.exec():
-            line_number = line_spinner.value()
-            description = f"Перезапуск со строки {line_number} (restart.from)"
-            data["line"] = line_number
-
-            module.description = description
-            module.set_data(data)
-
-            # Перерисовываем все модули
-            self._redraw_modules()
-
-            # Испускаем сигналы
-            self.moduleEdited.emit(module.index, module.module_type, description, data)
-            self.canvasChanged.emit()
-
-    def _edit_click_module(self, module, data):
-        """Редактирует модуль клика"""
-        dialog = ClickModuleDialog(self)
-        # Устанавливаем более компактный размер диалога
-        dialog.resize(380, 320)
-
-        # Применяем более компактный стиль
-        dialog.setStyleSheet(dialog.styleSheet() + """
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-            }
-        """)
-
-        # Заполняем данными из существующего модуля
-        dialog.load_data(data)
-
-        if dialog.exec():
-            new_data = dialog.get_data()
-
-            # Формируем описание
-            description = f"Клик по координатам ({new_data['x']}, {new_data['y']})"
-            if new_data.get('description'):
-                description += f" - {new_data['description']}"
-            if new_data.get('sleep') > 0:
-                description += f" с задержкой {new_data['sleep']} сек"
-
-            # Обновляем данные и описание модуля
-            module.description = description
-            module.set_data(new_data)
-
-            # Перерисовываем модули
-            self._redraw_modules()
-
-            # Испускаем сигналы
-            self.moduleEdited.emit(module.index, module.module_type, description, new_data)
-            self.canvasChanged.emit()
-
-    def _edit_swipe_module(self, module, data):
-        """Редактирует модуль свайпа"""
-        dialog = SwipeModuleDialog(self)
-        # Устанавливаем более компактный размер диалога
-        dialog.resize(380, 380)
-
-        # Применяем более компактный стиль
-        dialog.setStyleSheet(dialog.styleSheet() + """
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-            }
-        """)
-
-        # Заполняем данными из существующего модуля
-        dialog.load_data(data)
-
-        if dialog.exec():
-            new_data = dialog.get_data()
-
-            # Формируем описание
-            description = f"Свайп ({new_data['x1']}, {new_data['y1']}) → ({new_data['x2']}, {new_data['y2']})"
-            if new_data.get('description'):
-                description += f" - {new_data['description']}"
-            if new_data.get('sleep') > 0:
-                description += f" с задержкой {new_data['sleep']} сек"
-
-            # Обновляем данные и описание модуля
-            module.description = description
-            module.set_data(new_data)
-
-            # Перерисовываем модули
-            self._redraw_modules()
-
-            # Испускаем сигналы
-            self.moduleEdited.emit(module.index, module.module_type, description, new_data)
-            self.canvasChanged.emit()
-
-    def _edit_image_search_module(self, module, data):
-        """Редактирует модуль поиска картинки"""
-        dialog = ImageSearchModuleDialog(self)
-        # Устанавливаем размер диалога
-        dialog.resize(800, 600)
-
-        # Применяем стиль с улучшенными тултипами
-        dialog.setStyleSheet(dialog.styleSheet() + """
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-            }
-        """)
-
-        # Загружаем данные модуля
-        dialog.load_data(data)
-
-        if dialog.exec():
-            new_data = dialog.get_data()
-
-            # Формируем описание модуля
-            images_str = ", ".join(new_data.get("images", []))
-            description = f"Поиск: {images_str} (таймаут: {new_data.get('timeout', 120)} сек)"
-
-            # Обновляем данные и описание модуля
-            module.description = description
-            module.set_data(new_data)
-
-            # Перерисовываем модули
-            self._redraw_modules()
-
-            # Испускаем сигналы
-            self.moduleEdited.emit(module.index, module.module_type, description, new_data)
-            self.canvasChanged.emit()
-
+    # Специализированные методы для добавления модулей - без изменений
     def add_close_game_module(self):
         """Adds a close.game module to the canvas"""
         description = "Закрыть игру (close.game)"
@@ -731,10 +394,8 @@ class ActivityCanvasModule(CanvasModule):
     def add_click_module(self):
         """Adds a click module to the canvas"""
         dialog = ClickModuleDialog(self)
-        # Устанавливаем более компактный размер диалога
         dialog.resize(380, 320)
 
-        # Применяем более компактный стиль и исправляем тултипы
         dialog.setStyleSheet(dialog.styleSheet() + """
             QToolTip {
                 background-color: #2A2A2A;
@@ -757,10 +418,8 @@ class ActivityCanvasModule(CanvasModule):
     def add_swipe_module(self):
         """Adds a swipe module to the canvas"""
         dialog = SwipeModuleDialog(self)
-        # Устанавливаем более компактный размер диалога
         dialog.resize(380, 380)
 
-        # Применяем более компактный стиль и исправляем тултипы
         dialog.setStyleSheet(dialog.styleSheet() + """
             QToolTip {
                 background-color: #2A2A2A;
@@ -783,10 +442,8 @@ class ActivityCanvasModule(CanvasModule):
     def add_image_search_module(self):
         """Adds an image search module to the canvas"""
         dialog = ImageSearchModuleDialog(self)
-        # Устанавливаем более компактный размер диалога
         dialog.resize(800, 600)
 
-        # Применяем стиль с исправленными тултипами
         dialog.setStyleSheet(dialog.styleSheet() + """
             QToolTip {
                 background-color: #2A2A2A;
@@ -798,26 +455,10 @@ class ActivityCanvasModule(CanvasModule):
 
         if dialog.exec():
             data = dialog.get_data()
-
-            # Create description for the module
             images_str = ", ".join(data.get("images", []))
             description = f"Поиск изображений: {images_str} (таймаут: {data.get('timeout', 120)} сек)"
 
             self.add_module("Поиск картинки", description, data)
-
-    def clear(self):
-        """Очищает холст безопасным способом"""
-        # Удаляем модули с холста
-        for module in self.modules:
-            self.canvas_layout.removeWidget(module)
-            # Скрываем модуль
-            module.hide()
-
-        # Очищаем список модулей
-        self.modules.clear()
-
-        # Испускаем сигнал об изменении холста
-        self.canvasChanged.emit()
 
 
 class ActivityModuleDialog(QDialog):

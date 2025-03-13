@@ -501,27 +501,42 @@ class CreateBotPage(QWidget):
         # Select the added row
         self.modules_table.selectRow(row)
 
-    def edit_module(self, row: int):
-        """Edits a module in the table"""
+    def edit_module(self, index: int):
+        """Редактирует модуль на основе его типа"""
         try:
-            # Check if row is in valid range
-            if row < 0 or row >= len(self.modules_data):
-                QMessageBox.warning(self, "Ошибка", f"Неверный индекс строки: {row}")
+            # Проверка валидности индекса
+            if index < 0 or index >= len(self.modules_data):
+                QMessageBox.warning(self, "Ошибка", f"Неверный индекс строки: {index}")
                 return
 
-            module = self.modules_data[row]
+            module = self.modules_data[index]
             module_type = module.module_type
+            module_data = module.data
 
-            if module_type == "Activity":
-                self.edit_activity_module(row, module)
-            elif module_type == "Клик":
-                self.edit_click_module(row, module)
-            elif module_type == "Свайп":
-                self.edit_swipe_module(row, module)
-            elif module_type == "Пауза":
-                self.edit_time_sleep_module(row, module)
-            elif module_type == "Поиск картинки":
-                self.edit_image_search_module(row, module)
+            # Маппинг типов модулей на соответствующие диалоги и функции обновления
+            module_editors = {
+                "Activity": self._edit_activity_module,
+                "Клик": self._edit_generic_module_with_dialog,
+                "Свайп": self._edit_generic_module_with_dialog,
+                "Пауза": self._edit_generic_module_with_dialog,
+                "Поиск картинки": self._edit_image_search_module
+            }
+
+            # Дополнительные аргументы для различных типов модулей
+            dialog_classes = {
+                "Клик": ClickModuleDialog,
+                "Свайп": SwipeModuleDialog,
+                "Пауза": TimeSleepModuleDialog
+            }
+
+            # Вызываем соответствующий метод редактирования
+            if module_type in module_editors:
+                if module_type == "Activity":
+                    module_editors[module_type](index, module, module_data)
+                elif module_type in dialog_classes:
+                    module_editors[module_type](index, module, module_data, dialog_classes[module_type])
+                else:
+                    module_editors[module_type](index, module, module_data)
             else:
                 QMessageBox.warning(self, "Ошибка", f"Неизвестный тип модуля: {module_type}")
 
@@ -531,115 +546,82 @@ class CreateBotPage(QWidget):
             QMessageBox.critical(self, "Ошибка редактирования",
                                  f"Произошла ошибка при редактировании модуля:\n{str(e)}\n\nПодробности:\n{error_info}")
 
-    def edit_activity_module(self, row, module):
-        """Редактирует модуль активности"""
-        dialog = ActivityModuleDialog(self)
-        self.load_activity_dialog(dialog, module.data)
+    def _edit_generic_module_with_dialog(self, index, module, module_data, dialog_class):
+        """Общий метод для редактирования модулей с помощью диалога"""
+        dialog = dialog_class(self)
+        dialog.load_data(module_data)
 
         if dialog.exec():
             new_data = dialog.get_data()
 
-            # Update module data
+            # Обновляем данные модуля
             module.data.update(new_data)
 
-            # Update display in table
+            # Формируем описание на основе типа модуля
+            if module.module_type == "Клик":
+                description = f"({module.data['x']}, {module.data['y']})"
+                if module.data.get('description'):
+                    description += f" - {module.data['description']}"
+                if module.data.get('sleep', 0) > 0:
+                    description += f" с задержкой {module.data['sleep']} сек"
+
+            elif module.module_type == "Свайп":
+                description = f"({module.data['x1']}, {module.data['y1']}) → ({module.data['x2']}, {module.data['y2']})"
+                if module.data.get('description'):
+                    description += f" - {module.data['description']}"
+                if module.data.get('sleep', 0) > 0:
+                    description += f" с задержкой {module.data['sleep']} сек"
+
+            elif module.module_type == "Пауза":
+                description = f"Пауза {new_data['delay']} сек"
+                if new_data.get('description'):
+                    description += f" - {new_data['description']}"
+            else:
+                description = "Модуль обновлен"
+
+            # Обновляем отображение
+            module.display_text = description
+            item = self.modules_table.item(index, 2)
+            if item:
+                item.setText(description)
+
+    def _edit_activity_module(self, index, module, module_data):
+        """Редактирует модуль активности"""
+        dialog = ActivityModuleDialog(self)
+        self.load_activity_dialog(dialog, module_data)
+
+        if dialog.exec():
+            new_data = dialog.get_data()
+
+            # Обновляем данные модуля
+            module.data.update(new_data)
+
+            # Обновляем отображение в таблице
             status = "Включен" if new_data["enabled"] else "Отключен"
             new_description = f"Статус: {status}, Действие: {new_data['action']}"
             module.display_text = new_description
 
-            # Update table cell
-            item = self.modules_table.item(row, 2)
+            # Обновляем ячейку в таблице
+            item = self.modules_table.item(index, 2)
             if item:
                 item.setText(new_description)
 
-    def edit_click_module(self, row, module):
-        """Редактирует модуль клика"""
-        dialog = ClickModuleDialog(self)
-        dialog.load_data(module.data)
-
-        if dialog.exec():
-            new_data = dialog.get_data()
-
-            # Update module data
-            module.data.update({
-                "x": int(new_data["x"]),
-                "y": int(new_data["y"]),
-                "description": new_data["description"],
-                "console_description": new_data["console_description"],
-                "sleep": float(new_data["sleep"])
-            })
-
-            # Update display in table
-            new_description = f"({module.data['x']}, {module.data['y']}) {module.data['description']}"
-            if module.data.get('sleep', 0) > 0:
-                new_description += f" с задержкой {module.data['sleep']} сек"
-            module.display_text = new_description
-
-            # Update table cell
-            item = self.modules_table.item(row, 2)
-            if item:
-                item.setText(new_description)
-
-    def edit_swipe_module(self, row, module):
-        """Редактирует модуль свайпа"""
-        dialog = SwipeModuleDialog(self)
-        dialog.load_data(module.data)
-
-        if dialog.exec():
-            new_data = dialog.get_data()
-
-            # Update module data
-            module.data.update(new_data)
-
-            # Update display in table
-            new_description = f"({module.data['x1']}, {module.data['y1']}) → ({module.data['x2']}, {module.data['y2']}) {module.data['description']}"
-            if module.data.get('sleep', 0) > 0:
-                new_description += f" с задержкой {module.data['sleep']} сек"
-            module.display_text = new_description
-
-            # Update table cell
-            item = self.modules_table.item(row, 2)
-            if item:
-                item.setText(new_description)
-
-    def edit_time_sleep_module(self, row, module):
-        """Редактирует модуль паузы"""
-        dialog = TimeSleepModuleDialog(self)
-        dialog.load_data(module.data)
-
-        if dialog.exec():
-            new_data = dialog.get_data()
-
-            # Update module data
-            module.data.update(new_data)
-
-            # Update display in table
-            description = f"Пауза {new_data['delay']} сек"
-            if new_data.get('description'):
-                description += f" - {new_data['description']}"
-            module.display_text = description
-
-            # Update table cell
-            item = self.modules_table.item(row, 2)
-            if item:
-                item.setText(description)
-
-    def edit_image_search_module(self, row, module):
+    def _edit_image_search_module(self, index, module, module_data):
         """Редактирует модуль поиска картинки"""
         dialog = ImageSearchModuleDialog(self)
-        dialog.load_data(module.data)
+        dialog.load_data(module_data)
 
         if dialog.exec():
             new_data = dialog.get_data()
 
-            # Update module data
+            # Обновляем данные модуля
             module.data.update(new_data)
 
-            # Update display in table
+            # Формируем описание модуля
             images_str = ", ".join(new_data.get("images", []))
             new_description = f"Поиск: {images_str} (таймаут: {new_data.get('timeout', 120)} сек)"
 
-            # Add information about script blocks if there are any
+            # Добавляем информацию о блоках скрипта
             script_items = new_data.get("script_items", [])
             if script_items:
                 if_result_count = sum(1 for item in script_items if item.get("type") == "if_result")
@@ -657,10 +639,9 @@ class CreateBotPage(QWidget):
                 if blocks_info:
                     new_description += f" | Блоки: {', '.join(blocks_info)}"
 
+            # Обновляем отображение
             module.display_text = new_description
-
-            # Update table cell
-            item = self.modules_table.item(row, 2)
+            item = self.modules_table.item(index, 2)
             if item:
                 item.setText(new_description)
 
