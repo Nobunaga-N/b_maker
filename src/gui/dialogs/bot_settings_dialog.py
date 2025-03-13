@@ -13,7 +13,8 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QDateTime
 
 from src.utils.style_constants import (
-    COLOR_PRIMARY, COLOR_BG_DARK_3, COLOR_TEXT, BASE_BUTTON_STYLE, BASE_DIALOG_STYLE
+    COLOR_PRIMARY, COLOR_BG_DARK_3, COLOR_TEXT, BASE_BUTTON_STYLE, BASE_DIALOG_STYLE, SETTINGS_CHECKBOX_STYLE,
+    SCHEDULE_CONTAINER_STYLE, DATETIME_EDIT_STYLE
 )
 from src.utils.ui_factory import (
     create_input_field, create_spinbox_without_buttons,
@@ -86,68 +87,14 @@ class BotSettingsDialog(QDialog):
         schedule_container_layout.setVerticalSpacing(8)
 
         # Улучшенный внешний вид контейнера для даты/времени
-        self.schedule_container.setStyleSheet(f"""
-            #scheduleContainer {{
-                background-color: {COLOR_BG_DARK_3};
-                border-radius: 4px;
-                padding: 4px;
-            }}
-            QLabel {{
-                color: {COLOR_TEXT};
-            }}
-        """)
+        self.schedule_container.setStyleSheet(SCHEDULE_CONTAINER_STYLE)
 
         # Отложенный старт (дата и время)
         self.scheduled_time = QDateTimeEdit()
         self.scheduled_time.setDisplayFormat("dd.MM.yyyy HH:mm")
         self.scheduled_time.setDateTime(QDateTime.currentDateTime().addSecs(3600))  # По умолчанию +1 час
         self.scheduled_time.setCalendarPopup(True)
-        self.scheduled_time.setStyleSheet(f"""
-            QDateTimeEdit {{
-                background-color: {COLOR_BG_DARK_3};
-                color: {COLOR_TEXT};
-                border: 1px solid #555;
-                border-radius: 3px;
-                padding: 4px;
-            }}
-            /* Стиль для календаря и связанных элементов */
-            QCalendarWidget {{
-                background-color: #2D2D30;
-                color: {COLOR_TEXT};
-            }}
-            QCalendarWidget QToolButton {{
-                color: {COLOR_TEXT};
-                background-color: #3A3A3D;
-                border: 1px solid #505054;
-                border-radius: 3px;
-            }}
-            QCalendarWidget QMenu {{
-                color: {COLOR_TEXT};
-                background-color: #2D2D30;
-            }}
-            QCalendarWidget QSpinBox {{
-                color: {COLOR_TEXT};
-                background-color: #3A3A3D;
-                selection-background-color: #3A6EA5;
-                selection-color: {COLOR_TEXT};
-            }}
-            QCalendarWidget QTableView {{
-                alternate-background-color: #3E3E42;
-            }}
-            QCalendarWidget QAbstractItemView:enabled {{
-                color: {COLOR_TEXT};
-                background-color: #2D2D30;
-                selection-background-color: #3A6EA5;
-                selection-color: {COLOR_TEXT};
-            }}
-            QCalendarWidget QAbstractItemView:disabled {{
-                color: #777777;
-            }}
-            QCalendarWidget QWidget {{ 
-                background-color: #2D2D30;
-                color: {COLOR_TEXT};
-            }}
-        """)
+        self.scheduled_time.setStyleSheet(DATETIME_EDIT_STYLE)
 
         # Улучшенный и более понятный текст метки
         start_time_label = create_label("Запланирован на:", style="color: white; font-weight: bold;")
@@ -235,24 +182,7 @@ class BotSettingsDialog(QDialog):
         # Это решает проблему, когда чекбокс становится невидимым на черном фоне
         if enabled:
             # Стиль для включенного состояния
-            self.enable_schedule.setStyleSheet(f"""
-                QCheckBox {{
-                    color: {COLOR_TEXT};
-                    spacing: 5px;
-                    font-weight: bold;
-                }}
-                QCheckBox::indicator {{
-                    width: 16px;
-                    height: 16px;
-                    border: 1px solid {COLOR_PRIMARY};
-                    border-radius: 3px;
-                    background-color: #444;
-                }}
-                QCheckBox::indicator:checked {{
-                    background-color: {COLOR_PRIMARY};
-                    border: 1px solid {COLOR_TEXT};
-                }}
-            """)
+            self.enable_schedule.setStyleSheet(SETTINGS_CHECKBOX_STYLE)
         else:
             # Стиль для выключенного состояния - с более заметным индикатором
             self.enable_schedule.setStyleSheet(f"""

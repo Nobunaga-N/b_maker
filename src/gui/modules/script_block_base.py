@@ -15,7 +15,7 @@ from src.utils.ui_factory import (
     create_button, create_input_field, create_group_box
 )
 from src.utils.style_constants import (
-    SCRIPT_DIALOG_BLUE_STYLE, COLOR_ERROR, COLOR_SUCCESS
+    SCRIPT_DIALOG_BLUE_STYLE, COLOR_ERROR, COLOR_SUCCESS, BLUE_BUTTON_PANEL_STYLE
 )
 
 
@@ -113,13 +113,7 @@ class ScriptBlockDialog(QDialog):
 
         # Добавляем панель в основной лейаут
         buttons_panel = QFrame()
-        buttons_panel.setStyleSheet("""
-            QFrame {
-                border-top: 1px solid #4C7BD9;
-                margin-top: 10px;
-                padding-top: 10px;
-            }
-        """)
+        buttons_panel.setStyleSheet(BLUE_BUTTON_PANEL_STYLE)
         buttons_panel.setLayout(buttons_layout)
 
         self.layout.addWidget(buttons_panel)

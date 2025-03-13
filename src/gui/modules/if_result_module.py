@@ -17,7 +17,7 @@ from src.utils.ui_factory import (
 )
 from src.gui.modules.script_block_base import ScriptBlockDialog
 from src.utils.style_constants import (
-    SCRIPT_SUBMODULE_BUTTON_STYLE,SCRIPT_SUBMODULE_CANVAS_STYLE, SCRIPT_DIALOG_BLUE_STYLE
+    SCRIPT_SUBMODULE_BUTTON_STYLE,SCRIPT_SUBMODULE_CANVAS_STYLE, SCRIPT_DIALOG_BLUE_STYLE, BLUE_SPINNER_STYLE
 )
 
 
@@ -147,11 +147,7 @@ class IfResultCanvas(CanvasModule):
         time_spinner.setDecimals(1)
         time_spinner.setSingleStep(0.1)
         time_spinner.setSuffix(" сек")
-        time_spinner.setStyleSheet("""
-            background-color: #283A5A;
-            color: white;
-            border: 1px solid #4C7BD9;
-        """)
+        time_spinner.setStyleSheet(BLUE_SPINNER_STYLE)
 
         input_layout.addWidget(time_label)
         input_layout.addWidget(time_spinner)

@@ -13,7 +13,7 @@ from PyQt6.QtCore import Qt, QPoint, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont, QColor, QBrush, QKeyEvent
 
 from src.utils.resources import Resources
-from src.utils.style_constants import DARK_BUTTON_STYLE, COLOR_ERROR, COLOR_TEXT
+from src.utils.style_constants import DARK_BUTTON_STYLE, COLOR_ERROR, COLOR_TEXT, MANAGER_QUEUE_WIDGET_STYLE
 from src.utils.ui_factory import create_dark_button, create_delete_button
 
 class ManagerQueueWidget(QTreeWidget):
@@ -84,99 +84,7 @@ class ManagerQueueWidget(QTreeWidget):
         self.setIndentation(20)  # Увеличиваем отступ для дочерних элементов для лучшей видимости
 
         # Обновлённый стиль для виджета очереди
-        self.setStyleSheet("""
-            QTreeView {
-                background-color: #2D2D30;  /* Более светлый фон, как в редакторе */
-                color: white;
-                alternate-row-colors: true;
-                gridline-color: #444;
-                border: none;
-            }
-            QTreeView::item {
-                padding: 6px 0;
-                border-bottom: 1px solid #3E3E42;
-            }
-            /* Стиль для родительских элементов (ботов) */
-            QTreeView::item:has-children {
-                background-color: #3A3A3D;  /* Немного светлее для ботов */
-                font-weight: bold;
-                border-bottom: 1px solid #505054;
-            }
-            /* Стиль для дочерних элементов (эмуляторов) */
-            QTreeView::branch:has-children:!has-siblings:closed,
-            QTreeView::branch:closed:has-children:has-siblings {
-                border-image: none;
-                image: url(assets/icons/expand-white.svg);
-            }
-            QTreeView::branch:open:has-children:!has-siblings,
-            QTreeView::branch:open:has-children:has-siblings {
-                border-image: none;
-                image: url(assets/icons/collapse-white.svg);
-            }
-            QTreeView::item:selected {
-                background-color: #3A6EA5;
-                color: white;
-            }
-            QTreeView::item:hover {
-                background-color: #2C5175;
-            }
-            /* Исправление стилей подсказок и контекстного меню */
-            QToolTip {
-                background-color: #2D2D30;
-                color: white;
-                border: 1px solid #3E3E42;
-                padding: 2px;
-            }
-            QMenu {
-                background-color: #2D2D30;
-                color: white;
-                border: 1px solid #3E3E42;
-            }
-            QMenu::item {
-                padding: 5px 18px 5px 30px;
-            }
-            QMenu::item:selected {
-                background-color: #3A6EA5;
-            }
-            QMenu::separator {
-                height: 1px;
-                background-color: #3E3E42;
-                margin: 4px 0px;
-            }
-            /* Стиль для календаря и связанных элементов */
-            QCalendarWidget {
-                background-color: #2D2D30;
-                color: white;
-            }
-            QCalendarWidget QToolButton {
-                color: white;
-                background-color: #3A3A3D;
-                border: 1px solid #505054;
-                border-radius: 3px;
-            }
-            QCalendarWidget QMenu {
-                color: white;
-                background-color: #2D2D30;
-            }
-            QCalendarWidget QSpinBox {
-                color: white;
-                background-color: #3A3A3D;
-                selection-background-color: #3A6EA5;
-                selection-color: white;
-            }
-            QCalendarWidget QTableView {
-                alternate-background-color: #3E3E42;
-            }
-            QCalendarWidget QAbstractItemView:enabled {
-                color: white;
-                background-color: #2D2D30;
-                selection-background-color: #3A6EA5;
-                selection-color: white;
-            }
-            QCalendarWidget QAbstractItemView:disabled {
-                color: #777777;
-            }
-        """)
+        self.setStyleSheet(MANAGER_QUEUE_WIDGET_STYLE)
 
         # Включаем двойной клик для открытия консоли эмулятора
         self.itemDoubleClicked.connect(self.on_item_double_clicked)

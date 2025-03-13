@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont
 
-from src.utils.style_constants import SCRIPT_SUBMODULE_ITEM_STYLE
+from src.utils.style_constants import SCRIPT_SUBMODULE_ITEM_STYLE, CANVAS_MODULE_STYLE
 
 
 class ModuleItem(QFrame):
@@ -135,13 +135,7 @@ class CanvasModule(QFrame):
 
     def setup_ui(self):
         """Настраивает интерфейс холста"""
-        self.setStyleSheet("""
-            CanvasModule {
-                background-color: #1E1E1E;
-                border: 1px solid #444;
-                border-radius: 5px;
-            }
-        """)
+        self.setStyleSheet(CANVAS_MODULE_STYLE)
 
         # Основной лейаут
         main_layout = QVBoxLayout(self)

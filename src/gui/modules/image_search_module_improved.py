@@ -20,7 +20,7 @@ from src.gui.modules.elif_module import ElifModuleDialog
 from src.gui.modules.if_not_result_module import IfNotResultModuleDialog
 from src.utils.style_constants import (
     SCRIPT_CANVAS_STYLE, COMPACT_IMAGE_SETTINGS_STYLE,
-    COLOR_BG_DARK_2, COLOR_TEXT, COLOR_PRIMARY, COLOR_BORDER
+    COLOR_BG_DARK_2, COLOR_TEXT, COLOR_PRIMARY, COLOR_BORDER, IMAGE_SEARCH_DIALOG_STYLE
 )
 from src.utils.resources import Resources
 from src.utils.ui_factory import (
@@ -66,101 +66,7 @@ class ImageSearchModuleDialog(QDialog):
         layout.setContentsMargins(10, 10, 10, 10)
 
         # Улучшенный стиль для диалога
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #202020;
-                color: white;
-            }
-            QLabel {
-                color: white;
-            }
-            QGroupBox {
-                font-weight: bold;
-                color: #FFA500;
-                border: 1px solid #555;
-                border-radius: 4px;
-                margin-top: 8px;
-                padding-top: 8px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 6px;
-                padding: 0 3px;
-            }
-            QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 3px;
-                padding: 4px;
-                selection-background-color: #FFA500;
-            }
-            QComboBox {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 3px;
-                padding: 4px;
-                selection-background-color: #FFA500;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #555;
-                selection-background-color: #FFA500;
-            }
-            QPushButton {
-                background-color: #FFA500;
-                color: black;
-                border-radius: 3px;
-                padding: 4px 8px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #FFB347;
-            }
-            QTableWidget {
-                background-color: #2A2A2A;
-                color: white;
-                gridline-color: #444;
-                border: none;
-            }
-            QHeaderView::section {
-                background-color: #333;
-                color: #FFA500;
-                padding: 4px;
-                border: 1px solid #444;
-            }
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-                opacity: 200;
-            }
-            /* Для ScrollArea */
-            QScrollArea {
-                border: none;
-                background-color: transparent;
-            }
-            QScrollBar:vertical {
-                background-color: #2A2A2A;
-                width: 12px;
-                margin: 0px;
-                border-radius: 3px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #555;
-                min-height: 20px;
-                border-radius: 3px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #FFA500;
-            }
-            QScrollBar::sub-line:vertical, QScrollBar::add-line:vertical {
-                height: 0px;
-            }
-        """)
+        self.setStyleSheet(IMAGE_SEARCH_DIALOG_STYLE)
 
         # Заголовок
         title_label = create_title_label("Настройка модуля поиска изображений", 16)
