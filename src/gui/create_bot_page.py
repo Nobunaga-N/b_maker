@@ -295,46 +295,11 @@ class CreateBotPage(QWidget):
 
     def add_click_module(self):
         """Добавляет модуль клика в холст"""
-        dialog = ClickModuleDialog(self)
-        if dialog.exec():
-            data = dialog.get_data()
-
-            # Преобразуем данные (например, x и y в int, sleep в float)
-            try:
-                # Создаем данные модуля
-                module_data = {
-                    "type": "click",
-                    "x": int(data.get("x", 0)),
-                    "y": int(data.get("y", 0)),
-                    "description": data.get("description", ""),
-                    "console_description": data.get("console_description", ""),
-                    "sleep": float(data.get("sleep", 0.0))
-                }
-
-                # Добавляем модуль в таблицу
-                self.add_module_to_table(
-                    "Клик",
-                    f"({module_data['x']}, {module_data['y']}) {module_data['description']}",
-                    module_data
-                )
-
-            except ValueError as e:
-                QMessageBox.warning(self, "Ошибка", f"Некорректные данные: {str(e)}")
+        self.add_module_to_canvas(ClickModuleDialog, "Клик", self._format_click_description)
 
     def add_swipe_module(self):
         """Добавляет модуль свайпа в холст"""
-        dialog = SwipeModuleDialog(self)
-        if dialog.exec():
-            data = dialog.get_data()
-
-            try:
-                # Формируем описание
-                description = f"({data['x1']}, {data['y1']}) → ({data['x2']}, {data['y2']}) {data['description']}"
-
-                # Добавляем модуль в таблицу
-                self.add_module_to_table("Свайп", description, data)
-            except Exception as e:
-                QMessageBox.warning(self, "Ошибка", f"Ошибка при добавлении модуля свайпа: {str(e)}")
+        self.add_module_to_canvas(SwipeModuleDialog, "Свайп", self._format_swipe_description)
 
     def add_image_search_module(self):
         """Добавляет модуль поиска изображения в холст"""
@@ -369,17 +334,7 @@ class CreateBotPage(QWidget):
 
     def add_time_sleep_module(self):
         """Добавляет модуль time.sleep в холст"""
-        dialog = TimeSleepModuleDialog(self)
-        if dialog.exec():
-            data = dialog.get_data()
-
-            # Формируем описание для отображения
-            description = f"Пауза {data['delay']} сек"
-            if data.get('description'):
-                description += f" - {data['description']}"
-
-            # Добавляем модуль в таблицу
-            self.add_module_to_table("Пауза", description, data)
+        self.add_module_to_canvas(TimeSleepModuleDialog, "Пауза", self._format_pause_description)
 
     def add_activity_module(self):
         """Adds or configures the Activity module"""
@@ -502,7 +457,7 @@ class CreateBotPage(QWidget):
         self.modules_table.selectRow(row)
 
     def edit_module(self, index: int):
-        """Редактирует модуль на основе его типа"""
+        """Универсальный метод редактирования модуля на основе его типа"""
         try:
             # Проверка валидности индекса
             if index < 0 or index >= len(self.modules_data):
@@ -513,30 +468,19 @@ class CreateBotPage(QWidget):
             module_type = module.module_type
             module_data = module.data
 
-            # Маппинг типов модулей на соответствующие диалоги и функции обновления
-            module_editors = {
-                "Activity": self._edit_activity_module,
-                "Клик": self._edit_generic_module_with_dialog,
-                "Свайп": self._edit_generic_module_with_dialog,
-                "Пауза": self._edit_generic_module_with_dialog,
-                "Поиск картинки": self._edit_image_search_module
-            }
-
-            # Дополнительные аргументы для различных типов модулей
+            # Словарь соответствия типов модулей и классов диалогов
             dialog_classes = {
                 "Клик": ClickModuleDialog,
                 "Свайп": SwipeModuleDialog,
-                "Пауза": TimeSleepModuleDialog
+                "Пауза": TimeSleepModuleDialog,
             }
 
-            # Вызываем соответствующий метод редактирования
-            if module_type in module_editors:
-                if module_type == "Activity":
-                    module_editors[module_type](index, module, module_data)
-                elif module_type in dialog_classes:
-                    module_editors[module_type](index, module, module_data, dialog_classes[module_type])
-                else:
-                    module_editors[module_type](index, module, module_data)
+            if module_type == "Activity":
+                self._edit_activity_module(index, module, module_data)
+            elif module_type == "Поиск картинки":
+                self._edit_image_search_module(index, module, module_data)
+            elif module_type in dialog_classes:
+                self._edit_generic_module_with_dialog(index, module, module_data, dialog_classes[module_type])
             else:
                 QMessageBox.warning(self, "Ошибка", f"Неизвестный тип модуля: {module_type}")
 
@@ -545,6 +489,31 @@ class CreateBotPage(QWidget):
             error_info = traceback.format_exc()
             QMessageBox.critical(self, "Ошибка редактирования",
                                  f"Произошла ошибка при редактировании модуля:\n{str(e)}\n\nПодробности:\n{error_info}")
+
+    def _format_click_description(self, data):
+        """Форматирует описание для модуля клика"""
+        description = f"({data['x']}, {data['y']})"
+        if data.get('description'):
+            description += f" - {data['description']}"
+        if data.get('sleep', 0) > 0:
+            description += f" с задержкой {data['sleep']} сек"
+        return description
+
+    def _format_swipe_description(self, data):
+        """Форматирует описание для модуля свайпа"""
+        description = f"({data['x1']}, {data['y1']}) → ({data['x2']}, {data['y2']})"
+        if data.get('description'):
+            description += f" - {data['description']}"
+        if data.get('sleep', 0) > 0:
+            description += f" с задержкой {data['sleep']} сек"
+        return description
+
+    def _format_pause_description(self, data):
+        """Форматирует описание для модуля паузы"""
+        description = f"Пауза {data['delay']} сек"
+        if data.get('description'):
+            description += f" - {data['description']}"
+        return description
 
     def _edit_generic_module_with_dialog(self, index, module, module_data, dialog_class):
         """Общий метод для редактирования модулей с помощью диалога"""
@@ -559,23 +528,11 @@ class CreateBotPage(QWidget):
 
             # Формируем описание на основе типа модуля
             if module.module_type == "Клик":
-                description = f"({module.data['x']}, {module.data['y']})"
-                if module.data.get('description'):
-                    description += f" - {module.data['description']}"
-                if module.data.get('sleep', 0) > 0:
-                    description += f" с задержкой {module.data['sleep']} сек"
-
+                description = self._format_click_description(module.data)
             elif module.module_type == "Свайп":
-                description = f"({module.data['x1']}, {module.data['y1']}) → ({module.data['x2']}, {module.data['y2']})"
-                if module.data.get('description'):
-                    description += f" - {module.data['description']}"
-                if module.data.get('sleep', 0) > 0:
-                    description += f" с задержкой {module.data['sleep']} сек"
-
+                description = self._format_swipe_description(module.data)
             elif module.module_type == "Пауза":
-                description = f"Пауза {new_data['delay']} сек"
-                if new_data.get('description'):
-                    description += f" - {new_data['description']}"
+                description = self._format_pause_description(new_data)
             else:
                 description = "Модуль обновлен"
 
@@ -584,6 +541,25 @@ class CreateBotPage(QWidget):
             item = self.modules_table.item(index, 2)
             if item:
                 item.setText(description)
+
+    def add_module_to_canvas(self, dialog_class, module_type, format_description_func=None):
+        """Общий метод для добавления модуля через диалог"""
+        dialog = dialog_class(self)
+        if dialog.exec():
+            data = dialog.get_data()
+
+            try:
+                # Форматируем описание
+                if format_description_func:
+                    description = format_description_func(data)
+                else:
+                    description = f"Модуль {module_type}"
+
+                # Добавляем модуль в таблицу
+                self.add_module_to_table(module_type, description, data)
+
+            except ValueError as e:
+                QMessageBox.warning(self, "Ошибка", f"Некорректные данные: {str(e)}")
 
     def _edit_activity_module(self, index, module, module_data):
         """Редактирует модуль активности"""

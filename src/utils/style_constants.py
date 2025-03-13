@@ -1,6 +1,6 @@
 """
 Модуль содержит константы стилей для всего приложения.
-Это позволяет унифицировать внешний вид и уменьшить дублирование кода.
+Использует генераторы стилей для уменьшения дублирования кода.
 """
 
 # ======== ОСНОВНЫЕ ЦВЕТА И ПЕРЕМЕННЫЕ ========
@@ -40,51 +40,194 @@ PADDING_STANDARD = "6px 10px"
 PADDING_SMALL = "4px"
 FONT_WEIGHT_BOLD = "font-weight: bold;"
 
+# ======== ГЕНЕРАТОРЫ СТИЛЕЙ ========
+
+def generate_button_style(bg_color, text_color, hover_color=None, border_radius=BORDER_RADIUS,
+                          padding=PADDING_STANDARD, font_weight="bold", border="none", extra_css=""):
+    """Генерирует стиль для кнопки на основе параметров."""
+    hover_color = hover_color or bg_color
+
+    return f"""
+        QPushButton {{
+            background-color: {bg_color};
+            color: {text_color};
+            border: {border};
+            border-radius: {border_radius};
+            padding: {padding};
+            font-weight: {font_weight};
+            {extra_css}
+        }}
+        QPushButton:hover {{
+            background-color: {hover_color};
+        }}
+    """
+
+def generate_input_style(bg_color=COLOR_BG_DARK_2, text_color=COLOR_TEXT, border_color=COLOR_BORDER,
+                         border_radius="3px", padding=PADDING_SMALL, min_height=None, extra_css=""):
+    """Генерирует стиль для текстовых полей и других компонентов ввода."""
+    height_css = f"min-height: {min_height}; max-height: {min_height};" if min_height else ""
+
+    return f"""
+        background-color: {bg_color}; 
+        color: {text_color}; 
+        padding: {padding};
+        border: 1px solid {border_color};
+        border-radius: {border_radius};
+        {height_css}
+        {extra_css}
+    """
+
+def generate_container_style(bg_color, border_color=None, border_radius="8px", padding=None,
+                             margin=None, extra_css=""):
+    """Генерирует стиль для контейнеров (фреймы, группы и т.д.)."""
+    border_css = f"border: 1px solid {border_color};" if border_color else ""
+    padding_css = f"padding: {padding};" if padding else ""
+    margin_css = f"margin: {margin};" if margin else ""
+
+    return f"""
+        background-color: {bg_color}; 
+        border-radius: {border_radius};
+        {border_css}
+        {padding_css}
+        {margin_css}
+        {extra_css}
+    """
+
+def generate_group_box_style(title_color=COLOR_PRIMARY, border_color=COLOR_BORDER,
+                           border_radius=BORDER_RADIUS, margin_top="8px", title_position="left",
+                           title_offset="6px", extra_css=""):
+    """Генерирует стиль для группировочных боксов."""
+    return f"""
+        {FONT_WEIGHT_BOLD}
+        color: {title_color};
+        border: 1px solid {border_color};
+        border-radius: {border_radius};
+        margin-top: {margin_top};
+        padding-top: 8px;
+        {extra_css}
+    }}
+    QGroupBox::title {{
+        subcontrol-origin: margin;
+        {title_position}: {title_offset};
+        padding: 0 3px;
+    """
+
+def generate_table_style(bg_color=COLOR_BG_DARK_2, text_color=COLOR_TEXT,
+                        grid_color=COLOR_BORDER, header_bg=COLOR_BG_DARK_3,
+                        header_color=COLOR_PRIMARY, selected_bg=COLOR_PRIMARY,
+                        selected_text=COLOR_TEXT, extra_css=""):
+    """Генерирует стиль для таблиц."""
+    return f"""
+        QTableWidget {{
+            background-color: {bg_color};
+            color: {text_color};
+            gridline-color: {grid_color};
+            border: none;
+            {extra_css}
+        }}
+        QHeaderView::section {{
+            background-color: {header_bg};
+            color: {header_color};
+            padding: 5px;
+            border: 1px solid {grid_color};
+        }}
+        QTableWidget::item:selected {{
+            background-color: {selected_bg};
+            color: {selected_text};
+        }}
+    """
+
+def generate_tool_button_style(bg_color="transparent", text_color=COLOR_TEXT,
+                             hover_bg="rgba(255, 255, 255, 0.1)", hover_radius="3px",
+                             size=None, extra_css=""):
+    """Генерирует стиль для кнопок инструментов."""
+    size_css = f"""
+        min-width: {size}px;
+        max-width: {size}px;
+        min-height: {size}px;
+        max-height: {size}px;
+    """ if size else ""
+
+    return f"""
+        QToolButton {{
+            background-color: {bg_color};
+            border: none;
+            color: {text_color};
+            {size_css}
+            {extra_css}
+        }}
+        QToolButton:hover {{
+            background-color: {hover_bg};
+            border-radius: {hover_radius};
+        }}
+    """
+
+def generate_combobox_style(bg_color=COLOR_BG_DARK_2, text_color=COLOR_TEXT,
+                          border_color=COLOR_BORDER, popup_bg=COLOR_BG_DARK_2,
+                          selection_bg=COLOR_PRIMARY, padding=PADDING_SMALL,
+                          border_radius="3px", extra_css=""):
+    """Генерирует стиль для выпадающих списков."""
+    return f"""
+        QComboBox {{
+            background-color: {bg_color};
+            color: {text_color}; 
+            padding: {padding};
+            border: 1px solid {border_color};
+            border-radius: {border_radius};
+            {extra_css}
+        }}
+        QComboBox QAbstractItemView {{
+            background-color: {popup_bg};
+            color: {text_color};
+            border: 1px solid {border_color};
+            selection-background-color: {selection_bg};
+        }}
+    """
+
+def generate_dialog_style(bg_color=COLOR_BG_DARK_1, text_color=COLOR_TEXT,
+                        group_title_color=COLOR_PRIMARY, border_color=COLOR_BORDER,
+                        tooltip_bg=COLOR_BG_DARK_2, tooltip_border=COLOR_PRIMARY,
+                        extra_css=""):
+    """Генерирует стиль для диалогов."""
+    return f"""
+        QDialog {{
+            background-color: {bg_color};
+            color: {text_color};
+            {extra_css}
+        }}
+        QLabel {{
+            color: {text_color};
+        }}
+        QGroupBox {{
+            {generate_group_box_style(group_title_color, border_color)}
+        }}
+        QToolTip {{
+            background-color: {tooltip_bg};
+            color: {text_color};
+            border: 1px solid {tooltip_border};
+            padding: 2px;
+            opacity: 200;
+        }}
+    """
+
 # ======== БАЗОВЫЕ СТИЛИ КОМПОНЕНТОВ ========
 
 # Общий стиль для оранжевых кнопок
-BASE_ORANGE_BUTTON = f"""
-    background-color: {COLOR_PRIMARY};
-    color: black;
-    border-radius: {BORDER_RADIUS};
-    padding: {PADDING_STANDARD};
-    {FONT_WEIGHT_BOLD}
-"""
+BASE_ORANGE_BUTTON = generate_button_style(COLOR_PRIMARY, "black")
 
 # Общий стиль для темных кнопок
-BASE_DARK_BUTTON = f"""
-    background-color: {COLOR_BG_DARK_2};
-    color: {COLOR_TEXT};
-    border: 1px solid {COLOR_TEXT};
-    border-radius: 3px;
-    padding: 5px 10px;
-"""
+BASE_DARK_BUTTON = generate_button_style(COLOR_BG_DARK_2, COLOR_TEXT, COLOR_BG_DARK_3,
+                                         border="1px solid " + COLOR_TEXT, border_radius="3px",
+                                         padding="5px 10px", font_weight="normal")
 
 # Общий стиль для полей ввода
-BASE_INPUT = f"""
-    background-color: {COLOR_BG_DARK_2}; 
-    color: {COLOR_TEXT}; 
-    padding: {PADDING_SMALL};
-    border: 1px solid {COLOR_BORDER};
-    border-radius: 3px;
-"""
+BASE_INPUT = generate_input_style()
 
 # Общий стиль для фреймов
-BASE_FRAME = f"""
-    background-color: {COLOR_BG_DARK_1}; 
-    border-radius: 8px;
-    border: 1px solid {COLOR_BORDER};
-"""
+BASE_FRAME = generate_container_style(COLOR_BG_DARK_1, COLOR_BORDER)
 
 # Общий стиль для группбоксов
-BASE_GROUP_BOX = f"""
-    {FONT_WEIGHT_BOLD}
-    color: {COLOR_PRIMARY};
-    border: 1px solid {COLOR_BORDER};
-    border-radius: {BORDER_RADIUS};
-    margin-top: 8px;
-    padding-top: 8px;
-"""
+BASE_GROUP_BOX = generate_group_box_style()
 
 # Общий стиль для подсказок
 BASE_TOOLTIP = f"""
@@ -95,118 +238,31 @@ BASE_TOOLTIP = f"""
 """
 
 # Общий стиль для кнопок инструментов
-BASE_TOOL_BUTTON = f"""
-    background-color: transparent;
-    border: none;
-    color: {COLOR_TEXT};
-    min-width: 20px;
-    max-width: 20px;
-    min-height: 20px;
-    max-height: 20px;
-"""
+BASE_TOOL_BUTTON = generate_tool_button_style(size=20)
 
 # ======== КОНКРЕТНЫЕ СТИЛИ КОМПОНЕНТОВ ========
 
 # Стили для диалогов
-BASE_DIALOG_STYLE = f"""
-    QDialog {{
-        background-color: {COLOR_BG_DARK_1};
-        color: {COLOR_TEXT};
-    }}
-    QLabel {{
-        color: {COLOR_TEXT};
-    }}
-    QGroupBox {{
-        {BASE_GROUP_BOX}
-    }}
-    QGroupBox::title {{
-        subcontrol-origin: margin;
-        left: 6px;
-        padding: 0 3px;
-    }}
-    QToolTip {{
-        {BASE_TOOLTIP}
-        opacity: 200;
-    }}
-"""
+BASE_DIALOG_STYLE = generate_dialog_style()
 
 # Стили для кнопок
-BASE_BUTTON_STYLE = f"""
-    QPushButton {{
-        {BASE_ORANGE_BUTTON}
-    }}
-    QPushButton:hover {{
-        background-color: {COLOR_WARNING};
-    }}
-"""
+BASE_BUTTON_STYLE = BASE_ORANGE_BUTTON
 
-DARK_BUTTON_STYLE = f"""
-    QPushButton {{
-        {BASE_DARK_BUTTON}
-    }}
-    QPushButton:hover {{
-        background-color: {COLOR_BG_DARK_3};
-    }}
-"""
+DARK_BUTTON_STYLE = BASE_DARK_BUTTON
 
-DELETE_BUTTON_STYLE = f"""
-    QPushButton {{
-        background-color: {COLOR_ERROR};
-        color: {COLOR_TEXT};
-        border-radius: {BORDER_RADIUS};
-        padding: {PADDING_STANDARD};
-    }}
-    QPushButton:hover {{
-        background-color: #FF6666;
-    }}
-"""
+DELETE_BUTTON_STYLE = generate_button_style(COLOR_ERROR, COLOR_TEXT, "#FF6666")
 
 # Стили для полей ввода
-BASE_INPUT_STYLE = f"""
-    {BASE_INPUT}
-    min-height: 22px;
-    max-height: 22px;
-"""
+BASE_INPUT_STYLE = generate_input_style(min_height="22px")
 
 # Стили для спинбоксов
-BASE_SPINBOX_STYLE = f"""
-    {BASE_INPUT}
-    min-height: 22px;
-    max-height: 22px;
-"""
+BASE_SPINBOX_STYLE = generate_input_style(min_height="22px")
 
 # Стили для комбобоксов
-BASE_COMBOBOX_STYLE = f"""
-    QComboBox {{
-        {BASE_INPUT}
-    }}
-    QComboBox QAbstractItemView {{
-        background-color: {COLOR_BG_DARK_2};
-        color: {COLOR_TEXT};
-        border: 1px solid {COLOR_BORDER};
-        selection-background-color: {COLOR_PRIMARY};
-    }}
-"""
+BASE_COMBOBOX_STYLE = generate_combobox_style()
 
 # Стили для таблиц
-BASE_TABLE_STYLE = f"""
-    QTableWidget {{
-        background-color: {COLOR_BG_DARK_2};
-        color: {COLOR_TEXT};
-        gridline-color: {COLOR_BORDER};
-        border: none;
-    }}
-    QHeaderView::section {{
-        background-color: {COLOR_BG_DARK_3};
-        color: {COLOR_PRIMARY};
-        padding: 5px;
-        border: 1px solid {COLOR_BORDER};
-    }}
-    QTableWidget::item:selected {{
-        background-color: {COLOR_PRIMARY};
-        color: {COLOR_TEXT};
-    }}
-"""
+BASE_TABLE_STYLE = generate_table_style()
 
 # Стиль для основных фреймов
 MAIN_FRAME_STYLE = BASE_FRAME
@@ -262,17 +318,7 @@ SIDEBAR_ACTIVE_BUTTON_STYLE = f"""
     }}
 """
 
-SIDEBAR_ICON_STYLE = f"""
-    QToolButton {{
-        background: transparent;
-        border: none;
-        color: {COLOR_TEXT};
-    }}
-    QToolButton:hover {{
-        background-color: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-    }}
-"""
+SIDEBAR_ICON_STYLE = generate_tool_button_style(hover_bg="rgba(255, 255, 255, 0.2)", hover_radius="4px")
 
 # Обновленный стиль акцентных кнопок (используем базовый)
 ACCENT_BUTTON_STYLE = BASE_BUTTON_STYLE
@@ -323,22 +369,10 @@ MODULE_ITEM_STYLE = f"""
 """
 
 # Стиль для кнопок инструментов
-TOOL_BUTTON_STYLE = f"""
-    QToolButton {{
-        {BASE_TOOL_BUTTON}
-    }}
-    QToolButton:hover {{
-        background-color: rgba(255, 165, 0, 0.2);
-        border-radius: 2px;
-    }}
-"""
+TOOL_BUTTON_STYLE = BASE_TOOL_BUTTON
 
 # Стиль для холста модулей активности
-ACTIVITY_CANVAS_STYLE = f"""
-    background-color: #252525;
-    border-radius: 4px;
-    border: 1px solid {COLOR_BORDER_LIGHT};
-"""
+ACTIVITY_CANVAS_STYLE = generate_container_style("#252525", COLOR_BORDER_LIGHT, "4px")
 
 # Стиль для диалога активности
 ACTIVITY_DIALOG_STYLE = f"""
@@ -403,18 +437,10 @@ CREATE_BOT_STYLE = f"""
 """
 
 # Стиль для кнопок в таблице
-TABLE_ACTION_BUTTON_STYLE = f"""
-    QPushButton {{
-        background-color: #222222;
-        color: {COLOR_TEXT};
-        border: 1px solid {COLOR_TEXT};
-        border-radius: 2px;
-        padding: 4px 8px;
-    }}
-    QPushButton:hover {{
-        background-color: #333333;
-    }}
-"""
+TABLE_ACTION_BUTTON_STYLE = generate_button_style("#222222", COLOR_TEXT, "#333333",
+                                                border="1px solid " + COLOR_TEXT,
+                                                border_radius="2px", padding="4px 8px",
+                                                font_weight="normal")
 
 # ======== СТИЛИ ДЛЯ СКРИПТОВ ========
 
@@ -445,73 +471,24 @@ SCRIPT_ITEM_DESCRIPTION_STYLE = f"""
 """
 
 # Стиль для кнопок в элементе скрипта
-SCRIPT_ITEM_BUTTON_STYLE = f"""
-    QToolButton {{
-        {BASE_TOOL_BUTTON}
-    }}
-    QToolButton:hover {{
-        background-color: rgba(255, 165, 0, 0.2);
-        border-radius: 2px;
-    }}
-"""
+SCRIPT_ITEM_BUTTON_STYLE = generate_tool_button_style(hover_bg="rgba(255, 165, 0, 0.2)", hover_radius="2px")
 
 # Стиль для кнопки удаления в элементе скрипта
-SCRIPT_ITEM_DELETE_BUTTON_STYLE = f"""
-    QToolButton {{
-        {BASE_TOOL_BUTTON}
-        color: {COLOR_ERROR};
-    }}
-    QToolButton:hover {{
-        background-color: rgba(255, 68, 68, 0.2);
-        border-radius: 2px;
-    }}
-"""
+SCRIPT_ITEM_DELETE_BUTTON_STYLE = generate_tool_button_style(text_color=COLOR_ERROR,
+                                                           hover_bg="rgba(255, 68, 68, 0.2)",
+                                                           hover_radius="2px")
 
 # Стиль для холста скрипта
-SCRIPT_CANVAS_STYLE = f"""
-    background-color: #252525; 
-    border-radius: 3px; 
-    border: 1px solid {COLOR_BORDER_LIGHT};
-"""
+SCRIPT_CANVAS_STYLE = generate_container_style("#252525", COLOR_BORDER_LIGHT, "3px")
 
 # Стиль для кнопки отмены (красная)
-CANCEL_BUTTON_STYLE = f"""
-    QPushButton {{
-        background-color: {COLOR_ERROR};
-        color: {COLOR_TEXT};
-        border-radius: 3px;
-        padding: 5px 10px;
-        {FONT_WEIGHT_BOLD}
-    }}
-    QPushButton:hover {{
-        background-color: #FF6666;
-    }}
-"""
+CANCEL_BUTTON_STYLE = generate_button_style(COLOR_ERROR, COLOR_TEXT, "#FF6666", "3px", "5px 10px")
 
 # Стиль для кнопки подтверждения (зеленая)
-CONFIRM_BUTTON_STYLE = f"""
-    QPushButton {{
-        background-color: {COLOR_SUCCESS};
-        color: {COLOR_TEXT};
-        border-radius: 3px;
-        padding: 5px 10px;
-        {FONT_WEIGHT_BOLD}
-    }}
-    QPushButton:hover {{
-        background-color: #66CC66;
-    }}
-"""
+CONFIRM_BUTTON_STYLE = generate_button_style(COLOR_SUCCESS, COLOR_TEXT, "#66CC66", "3px", "5px 10px")
 
 # Стиль для панели кнопок
-BUTTONS_PANEL_STYLE = f"""
-    QFrame {{
-        border: 1px solid {COLOR_BORDER_LIGHT};
-        border-radius: 4px;
-        padding: 5px;
-        margin-top: 10px;
-        background-color: {COLOR_BG_DARK_2};
-    }}
-"""
+BUTTONS_PANEL_STYLE = generate_container_style(COLOR_BG_DARK_2, COLOR_BORDER_LIGHT, "4px", "5px", "10px 0 0 0")
 
 # Стиль для компактной секции настроек изображений
 COMPACT_IMAGE_SETTINGS_STYLE = f"""
@@ -542,20 +519,10 @@ COMPACT_IMAGE_SETTINGS_STYLE = f"""
 # ======== СТИЛИ ДЛЯ СИНЕЙ ТЕМЫ ========
 
 # Базовый синий стиль
-BASE_BLUE_STYLE = f"""
-    background-color: {COLOR_BLUE_BG};
-    color: {COLOR_TEXT};
-    border: 1px solid {COLOR_BLUE_ACCENT};
-"""
+BASE_BLUE_STYLE = generate_container_style(COLOR_BLUE_BG, COLOR_BLUE_ACCENT, extra_css=f"color: {COLOR_TEXT};")
 
 # Базовая синяя кнопка
-BASE_BLUE_BUTTON = f"""
-    background-color: {COLOR_BLUE_ACCENT};
-    color: {COLOR_TEXT};
-    border-radius: 4px;
-    padding: 8px 16px;
-    {FONT_WEIGHT_BOLD}
-"""
+BASE_BLUE_BUTTON = generate_button_style(COLOR_BLUE_ACCENT, COLOR_TEXT, COLOR_BLUE_HIGHLIGHT, "4px", "8px 16px")
 
 # Стиль для диалогов скрипт-блоков с синей темой
 SCRIPT_DIALOG_BLUE_STYLE = f"""
@@ -649,7 +616,9 @@ SCRIPT_SUBMODULE_ITEM_STYLE = f"""
         padding: 2px;
     }}
     QToolButton {{
-        {BASE_TOOL_BUTTON}
+        background-color: transparent;
+        border: none;
+        color: {COLOR_TEXT};
         icon-size: 16px;
         padding: 1px;
     }}
@@ -662,20 +631,18 @@ SCRIPT_SUBMODULE_ITEM_STYLE = f"""
 # Стиль для кнопок в холсте подмодуля
 SCRIPT_SUBMODULE_BUTTON_STYLE = f"""
     QPushButton {{
-        {BASE_BLUE_BUTTON}
+        background-color: {COLOR_BLUE_ACCENT};
+        color: {COLOR_TEXT};
+        border-radius: 3px;
+        padding: 5px 10px;
+        font-weight: bold;
     }}
     QPushButton:hover {{
         background-color: {COLOR_BLUE_HIGHLIGHT};
     }}
 """
 
-CANVAS_MODULE_STYLE = f"""
-    CanvasModule {{
-        background-color: {COLOR_BG_DARK_1};
-        border: 1px solid {COLOR_BORDER};
-        border-radius: 5px;
-    }}
-"""
+CANVAS_MODULE_STYLE = generate_container_style(COLOR_BG_DARK_1, COLOR_BORDER, "5px")
 
 SETTINGS_CHECKBOX_STYLE = f"""
     QCheckBox {{
@@ -695,16 +662,8 @@ SETTINGS_CHECKBOX_STYLE = f"""
     }}
 """
 
-SCHEDULE_CONTAINER_STYLE = f"""
-    #scheduleContainer {{
-        background-color: {COLOR_BG_DARK_3};
-        border-radius: 4px;
-        padding: 4px;
-    }}
-    QLabel {{
-        color: {COLOR_TEXT};
-    }}
-"""
+SCHEDULE_CONTAINER_STYLE = generate_container_style(COLOR_BG_DARK_3, border_radius="4px", padding="4px",
+                                                 extra_css=f"#scheduleContainer {{ }} QLabel {{ color: {COLOR_TEXT}; }}")
 
 DATETIME_EDIT_STYLE = f"""
     QDateTimeEdit {{
@@ -847,11 +806,7 @@ MANAGER_QUEUE_WIDGET_STYLE = f"""
     }}
 """
 
-BLUE_SPINNER_STYLE = f"""
-    background-color: {COLOR_BLUE_BG_LIGHT};
-    color: {COLOR_TEXT};
-    border: 1px solid {COLOR_BLUE_ACCENT};
-"""
+BLUE_SPINNER_STYLE = generate_input_style(COLOR_BLUE_BG_LIGHT, COLOR_TEXT, COLOR_BLUE_ACCENT)
 
 BLUE_BUTTON_PANEL_STYLE = f"""
     QFrame {{
