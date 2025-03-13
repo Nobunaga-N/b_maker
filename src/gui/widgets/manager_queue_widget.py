@@ -1,24 +1,25 @@
 # src/gui/widgets/manager_queue_widget.py
 """
 Модуль содержит улучшенный класс ManagerQueueWidget - виджет для очереди ботов.
-Решает проблемы с перетаскиванием, стилизацией и улучшает пользовательский опыт.
+Использует базовый класс для обработки контекстных меню.
 """
 
-from PyQt6.QtWidgets import (
-    QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox, QAbstractItemView,
-    QHeaderView, QPushButton, QHBoxLayout, QWidget, QVBoxLayout,
-    QToolButton, QLabel, QFrame
-)
-from PyQt6.QtCore import Qt, QPoint, pyqtSignal
+from PyQt6.QtWidgets import QTreeWidgetItem, QHeaderView, QMessageBox, QAbstractItemView, QTreeWidget
+from PyQt6.QtCore import Qt, pyqtSignal, QPoint
 from PyQt6.QtGui import QIcon, QFont, QColor, QBrush, QKeyEvent
 
 from src.utils.resources import Resources
-from src.utils.style_constants import DARK_BUTTON_STYLE, COLOR_ERROR, COLOR_TEXT, MANAGER_QUEUE_WIDGET_STYLE
+from src.utils.style_constants import (
+    DARK_BUTTON_STYLE, COLOR_ERROR, COLOR_TEXT, MANAGER_QUEUE_WIDGET_STYLE
+)
 from src.utils.ui_factory import create_dark_button, create_delete_button
+from src.gui.widgets.context_menu_tree_widget import ContextMenuTreeWidget
 
-class ManagerQueueWidget(QTreeWidget):
+
+class ManagerQueueWidget(ContextMenuTreeWidget):
     """
     Улучшенный QTreeWidget для очереди ботов с улучшенной видимостью элементов.
+    Использует базовый класс для обработки контекстных меню.
     """
     # Сигналы для оповещения родительского виджета
     botStartRequested = pyqtSignal(str)  # Имя бота для запуска
@@ -35,6 +36,7 @@ class ManagerQueueWidget(QTreeWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent_window = parent
+        self.selected_item = None
 
         # Устанавливаем количество столбцов и заголовки
         self.setColumnCount(7)
@@ -42,9 +44,6 @@ class ManagerQueueWidget(QTreeWidget):
             "№", "Бот", "Игра", "Потоки",
             "Запланирован на", "Циклы", "Время раб."
         ])
-
-        # Сохраняем ссылку на текущий элемент для контекстного меню
-        self.selected_item = None
 
         # Стилизуем заголовки
         self.header().setStyleSheet("""
@@ -89,20 +88,87 @@ class ManagerQueueWidget(QTreeWidget):
         # Включаем двойной клик для открытия консоли эмулятора
         self.itemDoubleClicked.connect(self.on_item_double_clicked)
 
-        # Контекстное меню
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.show_context_menu)
+    # УДАЛИТЬ метод show_context_menu, так как он теперь реализован в базовом классе:
+    # def show_context_menu(self, position): ...
 
-        # Убрали вызов setup_navigation_panel(), так как эти кнопки уже есть в manager_page.py
-        # self.setup_navigation_panel()
+    # ДОБАВИТЬ новый метод для определения пунктов меню
+    def get_menu_items(self, item):
+        """
+        Возвращает список элементов для меню в зависимости от типа элемента.
+        """
+        if item.parent() is None:
+            # Это бот (top-level item)
+            return [
+                {
+                    'id': 'settings',
+                    'text': "Настройки",
+                    'icon_path': Resources.get_icon_path("settings")
+                },
+                {
+                    'id': 'start',
+                    'text': "Запустить",
+                    'icon_path': Resources.get_icon_path("play")
+                },
+                {
+                    'id': 'duplicate',
+                    'text': "Дублировать",
+                    'icon_path': Resources.get_icon_path("copy")
+                },
+                {
+                    'id': 'delete',
+                    'text': "Удалить",
+                    'icon_path': Resources.get_icon_path("delete"),
+                    'separator_before': True
+                }
+            ]
+        else:
+            # Это эмулятор (child item)
+            return [
+                {
+                    'id': 'console',
+                    'text': "Открыть консоль",
+                    'icon_path': Resources.get_icon_path("console")
+                },
+                {
+                    'id': 'stop',
+                    'text': "Остановить",
+                    'icon_path': Resources.get_icon_path("stop")
+                },
+                {
+                    'id': 'restart',
+                    'text': "Перезапустить",
+                    'icon_path': Resources.get_icon_path("restart")
+                }
+            ]
 
-    # Оставляем метод setup_navigation_panel() для совместимости, но не вызываем его
-    def setup_navigation_panel(self):
+    # ДОБАВИТЬ новый метод для обработки действий меню
+    def handle_menu_action(self, item, action_id):
         """
-        Создает и настраивает навигационную панель с кнопками перемещения вверх/вниз.
-        Эта панель размещается внизу виджета.
+        Обрабатывает выбранное действие меню.
         """
-        pass  # Метод теперь ничего не делает, так как кнопки уже есть в manager_page.py
+        if item.parent() is None:
+            # Действия для бота
+            bot_name = item.text(1)
+            if action_id == 'delete':
+                self.selected_item = item
+                self.remove_selected_bot()
+            elif action_id == 'settings':
+                self.selected_item = item
+                if hasattr(self.parent_window, 'show_settings_dialog'):
+                    self.parent_window.show_settings_dialog()
+            elif action_id == 'start':
+                self.botStartRequested.emit(bot_name)
+            elif action_id == 'duplicate':
+                self.botDuplicateRequested.emit(bot_name)
+        else:
+            # Действия для эмулятора
+            emu_id = item.data(0, Qt.ItemDataRole.UserRole)
+            if action_id == 'console':
+                self.emulatorConsoleRequested.emit(emu_id)
+            elif action_id == 'stop':
+                self.emulatorStopRequested.emit(emu_id)
+            elif action_id == 'restart':
+                self.emulatorRestartRequested.emit(emu_id)
 
     def move_selected_item_up(self):
         """Перемещает выбранный элемент вверх"""
@@ -300,72 +366,6 @@ class ManagerQueueWidget(QTreeWidget):
             self.remove_selected_bot()
         else:
             super().keyPressEvent(event)
-
-    def show_context_menu(self, pos: QPoint):
-        """
-        Контекстное меню по правому клику с различными действиями
-        в зависимости от выбранного элемента.
-        """
-        item = self.itemAt(pos)
-        if not item:
-            return
-
-        menu = QMenu(self)
-
-        if item.parent() is None:
-            # Это бот (top-level item)
-            settings_action = menu.addAction("Настройки")
-            settings_action.setIcon(QIcon(Resources.get_icon_path("settings")))
-
-            start_action = menu.addAction("Запустить")
-            start_action.setIcon(QIcon(Resources.get_icon_path("play")))
-
-            duplicate_action = menu.addAction("Дублировать")
-            duplicate_action.setIcon(QIcon(Resources.get_icon_path("copy")))
-
-            menu.addSeparator()
-
-            delete_action = menu.addAction("Удалить")
-            delete_action.setIcon(QIcon(Resources.get_icon_path("delete")))
-        else:
-            # Это эмулятор (child item)
-            console_action = menu.addAction("Открыть консоль")
-            console_action.setIcon(QIcon(Resources.get_icon_path("console")))
-
-            stop_action = menu.addAction("Остановить")
-            stop_action.setIcon(QIcon(Resources.get_icon_path("stop")))
-
-            restart_action = menu.addAction("Перезапустить")
-            restart_action.setIcon(QIcon(Resources.get_icon_path("restart")))
-
-        action = menu.exec(self.mapToGlobal(pos))
-
-        if not action:
-            return
-
-        if item.parent() is None:
-            # Действия для бота
-            bot_name = item.text(1)
-            if action == delete_action:
-                self.selected_item = item
-                self.remove_selected_bot()
-            elif action == settings_action:
-                self.selected_item = item
-                if hasattr(self.parent_window, 'show_settings_dialog'):
-                    self.parent_window.show_settings_dialog()
-            elif action == start_action:
-                self.botStartRequested.emit(bot_name)
-            elif action == duplicate_action:
-                self.botDuplicateRequested.emit(bot_name)
-        else:
-            # Действия для эмулятора
-            emu_id = item.data(0, Qt.ItemDataRole.UserRole)
-            if action == console_action:
-                self.emulatorConsoleRequested.emit(emu_id)
-            elif action == stop_action:
-                self.emulatorStopRequested.emit(emu_id)
-            elif action == restart_action:
-                self.emulatorRestartRequested.emit(emu_id)
 
     def add_bot_to_queue(self, bot_name, game_name, threads=1, scheduled_time=None):
         """

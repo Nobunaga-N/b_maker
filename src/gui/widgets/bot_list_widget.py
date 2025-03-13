@@ -4,19 +4,19 @@
 и управления списком доступных ботов.
 """
 
-from PyQt6.QtWidgets import (
-    QTreeWidget, QTreeWidgetItem, QMenu, QMessageBox, QAbstractItemView, QHeaderView
-)
+from PyQt6.QtWidgets import QAbstractItemView, QHeaderView, QMessageBox, QTreeWidgetItem
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QIcon, QFont, QColor, QBrush
+from PyQt6.QtGui import QFont, QColor, QBrush
 
 from src.utils.style_constants import TABLE_STYLE
 from src.utils.resources import Resources
+from src.gui.widgets.context_menu_tree_widget import ContextMenuTreeWidget
 
 
-class BotListWidget(QTreeWidget):
+class BotListWidget(ContextMenuTreeWidget):
     """
     Улучшенный виджет списка ботов с дополнительными возможностями.
+    Использует базовый класс для обработки контекстных меню.
     """
     # Сигналы для взаимодействия с родительским виджетом
     botEditRequested = pyqtSignal(str)  # Имя бота для редактирования
@@ -45,12 +45,57 @@ class BotListWidget(QTreeWidget):
         self.header().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.header().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
 
-        # Настройка контекстного меню
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.show_context_menu)
-
         # Настройка двойного клика
         self.itemDoubleClicked.connect(self.on_double_click)
+
+    # УДАЛИТЬ метод show_context_menu, так как он теперь реализован в базовом классе:
+    # def show_context_menu(self, position): ...
+
+    # ДОБАВИТЬ новый метод для определения пунктов меню
+    def get_menu_items(self, item):
+        """
+        Возвращает список элементов для меню ботов.
+        """
+        return [
+            {
+                'id': 'edit',
+                'text': "Редактировать",
+                'icon_path': Resources.get_icon_path("edit")
+            },
+            {
+                'id': 'add_to_manager',
+                'text': "Добавить в менеджер",
+                'icon_path': Resources.get_icon_path("add-to-queue")
+            },
+            {
+                'id': 'export',
+                'text': "Экспорт",
+                'icon_path': Resources.get_icon_path("export"),
+                'separator_before': True
+            },
+            {
+                'id': 'delete',
+                'text': "Удалить",
+                'icon_path': Resources.get_icon_path("delete")
+            }
+        ]
+
+    # ДОБАВИТЬ новый метод для обработки действий меню
+    def handle_menu_action(self, item, action_id):
+        """
+        Обрабатывает выбранное действие меню.
+        """
+        bot_name = item.text(0)
+        game_name = item.text(1)
+
+        if action_id == 'edit':
+            self.botEditRequested.emit(bot_name)
+        elif action_id == 'add_to_manager':
+            self.botAddToManagerRequested.emit(bot_name, game_name)
+        elif action_id == 'delete':
+            self.on_delete_bot(bot_name)
+        elif action_id == 'export':
+            self.botExportRequested.emit(bot_name)
 
     def add_bot(self, bot_name, game_name):
         """Добавляет бота в список"""
@@ -91,43 +136,7 @@ class BotListWidget(QTreeWidget):
         if item:
             self.botEditRequested.emit(item.text(0))
 
-    def show_context_menu(self, position):
-        """Показывает контекстное меню для выбранного бота"""
-        item = self.itemAt(position)
-        if not item:
-            return
-
-        # Создаем меню
-        menu = QMenu(self)
-
-        # Добавляем действия
-        edit_action = menu.addAction("Редактировать")
-        edit_action.setIcon(QIcon(Resources.get_icon_path("edit")))
-
-        add_to_manager_action = menu.addAction("Добавить в менеджер")
-        add_to_manager_action.setIcon(QIcon(Resources.get_icon_path("add-to-queue")))
-
-        menu.addSeparator()
-
-        export_action = menu.addAction("Экспорт")
-        export_action.setIcon(QIcon(Resources.get_icon_path("export")))
-
-        delete_action = menu.addAction("Удалить")
-        delete_action.setIcon(QIcon(Resources.get_icon_path("delete")))
-
-        # Выполняем меню
-        action = menu.exec(self.mapToGlobal(position))
-
-        # Обрабатываем выбранное действие
-        if action == edit_action:
-            self.botEditRequested.emit(item.text(0))
-        elif action == add_to_manager_action:
-            self.botAddToManagerRequested.emit(item.text(0), item.text(1))
-        elif action == delete_action:
-            self.on_delete_bot(item.text(0))
-        elif action == export_action:
-            self.botExportRequested.emit(item.text(0))
-
+    # СОХРАНИТЬ этот метод, так как он содержит бизнес-логику, а не только отображение меню
     def on_delete_bot(self, bot_name):
         """Запрашивает подтверждение удаления бота"""
         reply = QMessageBox.question(
