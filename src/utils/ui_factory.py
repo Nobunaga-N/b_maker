@@ -13,7 +13,7 @@ from PyQt6.QtGui import QIcon, QFont
 from PyQt6.QtCore import Qt
 
 from src.utils.style_constants import (
-    ACCENT_BUTTON_STYLE, DELETE_BUTTON_STYLE,
+    DELETE_BUTTON_STYLE,
     TITLE_STYLE, MAIN_FRAME_STYLE
 )
 from src.utils.resources import Resources
@@ -304,11 +304,10 @@ def create_script_item_widget(index, item_type, description, data, parent=None):
     Returns:
         QFrame: Стилизованный фрейм элемента скрипта
     """
-    from PyQt6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel, QToolButton
+    from PyQt6.QtWidgets import QFrame, QVBoxLayout, QHBoxLayout, QLabel
     from src.utils.style_constants import (
         SCRIPT_ITEM_STYLE, SCRIPT_ITEM_HEADER_STYLE,
-        SCRIPT_ITEM_DESCRIPTION_STYLE, SCRIPT_ITEM_BUTTON_STYLE,
-        SCRIPT_ITEM_DELETE_BUTTON_STYLE
+        SCRIPT_ITEM_DESCRIPTION_STYLE
     )
 
     # Основной фрейм элемента
@@ -419,39 +418,6 @@ def add_script_item_buttons(item_frame, edit_callback=None, delete_callback=None
     header_layout.addWidget(delete_btn)
 
     return edit_btn, delete_btn, move_up_btn, move_down_btn
-
-
-def create_action_buttons_panel():
-    """
-    Создает панель с кнопками "Отмена" и "Подтвердить"
-    с правильным стилем и выравниванием вправо.
-
-    Returns:
-        Tuple[QFrame, QPushButton, QPushButton]: (панель, кнопка отмены, кнопка подтверждения)
-    """
-    from PyQt6.QtWidgets import QFrame, QHBoxLayout, QPushButton
-    from src.utils.style_constants import CANCEL_BUTTON_STYLE, CONFIRM_BUTTON_STYLE, BUTTONS_PANEL_STYLE
-
-    panel = QFrame()
-    panel.setStyleSheet(BUTTONS_PANEL_STYLE)
-    layout = QHBoxLayout(panel)
-    layout.setContentsMargins(5, 5, 5, 5)
-
-    # Добавляем растяжку слева для выравнивания кнопок вправо
-    layout.addStretch(1)
-
-    # Создаем кнопки
-    cancel_btn = QPushButton("Отмена")
-    cancel_btn.setStyleSheet(CANCEL_BUTTON_STYLE)
-
-    confirm_btn = QPushButton("Подтвердить")
-    confirm_btn.setStyleSheet(CONFIRM_BUTTON_STYLE)
-
-    # Добавляем кнопки
-    layout.addWidget(cancel_btn)
-    layout.addWidget(confirm_btn)
-
-    return panel, cancel_btn, confirm_btn
 
 
 def create_multiple_file_dialog(title="Выбрать файлы", filter="Изображения (*.png *.jpg *.jpeg)"):
