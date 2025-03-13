@@ -19,6 +19,7 @@ from src.utils.ui_factory import (
     create_spinbox_without_buttons, create_double_spinbox_without_buttons
 )
 from src.utils.resources import Resources
+from src.utils.module_handler import ModuleHandler
 
 
 class BaseModuleDialog(QDialog):
@@ -85,6 +86,7 @@ class ClickModuleDialog(BaseModuleDialog):
     """
     Оптимизированный диалог для настройки модуля клика.
     """
+    MODULE_TYPE = "Клик"
 
     def __init__(self, parent=None):
         super().__init__(parent, "Настройка клика", 350, 300)
@@ -154,6 +156,7 @@ class SwipeModuleDialog(BaseModuleDialog):
     """
     Оптимизированный диалог для настройки модуля свайпа.
     """
+    MODULE_TYPE = "Свайп"
 
     def __init__(self, parent=None):
         super().__init__(parent, "Настройка свайпа", 350, 350)
@@ -238,6 +241,7 @@ class TimeSleepModuleDialog(BaseModuleDialog):
     """
     Оптимизированный диалог для настройки модуля паузы.
     """
+    MODULE_TYPE = "Пауза"
 
     def __init__(self, parent=None):
         super().__init__(parent, "Настройка паузы", 300, 180)

@@ -23,7 +23,8 @@ from src.utils.ui_factory import (
 )
 from src.utils.resources import Resources
 from src.gui.modules.canvas_module import CanvasModule, ModuleItem
-from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog
+from src.utils.module_handler import ModuleHandler
+from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog, TimeSleepModuleDialog
 from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
 
 
@@ -238,6 +239,8 @@ class ActivityCanvasModule(CanvasModule):
         """)
         return button
 
+    # Удаляем дублирующиеся методы add_module, _update_module_numbers, _redraw_modules
+
     def add_module(self, module_type: str, description: str, data: dict = None):
         """Переопределяем метод для добавления нумерации модулей"""
         # Вызываем родительский метод для добавления модуля
@@ -254,14 +257,6 @@ class ActivityCanvasModule(CanvasModule):
             # Обновляем индекс модуля
             module.update_index(i)
 
-    def _redraw_modules(self):
-        """Переопределяем метод перерисовки для обновления нумерации"""
-        # Вызываем родительский метод
-        super()._redraw_modules()
-
-        # Обновляем нумерацию всех модулей
-        self._update_module_numbers()
-
     def clear(self):
         """Очищает холст безопасным способом"""
         # Удаляем все модули с холста
@@ -276,7 +271,7 @@ class ActivityCanvasModule(CanvasModule):
         # Испускаем сигнал об изменении холста
         self.canvasChanged.emit()
 
-    # Специализированные методы для добавления модулей - без изменений
+    # Специализированные методы для добавления модулей с использованием ModuleHandler
     def add_close_game_module(self):
         """Adds a close.game module to the canvas"""
         description = "Закрыть игру (close.game)"
@@ -336,7 +331,7 @@ class ActivityCanvasModule(CanvasModule):
 
         if dialog.exec():
             time_value = time_spinner.value()
-            description = f"Пауза {time_value} сек (time.sleep)"
+            description = ModuleHandler.format_module_description("time.sleep", {"time": time_value})
             data = {"type": "time_sleep", "time": time_value}
             self.add_module("time.sleep", description, data)
 
@@ -381,84 +376,45 @@ class ActivityCanvasModule(CanvasModule):
 
         if dialog.exec():
             line_number = line_spinner.value()
-            description = f"Перезапуск со строки {line_number} (restart.from)"
+            description = ModuleHandler.format_module_description("restart.from", {"line": line_number})
             data = {"type": "restart_from", "line": line_number}
             self.add_module("restart.from", description, data)
 
     def add_restart_from_last_module(self):
         """Adds a restart.from.last module to the canvas"""
-        description = "Перезапуск с последней позиции (restart.from.last)"
+        description = ModuleHandler.format_module_description("restart.from.last", {})
         data = {"type": "restart_from_last"}
         self.add_module("restart.from.last", description, data)
 
     def add_click_module(self):
-        """Adds a click module to the canvas"""
-        dialog = ClickModuleDialog(self)
-        dialog.resize(380, 320)
-
-        dialog.setStyleSheet(dialog.styleSheet() + """
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-            }
-        """)
-
-        if dialog.exec():
-            data = dialog.get_data()
-            description = f"Клик по координатам ({data['x']}, {data['y']})"
-            if data.get('description'):
-                description += f" - {data['description']}"
-            if data.get('sleep') > 0:
-                description += f" с задержкой {data['sleep']} сек"
-
-            self.add_module("Клик", description, data)
+        """Adds a click module to the canvas using ModuleHandler"""
+        self.add_module_with_dialog(ClickModuleDialog)
 
     def add_swipe_module(self):
-        """Adds a swipe module to the canvas"""
-        dialog = SwipeModuleDialog(self)
-        dialog.resize(380, 380)
-
-        dialog.setStyleSheet(dialog.styleSheet() + """
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-            }
-        """)
-
-        if dialog.exec():
-            data = dialog.get_data()
-            description = f"Свайп ({data['x1']}, {data['y1']}) → ({data['x2']}, {data['y2']})"
-            if data.get('description'):
-                description += f" - {data['description']}"
-            if data.get('sleep') > 0:
-                description += f" с задержкой {data['sleep']} сек"
-
-            self.add_module("Свайп", description, data)
+        """Adds a swipe module to the canvas using ModuleHandler"""
+        self.add_module_with_dialog(SwipeModuleDialog)
 
     def add_image_search_module(self):
-        """Adds an image search module to the canvas"""
-        dialog = ImageSearchModuleDialog(self)
-        dialog.resize(800, 600)
+        """Adds an image search module to the canvas using ModuleHandler"""
+        self.add_module_with_dialog(ImageSearchModuleDialog)
 
-        dialog.setStyleSheet(dialog.styleSheet() + """
-            QToolTip {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #FFA500;
-                padding: 2px;
-            }
-        """)
+    def add_get_coords_module(self):
+        """Adds a get_coords module to the canvas"""
+        description = ModuleHandler.format_module_description("get_coords", {})
+        data = {"type": "get_coords"}
+        self.add_module("get_coords", description, data)
 
-        if dialog.exec():
-            data = dialog.get_data()
-            images_str = ", ".join(data.get("images", []))
-            description = f"Поиск изображений: {images_str} (таймаут: {data.get('timeout', 120)} сек)"
+    def add_continue_module(self):
+        """Adds a continue module to the canvas"""
+        description = ModuleHandler.format_module_description("continue", {})
+        data = {"type": "continue"}
+        self.add_module("continue", description, data)
 
-            self.add_module("Поиск картинки", description, data)
+    def add_running_clear_module(self):
+        """Adds a running.clear() module to the canvas"""
+        description = ModuleHandler.format_module_description("running.clear()", {})
+        data = {"type": "running_clear"}
+        self.add_module("running.clear()", description, data)
 
 
 class ActivityModuleDialog(QDialog):

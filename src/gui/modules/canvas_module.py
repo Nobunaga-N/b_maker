@@ -12,6 +12,7 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont
 
 from src.utils.style_constants import SCRIPT_SUBMODULE_ITEM_STYLE, CANVAS_MODULE_STYLE
+from src.utils.module_handler import ModuleHandler
 
 
 class ModuleItem(QFrame):
@@ -67,6 +68,11 @@ class ModuleItem(QFrame):
         top_layout.setContentsMargins(0, 0, 0, 0)
         top_layout.setSpacing(2)
 
+        # Номер элемента
+        self.index_label = QLabel(f"{self.index + 1}.")
+        self.index_label.setStyleSheet("font-weight: bold; color: #FFA500;")
+        top_layout.addWidget(self.index_label)
+
         # Тип модуля (жирный текст)
         type_label = QLabel(self.module_type)
         type_label.setStyleSheet("font-weight: bold; color: #FFA500;")
@@ -103,10 +109,10 @@ class ModuleItem(QFrame):
         main_layout.addLayout(top_layout)
 
         # Описание модуля
-        desc_label = QLabel(self.description)
-        desc_label.setWordWrap(True)
-        desc_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        main_layout.addWidget(desc_label)
+        self.desc_label = QLabel(self.description)
+        self.desc_label.setWordWrap(True)
+        self.desc_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        main_layout.addWidget(self.desc_label)
 
     def set_data(self, data: dict):
         """Устанавливает дополнительные данные для элемента"""
@@ -115,6 +121,11 @@ class ModuleItem(QFrame):
     def get_data(self) -> dict:
         """Возвращает данные элемента"""
         return self.data
+
+    def update_index(self, new_index: int):
+        """Обновляет индекс и отображение номера модуля"""
+        self.index = new_index
+        self.index_label.setText(f"{new_index + 1}.")
 
 
 class CanvasModule(QFrame):
@@ -224,6 +235,32 @@ class CanvasModule(QFrame):
 
         return index
 
+    def add_module_with_dialog(self, dialog_class, parent=None):
+        """
+        Добавляет модуль с использованием диалога и ModuleHandler.
+
+        Args:
+            dialog_class: Класс диалога
+            parent: Родительский объект (по умолчанию self)
+
+        Returns:
+            Индекс добавленного модуля или -1 если отменено
+        """
+        parent = parent or self
+
+        def callback(module_type, description, data):
+            return self.add_module(module_type, description, data)
+
+        success, data = ModuleHandler.add_module_with_dialog(
+            dialog_class,
+            parent=parent,
+            callback=callback
+        )
+
+        if success and data:
+            return len(self.modules) - 1
+        return -1
+
     def edit_module(self, index: int):
         """
         Метод-заглушка для редактирования модуля.
@@ -233,6 +270,44 @@ class CanvasModule(QFrame):
             module = self.modules[index]
             print(f"Редактирование модуля {module.module_type} с индексом {index}")
             # Логика редактирования будет реализована в дочерних классах
+
+    def edit_module_with_dialog(self, index, dialog_class, parent=None):
+        """
+        Редактирует модуль с использованием диалога и ModuleHandler.
+
+        Args:
+            index: Индекс модуля для редактирования
+            dialog_class: Класс диалога
+            parent: Родительский объект (по умолчанию self)
+
+        Returns:
+            True в случае успеха, иначе False
+        """
+        parent = parent or self
+
+        if 0 <= index < len(self.modules):
+            module = self.modules[index]
+            existing_data = module.get_data()
+
+            def callback(module_type, description, data):
+                # Обновляем данные модуля
+                module.set_data(data)
+                # Обновляем описание
+                module.desc_label.setText(description)
+                # Испускаем сигнал об изменении
+                self.moduleEdited.emit(index, module_type, description, data)
+                self.canvasChanged.emit()
+
+            success, _ = ModuleHandler.edit_module_with_dialog(
+                dialog_class,
+                existing_data,
+                parent=parent,
+                callback=callback
+            )
+
+            return success
+
+        return False
 
     def delete_module(self, index: int):
         """Удаляет модуль с указанным индексом"""
@@ -255,10 +330,12 @@ class CanvasModule(QFrame):
                 # Обновляем индексы оставшихся модулей
                 for i, mod in enumerate(self.modules):
                     mod.index = i
+                    mod.update_index(i)
 
                 # Испускаем сигнал
                 self.moduleDeleted.emit(index)
                 self.canvasChanged.emit()
+                self._redraw_modules()
 
     def move_module_up(self, index: int):
         """Перемещает модуль вверх по списку"""
@@ -269,6 +346,10 @@ class CanvasModule(QFrame):
             # Обновляем индексы
             self.modules[index - 1].index = index - 1
             self.modules[index].index = index
+
+            # Обновляем отображение индексов
+            self.modules[index - 1].update_index(index - 1)
+            self.modules[index].update_index(index)
 
             # Перерисовываем на холсте
             self._redraw_modules()
@@ -285,6 +366,10 @@ class CanvasModule(QFrame):
             # Обновляем индексы
             self.modules[index].index = index
             self.modules[index + 1].index = index + 1
+
+            # Обновляем отображение индексов
+            self.modules[index].update_index(index)
+            self.modules[index + 1].update_index(index + 1)
 
             # Перерисовываем на холсте
             self._redraw_modules()
@@ -328,8 +413,7 @@ class CanvasModule(QFrame):
         """Загружает данные модулей на холст"""
         self.clear()
         for module_data in modules_data:
-            self.add_module(
-                module_data.get("type", ""),
-                module_data.get("description", ""),
-                module_data.get("data", {})
-            )
+            module_type = module_data.get("type", "")
+            description = module_data.get("description", "")
+            data = module_data.get("data", {})
+            self.add_module(module_type, description, data)
