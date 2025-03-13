@@ -11,8 +11,12 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 
-from src.utils.ui_factory import create_input_field, create_group_box
-from src.utils.style_constants import SCRIPT_DIALOG_BLUE_STYLE
+from src.utils.ui_factory import (
+    create_button, create_input_field, create_group_box
+)
+from src.utils.style_constants import (
+    SCRIPT_DIALOG_BLUE_STYLE, COLOR_ERROR, COLOR_SUCCESS
+)
 
 
 class ScriptBlockDialog(QDialog):
@@ -74,32 +78,30 @@ class ScriptBlockDialog(QDialog):
         """Создает кнопки диалога с выравниванием вправо и новыми цветами"""
         buttons_layout = QHBoxLayout()
 
-        self.cancel_btn = QPushButton("Отмена")
-        self.cancel_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #D94C4C;
+        self.cancel_btn = create_button("Отмена", f"""
+            QPushButton {{
+                background-color: {COLOR_ERROR};
                 color: white;
                 border-radius: 4px;
                 padding: 8px 16px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
+            }}
+            QPushButton:hover {{
                 background-color: #E55E5E;
-            }
+            }}
         """)
 
-        self.ok_btn = QPushButton("Подтвердить")
-        self.ok_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #4CAF50;
+        self.ok_btn = create_button("Подтвердить", f"""
+            QPushButton {{
+                background-color: {COLOR_SUCCESS};
                 color: white;
                 border-radius: 4px;
                 padding: 8px 16px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
+            }}
+            QPushButton:hover {{
                 background-color: #5EBF61;
-            }
+            }}
         """)
 
         self.cancel_btn.clicked.connect(self.reject)

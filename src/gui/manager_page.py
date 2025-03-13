@@ -16,8 +16,13 @@ from PyQt6.QtCore import Qt, pyqtSignal, QSize
 from PyQt6.QtGui import QIcon, QFont, QColor, QBrush
 
 from src.utils.resources import Resources
-from src.utils.style_constants import MAIN_FRAME_STYLE, DARK_BUTTON_STYLE, TOOLTIP_STYLE
-from src.utils.ui_factory import create_title_label, create_accent_button
+from src.utils.style_constants import (
+    MAIN_FRAME_STYLE, DARK_BUTTON_STYLE, TOOLTIP_STYLE
+)
+from src.utils.ui_factory import (
+    create_title_label, create_accent_button, create_dark_button,
+    create_frame
+)
 from src.gui.widgets import ManagerQueueWidget, BotListWidget
 from src.gui.dialogs import BotSettingsDialog
 from src.controllers import BotManagerController
@@ -143,8 +148,7 @@ class ManagerPage(QWidget):
         Создает фрейм с менеджером ботов.
         Оптимизирован для экономии пространства и улучшения UX.
         """
-        manager_frame = QFrame()
-        manager_frame.setStyleSheet(MAIN_FRAME_STYLE)
+        manager_frame = create_frame()
         manager_layout = QVBoxLayout(manager_frame)
         manager_layout.setContentsMargins(15, 15, 15, 15)
         manager_layout.setSpacing(10)
@@ -238,8 +242,7 @@ class ManagerPage(QWidget):
 
     def _create_bots_frame(self):
         """Создает компактный фрейм со списком ботов"""
-        bots_frame = QFrame()
-        bots_frame.setStyleSheet(MAIN_FRAME_STYLE)
+        bots_frame = create_frame()
         bots_layout = QVBoxLayout(bots_frame)
         # Уменьшаем отступы для более компактного вида
         bots_layout.setContentsMargins(10, 10, 10, 10)
@@ -278,34 +281,24 @@ class ManagerPage(QWidget):
         buttons_layout.setSpacing(5)  # Небольшие промежутки между кнопками
 
         # Создаем полноценные кнопки с фиксированной высотой
-        self.btn_edit_bot = QPushButton("Редактировать")
-        self.btn_edit_bot.setIcon(QIcon(Resources.get_icon_path("edit")))
-        self.btn_edit_bot.setToolTip("Редактировать выбранного бота")
-        self.btn_edit_bot.setStyleSheet(DARK_BUTTON_STYLE)
+        self.btn_edit_bot = create_dark_button("Редактировать", Resources.get_icon_path("edit"),
+                                               tooltip="Редактировать выбранного бота")
         self.btn_edit_bot.setFixedHeight(30)  # Фиксированная высота кнопки
 
-        self.btn_add_to_manager = QPushButton("В менеджер")
-        self.btn_add_to_manager.setIcon(QIcon(Resources.get_icon_path("add-to-queue")))
-        self.btn_add_to_manager.setToolTip("Добавить выбранного бота в менеджер")
-        self.btn_add_to_manager.setStyleSheet(DARK_BUTTON_STYLE)
+        self.btn_add_to_manager = create_dark_button("В менеджер", Resources.get_icon_path("add-to-queue"),
+                                               tooltip="Добавить выбранного бота в менеджер")
         self.btn_add_to_manager.setFixedHeight(30)  # Фиксированная высота кнопки
 
-        self.btn_delete_bot = QPushButton("Удалить")
-        self.btn_delete_bot.setIcon(QIcon(Resources.get_icon_path("delete")))
-        self.btn_delete_bot.setToolTip("Удалить выбранного бота")
-        self.btn_delete_bot.setStyleSheet(DARK_BUTTON_STYLE)
+        self.btn_delete_bot = create_dark_button("Удалить", Resources.get_icon_path("delete"),
+                                               tooltip="Удалить выбранного бота")
         self.btn_delete_bot.setFixedHeight(30)  # Фиксированная высота кнопки
 
-        self.btn_export_bot = QPushButton("Экспорт")
-        self.btn_export_bot.setIcon(QIcon(Resources.get_icon_path("export")))
-        self.btn_export_bot.setToolTip("Экспортировать выбранного бота")
-        self.btn_export_bot.setStyleSheet(DARK_BUTTON_STYLE)
+        self.btn_export_bot = create_dark_button("Экспорт", Resources.get_icon_path("export"),
+                                               tooltip="Экспортировать выбранного бота")
         self.btn_export_bot.setFixedHeight(30)  # Фиксированная высота кнопки
 
-        self.btn_import_bot = QPushButton("Импорт")
-        self.btn_import_bot.setIcon(QIcon(Resources.get_icon_path("import")))
-        self.btn_import_bot.setToolTip("Импортировать бота")
-        self.btn_import_bot.setStyleSheet(DARK_BUTTON_STYLE)
+        self.btn_import_bot = create_dark_button("Импорт", Resources.get_icon_path("import"),
+                                               tooltip="Импортировать бота")
         self.btn_import_bot.setFixedHeight(30)  # Фиксированная высота кнопки
 
         # Добавляем кнопки в вертикальный лейаут

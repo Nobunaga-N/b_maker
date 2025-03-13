@@ -17,12 +17,13 @@ from src.gui.dialog_modules import ClickModuleDialog, SwipeModuleDialog, TimeSle
 from src.gui.modules.image_search_module_improved import ImageSearchModuleDialog
 from src.gui.custom_widgets import ActivityModuleDialog, ModuleListItem
 from src.utils.resources import Resources
-from src.utils.style_constants import (MAIN_FRAME_STYLE, TABLE_STYLE, CREATE_BOT_STYLE,DARK_BUTTON_STYLE, TABLE_ACTION_BUTTON_STYLE
+from src.utils.style_constants import (
+    MAIN_FRAME_STYLE, BASE_TABLE_STYLE, CREATE_BOT_STYLE, DARK_BUTTON_STYLE
 )
 from src.utils.ui_factory import (
-    create_title_label, create_accent_button, create_input_field,
-    create_spinbox_without_buttons, create_double_spinbox_without_buttons,
-    create_group_box
+    create_title_label, create_accent_button, create_dark_button,
+    create_input_field, create_frame, create_spinbox_without_buttons,
+    create_double_spinbox_without_buttons, create_group_box, create_table
 )
 
 
@@ -96,11 +97,7 @@ class CreateBotPage(QWidget):
 
     def create_bot_button(self, text, icon_path=None):
         """Создает кнопку с темным фоном, белым текстом и белой рамкой"""
-        button = QPushButton(text)
-        if icon_path:
-            button.setIcon(QIcon(icon_path))
-        button.setStyleSheet(DARK_BUTTON_STYLE)
-        return button
+        return create_dark_button(text, icon_path)
 
     def add_action_buttons_to_row(self, row, module_type):
         """Создает и добавляет кнопки действий для указанной строки"""
@@ -110,8 +107,7 @@ class CreateBotPage(QWidget):
         actions_layout.setSpacing(2)
 
         # Создаем кнопку редактирования с нужным стилем
-        edit_btn = QPushButton("Изменить")
-        edit_btn.setStyleSheet(TABLE_ACTION_BUTTON_STYLE)
+        edit_btn = create_dark_button("Изменить")
 
         # Используем замыкание для сохранения текущего row
         def create_edit_callback(r):
@@ -208,8 +204,7 @@ class CreateBotPage(QWidget):
 
     def setup_modules_panel(self, splitter):
         """Настраивает панель с доступными модулями"""
-        modules_panel = QFrame()
-        modules_panel.setStyleSheet(MAIN_FRAME_STYLE)
+        modules_panel = create_frame()
         modules_layout = QVBoxLayout(modules_panel)
 
         modules_title = create_title_label("Доступные модули", 16)
@@ -244,9 +239,7 @@ class CreateBotPage(QWidget):
         canvas_layout.addWidget(canvas_title)
 
         # Таблица модулей (холст)
-        self.modules_table = QTableWidget(0, 4)  # строки, столбцы (№, Тип, Описание, Действия)
-        self.modules_table.setHorizontalHeaderLabels(["№", "Тип модуля", "Описание", "Действия"])
-        self.modules_table.setStyleSheet(TABLE_STYLE)
+        self.modules_table = create_table(["№", "Тип модуля", "Описание", "Действия"])
         self.modules_table.verticalHeader().setVisible(False)
         self.modules_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.modules_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Fixed)

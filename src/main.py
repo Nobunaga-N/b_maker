@@ -13,6 +13,7 @@ from src.gui.main_window import MainWindow
 from src.utils.logger import setup_logger
 from src.utils.resources import Resources
 from src.utils.exceptions import BotMakerError
+from src.utils.style_constants import TOOLTIP_STYLE
 
 # Константы
 APP_NAME = "BOT Maker"
@@ -80,14 +81,7 @@ def main() -> None:
         app.setWindowIcon(QIcon(icon_path))
 
     # Применение глобального стиля для QToolTip
-    app.setStyleSheet("""
-        QToolTip {
-            background-color: #2A2A2A;
-            color: white;
-            border: 1px solid #FFA500;
-            padding: 2px;
-        }
-    """)
+    app.setStyleSheet(TOOLTIP_STYLE)
 
     # Загрузка стиля приложения
     style_path = Resources.get_style_path(DEFAULT_STYLE)

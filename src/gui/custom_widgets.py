@@ -13,12 +13,13 @@ import json
 from typing import Dict, List, Any, Optional
 
 from src.utils.style_constants import (
-    MODULE_ITEM_STYLE, TOOL_BUTTON_STYLE, ACTIVITY_CANVAS_STYLE, ACTIVITY_DIALOG_STYLE, ACTIVITY_MODULE_TITLE_STYLE,
-    MODULE_BUTTON_STYLE
+    MODULE_ITEM_STYLE, TOOL_BUTTON_STYLE, ACTIVITY_CANVAS_STYLE,
+    ACTIVITY_DIALOG_STYLE, ACTIVITY_MODULE_TITLE_STYLE, MODULE_BUTTON_STYLE
 )
 from src.utils.ui_factory import (
-    create_tool_button, create_accent_button, create_group_box,
-    create_double_spinbox_without_buttons, create_text_label, create_spinbox_without_buttons
+    create_tool_button, create_accent_button, create_dark_button,
+    create_group_box, create_double_spinbox_without_buttons,
+    create_text_label, create_spinbox_without_buttons, create_button
 )
 from src.utils.resources import Resources
 from src.gui.modules.canvas_module import CanvasModule, ModuleItem
@@ -229,22 +230,11 @@ class ActivityCanvasModule(CanvasModule):
 
     def _create_command_button(self, text, tooltip, icon_path, slot):
         """Создает компактную кнопку для панели инструментов"""
-        button = QPushButton(text)
-        button.setToolTip(tooltip)
-        if icon_path:
-            button.setIcon(QIcon(icon_path))
-        button.clicked.connect(slot)
-        button.setStyleSheet("""
+        button = create_dark_button(text, icon_path, slot, tooltip)
+        button.setStyleSheet(button.styleSheet() + """
             QPushButton {
-                background-color: #333;
-                color: white;
-                border-radius: 3px;
-                padding: 3px 6px;
                 font-size: 11px;
-            }
-            QPushButton:hover {
-                background-color: #444;
-                border: 1px solid #FFA500;
+                padding: 3px 6px;
             }
         """)
         return button

@@ -19,13 +19,15 @@ from src.gui.modules.if_result_module import IfResultModuleDialog
 from src.gui.modules.elif_module import ElifModuleDialog
 from src.gui.modules.if_not_result_module import IfNotResultModuleDialog
 from src.utils.style_constants import (
-    SCRIPT_CANVAS_STYLE, COMPACT_IMAGE_SETTINGS_STYLE
+    SCRIPT_CANVAS_STYLE, COMPACT_IMAGE_SETTINGS_STYLE,
+    COLOR_BG_DARK_2, COLOR_TEXT, COLOR_PRIMARY, COLOR_BORDER
 )
 from src.utils.resources import Resources
 from src.utils.ui_factory import (
     create_script_button, create_group_box, create_input_field,
     create_spinbox_without_buttons, create_title_label,
-    create_script_item_widget, add_script_item_buttons, create_multiple_file_dialog
+    create_script_item_widget, add_script_item_buttons,
+    create_multiple_file_dialog, create_button, create_delete_button
 )
 
 
@@ -300,18 +302,7 @@ class ImageSearchModuleDialog(QDialog):
         self.images_list.setItem(row_position, 0, QTableWidgetItem(image_name))
 
         # Кнопка удаления
-        delete_btn = QPushButton("Удалить")
-        delete_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #FF4444;
-                color: white;
-                border-radius: 3px;
-                padding: 3px;
-            }
-            QPushButton:hover {
-                background-color: #FF6666;
-            }
-        """)
+        delete_btn = create_delete_button("Удалить")
 
         delete_btn.clicked.connect(create_delete_function(row_position))
         self.images_list.setCellWidget(row_position, 1, delete_btn)

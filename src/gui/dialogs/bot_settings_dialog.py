@@ -14,10 +14,11 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QDateTime, QTime, QDate
 
 from src.utils.style_constants import (
-    MODULE_DIALOG_STYLE, MODULE_BUTTON_STYLE
+    BASE_DIALOG_STYLE, BASE_BUTTON_STYLE, COLOR_PRIMARY, COLOR_BG_DARK_3
 )
 from src.utils.ui_factory import (
-    create_input_field, create_spinbox_without_buttons
+    create_input_field, create_spinbox_without_buttons,
+    create_button, create_group_box, create_label
 )
 
 
@@ -33,26 +34,26 @@ class BotSettingsDialog(QDialog):
         self.setWindowTitle("Настройка параметров бота")
         self.setModal(True)
         self.resize(450, 400)
-        self.setStyleSheet(MODULE_DIALOG_STYLE)
+        self.setStyleSheet(BASE_DIALOG_STYLE)
         self.setup_ui()
 
         # Устанавливаем начальный стиль для чекбокса
-        self.enable_schedule.setStyleSheet("""
-            QCheckBox {
+        self.enable_schedule.setStyleSheet(f"""
+            QCheckBox {{
                 color: white;
                 spacing: 5px;
-            }
-            QCheckBox::indicator {
+            }}
+            QCheckBox::indicator {{
                 width: 16px;
                 height: 16px;
                 border: 1px solid #888;
                 border-radius: 3px;
-                background-color: #333;
-            }
-            QCheckBox::indicator:unchecked {
-                background-color: #333;
-                border: 1px solid #FFA500;
-            }
+                background-color: {COLOR_BG_DARK_3};
+            }}
+            QCheckBox::indicator:unchecked {{
+                background-color: {COLOR_BG_DARK_3};
+                border: 1px solid {COLOR_PRIMARY};
+            }}
         """)
 
     def setup_ui(self):
@@ -65,23 +66,7 @@ class BotSettingsDialog(QDialog):
         form_layout.setVerticalSpacing(10)
 
         # Группа планирования запуска с улучшенным стилем
-        schedule_group = QGroupBox("Планирование запуска")
-        schedule_group.setStyleSheet("""
-            QGroupBox {
-                font-weight: bold;
-                color: #FFA500;
-                border: 1px solid #444;
-                border-radius: 4px;
-                margin-top: 8px;
-                padding-top: 16px;
-            }
-            QGroupBox::title {
-                subcontrol-origin: margin;
-                left: 6px;
-                padding: 0 3px;
-                color: #FFA500;
-            }
-        """)
+        schedule_group = create_group_box("Планирование запуска")
         schedule_layout = QVBoxLayout(schedule_group)
 
         # Добавляем небольшую верхнюю прокладку для чекбокса
@@ -270,11 +255,8 @@ class BotSettingsDialog(QDialog):
 
         # Кнопки OK и Cancel
         buttons_layout = QHBoxLayout()
-        self.btn_cancel = QPushButton("Отмена")
-        self.btn_ok = QPushButton("ОК")
-
-        self.btn_cancel.setStyleSheet(MODULE_BUTTON_STYLE)
-        self.btn_ok.setStyleSheet(MODULE_BUTTON_STYLE)
+        self.btn_cancel = create_button("Отмена", BASE_BUTTON_STYLE)
+        self.btn_ok = create_button("ОК", BASE_BUTTON_STYLE)
 
         self.btn_cancel.clicked.connect(self.reject)
         self.btn_ok.clicked.connect(self.accept)

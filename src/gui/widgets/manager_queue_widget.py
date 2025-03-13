@@ -13,8 +13,8 @@ from PyQt6.QtCore import Qt, QPoint, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont, QColor, QBrush, QKeyEvent
 
 from src.utils.resources import Resources
-from src.utils.style_constants import DARK_BUTTON_STYLE
-
+from src.utils.style_constants import DARK_BUTTON_STYLE, COLOR_ERROR, COLOR_TEXT
+from src.utils.ui_factory import create_dark_button, create_delete_button
 
 class ManagerQueueWidget(QTreeWidget):
     """

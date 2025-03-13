@@ -10,10 +10,11 @@ import json
 import os
 
 from src.utils.style_constants import (
-    TITLE_STYLE, MAIN_FRAME_STYLE, TABLE_STYLE, SETTINGS_BUTTON_STYLE
+    TITLE_STYLE, MAIN_FRAME_STYLE, BASE_TABLE_STYLE, SETTINGS_BUTTON_STYLE
 )
 from src.utils.ui_factory import (
-    create_title_label, create_accent_button, create_input_field, create_delete_button
+    create_title_label, create_accent_button, create_input_field,
+    create_delete_button, create_table, create_frame
 )
 from src.utils.resources import Resources
 
@@ -42,8 +43,7 @@ class SettingsPage(QWidget):
         main_layout.addWidget(title_label)
 
         # Раздел игр и активностей
-        games_frame = QFrame()
-        games_frame.setStyleSheet(MAIN_FRAME_STYLE)
+        games_frame = create_frame()
         games_layout = QVBoxLayout(games_frame)
         games_layout.setContentsMargins(15, 15, 15, 15)
         games_layout.setSpacing(10)
@@ -74,9 +74,7 @@ class SettingsPage(QWidget):
         games_layout.addLayout(form_layout)
 
         # Таблица игр и активностей
-        self.table = QTableWidget(0, 3)  # 0 строк, 3 столбца (игра, активность, кнопка удаления)
-        self.table.setHorizontalHeaderLabels(["Игра", "Активность", ""])
-        self.table.setStyleSheet(TABLE_STYLE)
+        self.table = create_table(["Игра", "Активность", ""])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Fixed)

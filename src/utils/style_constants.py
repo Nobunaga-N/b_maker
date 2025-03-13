@@ -1,27 +1,243 @@
-# src/utils/style_constants.py
 """
 Модуль содержит константы стилей для всего приложения.
 Это позволяет унифицировать внешний вид и уменьшить дублирование кода.
 """
 
-# Стиль для кнопки удаления
-DELETE_BUTTON_STYLE = """
-    QPushButton {
-        background-color: #FF4444;
-        color: #FFF;
+# Основные цвета
+COLOR_PRIMARY = "#FFA500"  # Оранжевый (акцентный цвет)
+COLOR_SECONDARY = "#4C7BD9"  # Синий (для синей темы)
+COLOR_ERROR = "#FF4444"  # Красный (для ошибок и удаления)
+COLOR_SUCCESS = "#44BB44"  # Зеленый (для успеха)
+COLOR_WARNING = "#FFB347"  # Светло-оранжевый (для предупреждений)
+
+# Темные фоны
+COLOR_BG_DARK = "#000000"  # Основной фон приложения
+COLOR_BG_DARK_1 = "#1E1E1E"  # Основной фон фреймов
+COLOR_BG_DARK_2 = "#2A2A2A"  # Фон полей ввода и элементов
+COLOR_BG_DARK_3 = "#333333"  # Фон заголовков и более светлых областей
+
+# Границы
+COLOR_BORDER = "#444444"  # Основные границы
+COLOR_BORDER_LIGHT = "#555555"  # Светлые границы
+
+# Текст
+COLOR_TEXT = "#FFFFFF"  # Основной текст
+COLOR_TEXT_SECONDARY = "#CCCCCC"  # Вторичный текст
+
+# Синяя тема
+COLOR_BLUE_BG = "#1E2B3C"  # Фон синей темы
+COLOR_BLUE_ACCENT = "#4C7BD9"  # Акцент синей темы
+COLOR_BLUE_HIGHLIGHT = "#5E8DE5"  # Подсветка синей темы
+COLOR_BLUE_BG_LIGHT = "#283A5A"  # Светлый фон синей темы
+COLOR_BLUE_TEXT = "#89B4FF"  # Текст синей темы
+
+# Базовые стили компонентов
+
+# Общие стили для всех диалогов
+BASE_DIALOG_STYLE = f"""
+    QDialog {{
+        background-color: {COLOR_BG_DARK_1};
+        color: {COLOR_TEXT};
+    }}
+    QLabel {{
+        color: {COLOR_TEXT};
+    }}
+    QGroupBox {{
+        font-weight: bold;
+        color: {COLOR_PRIMARY};
+        border: 1px solid {COLOR_BORDER};
         border-radius: 4px;
-    }
-    QPushButton:hover {
+        margin-top: 8px;
+        padding-top: 8px;
+    }}
+    QGroupBox::title {{
+        subcontrol-origin: margin;
+        left: 6px;
+        padding: 0 3px;
+    }}
+    QToolTip {{
+        background-color: {COLOR_BG_DARK_2};
+        color: {COLOR_TEXT};
+        border: 1px solid {COLOR_PRIMARY};
+        padding: 2px;
+        opacity: 200;
+    }}
+"""
+
+# Стиль для кнопок
+BASE_BUTTON_STYLE = f"""
+    QPushButton {{
+        background-color: {COLOR_PRIMARY};
+        color: black;
+        border-radius: 4px;
+        padding: 6px 10px;
+        font-weight: bold;
+    }}
+    QPushButton:hover {{
+        background-color: {COLOR_WARNING};
+    }}
+"""
+
+# Стиль для темных кнопок
+DARK_BUTTON_STYLE = f"""
+    QPushButton {{
+        background-color: {COLOR_BG_DARK_2};
+        color: {COLOR_TEXT};
+        border: 1px solid {COLOR_TEXT};
+        border-radius: 3px;
+        padding: 5px 10px;
+    }}
+    QPushButton:hover {{
+        background-color: {COLOR_BG_DARK_3};
+    }}
+"""
+
+# Стиль для кнопки удаления
+DELETE_BUTTON_STYLE = f"""
+    QPushButton {{
+        background-color: {COLOR_ERROR};
+        color: {COLOR_TEXT};
+        border-radius: 4px;
+        padding: 6px 10px;
+    }}
+    QPushButton:hover {{
         background-color: #FF6666;
-    }
+    }}
+"""
+
+# Стиль для полей ввода
+BASE_INPUT_STYLE = f"""
+    background-color: {COLOR_BG_DARK_2}; 
+    color: {COLOR_TEXT}; 
+    padding: 4px;
+    border: 1px solid {COLOR_BORDER};
+    border-radius: 3px;
+    min-height: 22px;
+    max-height: 22px;
+"""
+
+# Стиль для спин-боксов
+BASE_SPINBOX_STYLE = f"""
+    background-color: {COLOR_BG_DARK_2}; 
+    color: {COLOR_TEXT}; 
+    padding: 4px;
+    border: 1px solid {COLOR_BORDER};
+    border-radius: 3px;
+    min-height: 22px;
+    max-height: 22px;
+"""
+
+# Стиль для комбо-боксов
+BASE_COMBOBOX_STYLE = f"""
+    QComboBox {{
+        background-color: {COLOR_BG_DARK_2};
+        color: {COLOR_TEXT}; 
+        padding: 4px;
+        border: 1px solid {COLOR_BORDER};
+        border-radius: 3px;
+    }}
+    QComboBox QAbstractItemView {{
+        background-color: {COLOR_BG_DARK_2};
+        color: {COLOR_TEXT};
+        border: 1px solid {COLOR_BORDER};
+        selection-background-color: {COLOR_PRIMARY};
+    }}
+"""
+
+# Стиль для таблиц
+BASE_TABLE_STYLE = f"""
+    QTableWidget {{
+        background-color: {COLOR_BG_DARK_2};
+        color: {COLOR_TEXT};
+        gridline-color: {COLOR_BORDER};
+        border: none;
+    }}
+    QHeaderView::section {{
+        background-color: {COLOR_BG_DARK_3};
+        color: {COLOR_PRIMARY};
+        padding: 5px;
+        border: 1px solid {COLOR_BORDER};
+    }}
+    QTableWidget::item:selected {{
+        background-color: {COLOR_PRIMARY};
+        color: {COLOR_TEXT};
+    }}
 """
 
 # Стиль для основных фреймов
-MAIN_FRAME_STYLE = """
-    background-color: #1E1E1E; 
+MAIN_FRAME_STYLE = f"""
+    background-color: {COLOR_BG_DARK_1}; 
     border-radius: 8px;
-    border: 1px solid #444;
+    border: 1px solid {COLOR_BORDER};
 """
+
+# Остальные специфические стили для совместимости
+MODULE_DIALOG_STYLE = BASE_DIALOG_STYLE
+TABLE_STYLE = BASE_TABLE_STYLE
+SETTINGS_BUTTON_STYLE = BASE_BUTTON_STYLE
+TOOLTIP_STYLE = f"""
+    QToolTip {{
+        background-color: {COLOR_BG_DARK_2};
+        color: {COLOR_TEXT};
+        border: 1px solid {COLOR_PRIMARY};
+        padding: 2px;
+    }}
+"""
+
+# Стили для боковой панели
+SIDEBAR_STYLE = f"""
+    background-color: #121212;
+    border-right: 2px solid {COLOR_BG_DARK_3};
+"""
+
+SIDEBAR_BUTTON_STYLE = f"""
+    QPushButton {{
+        color: {COLOR_TEXT};
+        background: transparent;
+        border: none;
+        text-align: left;
+        padding: 5px 10px;
+        border-radius: 5px;
+    }}
+    QPushButton:hover {{
+        background-color: rgba(255, 255, 255, 0.2);
+    }}
+"""
+
+SIDEBAR_ACTIVE_BUTTON_STYLE = f"""
+    QPushButton {{
+        color: {COLOR_TEXT};
+        background-color: rgba(255, 255, 255, 0.15);
+        border: none;
+        text-align: left;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-weight: bold;
+    }}
+    QPushButton:hover {{
+        background-color: rgba(255, 255, 255, 0.25);
+    }}
+"""
+
+SIDEBAR_ICON_STYLE = f"""
+    QToolButton {{
+        background: transparent;
+        border: none;
+        color: {COLOR_TEXT};
+    }}
+    QToolButton:hover {{
+        background-color: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+    }}
+"""
+
+# Заголовок
+TITLE_STYLE = f"""
+    color: {COLOR_PRIMARY};
+    font-size: 16px;
+    font-weight: bold;
+"""
+
 
 # Обновленный стиль акцентных кнопок
 ACCENT_BUTTON_STYLE = """
@@ -34,105 +250,6 @@ ACCENT_BUTTON_STYLE = """
     }
     QPushButton:hover {
         background-color: #FFB347;
-    }
-"""
-
-# Стили для бокового меню с окантовкой
-SIDEBAR_STYLE = """
-    background-color: #121212;
-    border-right: 2px solid #333333;
-"""
-
-# Стиль кнопок бокового меню (белый текст)
-SIDEBAR_BUTTON_STYLE = """
-    QPushButton {
-        color: white;
-        background: transparent;
-        border: none;
-        text-align: left;
-        padding: 5px 10px;
-        border-radius: 5px;
-    }
-    QPushButton:hover {
-        background-color: rgba(255, 255, 255, 0.2);
-    }
-"""
-
-# Стиль активной кнопки бокового меню
-SIDEBAR_ACTIVE_BUTTON_STYLE = """
-    QPushButton {
-        color: white;
-        background-color: rgba(255, 255, 255, 0.15);
-        border: none;
-        text-align: left;
-        padding: 5px 10px;
-        border-radius: 5px;
-        font-weight: bold;
-    }
-    QPushButton:hover {
-        background-color: rgba(255, 255, 255, 0.25);
-    }
-"""
-
-# Стиль иконки бургера и других иконок в меню
-SIDEBAR_ICON_STYLE = """
-    QToolButton {
-        background: transparent;
-        border: none;
-        color: white;
-    }
-    QToolButton:hover {
-        background-color: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-    }
-"""
-
-# Улучшенный стиль для диалогов модулей
-MODULE_DIALOG_STYLE = """
-    QDialog {
-        background-color: #202020;
-        color: white;
-    }
-    QLabel {
-        color: white;
-    }
-    QGroupBox {
-        font-weight: bold;
-        color: #FFA500;
-        border: 1px solid #444;
-        border-radius: 4px;
-        margin-top: 8px;
-        padding-top: 8px;
-    }
-    QGroupBox::title {
-        subcontrol-origin: margin;
-        left: 6px;
-        padding: 0 3px;
-    }
-    QSpinBox, QDoubleSpinBox {
-        background-color: #2A2A2A;
-        color: white;
-        border: 1px solid #444;
-        border-radius: 3px;
-        padding: 3px;
-        min-height: 22px;
-        max-height: 22px;
-    }
-    QLineEdit {
-        background-color: #2A2A2A;
-        color: white;
-        border: 1px solid #444;
-        border-radius: 3px;
-        padding: 3px;
-        min-height: 22px;
-        max-height: 22px;
-    }
-    QToolTip {
-        background-color: #2A2A2A;
-        color: white;
-        border: 1px solid #FFA500;
-        padding: 2px;
-        opacity: 200;
     }
 """
 
@@ -293,61 +410,6 @@ ACTIVITY_DIALOG_STYLE = """
 CREATE_BOT_STYLE = """
     QWidget#createBotPage {
         background-color: #000000;
-    }
-"""
-
-# Стиль для таблицы (холста) модулей
-TABLE_STYLE = """
-    QTableWidget {
-        background-color: #2C2C2C;
-        color: white;
-        gridline-color: #444;
-        border: none;
-    }
-    QHeaderView::section {
-        background-color: #3A3A3A;
-        color: #FFA500;
-        padding: 5px;
-        border: 1px solid #444;
-    }
-    QTableWidget::item:selected {
-        background-color: #FFA500;
-        color: white;
-    }
-"""
-
-# Стиль для кнопки сохранения в настройках
-SETTINGS_BUTTON_STYLE = """
-    QPushButton {
-        background-color: #FFA500;
-        color: #000;
-        border-radius: 4px;
-        padding: 10px;
-        font-weight: bold;
-        margin-top: 10px;
-    }
-    QPushButton:hover {
-        background-color: #FFB347;
-    }
-"""
-
-DARK_BUTTON_STYLE = """
-    QPushButton {
-        background-color: #222222;
-        color: white;
-        border: 1px solid white;
-        border-radius: 2px;
-        padding: 5px 10px;
-        margin: 0px;  /* Убираем margin */
-    }
-    QPushButton:hover {
-        background-color: #333333;
-    }
-    QToolTip {
-        background-color: #2A2A2A;
-        color: white;
-        border: 1px solid #FFA500;
-        padding: 2px;
     }
 """
 
@@ -621,22 +683,6 @@ SCRIPT_SUBMODULE_BUTTON_STYLE = """
     QPushButton:hover {
         background-color: #5E8DE5;
     }
-"""
-
-TOOLTIP_STYLE = """
-    QToolTip {
-        background-color: #2A2A2A;
-        color: white;
-        border: 1px solid #FFA500;
-        padding: 2px;
-    }
-"""
-
-# Стиль для заголовков
-TITLE_STYLE = """
-    color: #FFA500;
-    font-size: 16px;
-    font-weight: bold;
 """
 
 # Стиль для заголовка модуля активности

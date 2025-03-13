@@ -11,11 +11,12 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 from typing import Dict, Any, Optional
 
-from src.utils.style_constants import MODULE_DIALOG_STYLE, MODULE_BUTTON_STYLE, FORM_GROUP_STYLE
+from src.utils.style_constants import (
+    MODULE_DIALOG_STYLE, MODULE_BUTTON_STYLE, FORM_GROUP_STYLE
+)
 from src.utils.ui_factory import (
-    create_input_field,
-    create_spinbox_without_buttons, create_double_spinbox_without_buttons,
-    create_group_box
+    create_input_field, create_button, create_group_box,
+    create_spinbox_without_buttons, create_double_spinbox_without_buttons
 )
 from src.utils.resources import Resources
 
@@ -54,12 +55,8 @@ class BaseModuleDialog(QDialog):
         buttons_layout = QHBoxLayout()
 
         # Создаем кнопки напрямую с правильным стилем
-        self.btn_cancel = QPushButton("Отмена")
-        self.btn_confirm = QPushButton("Подтвердить")
-
-        # Применяем нужный стиль для сохранения оранжевого цвета #FFA500
-        self.btn_cancel.setStyleSheet(MODULE_BUTTON_STYLE)
-        self.btn_confirm.setStyleSheet(MODULE_BUTTON_STYLE)
+        self.btn_cancel = create_button("Отмена", MODULE_BUTTON_STYLE)
+        self.btn_confirm = create_button("Подтвердить", MODULE_BUTTON_STYLE)
 
         self.btn_cancel.clicked.connect(self.reject)
         self.btn_confirm.clicked.connect(self.accept)

@@ -1,4 +1,3 @@
-# src/utils/ui_factory.py
 """
 Фабрика для создания стандартных UI-компонентов.
 Позволяет унифицировать создание часто используемых элементов интерфейса.
@@ -7,177 +6,107 @@
 from PyQt6.QtWidgets import (
     QPushButton, QLabel, QLineEdit, QSpinBox, QDoubleSpinBox,
     QGroupBox, QFrame, QTableWidget, QHeaderView, QComboBox,
-    QCheckBox
+    QCheckBox, QToolButton, QFileDialog
 )
 from PyQt6.QtGui import QIcon, QFont
 from PyQt6.QtCore import Qt
 
 from src.utils.style_constants import (
-    DELETE_BUTTON_STYLE,
-    TITLE_STYLE, MAIN_FRAME_STYLE
+    COLOR_PRIMARY, COLOR_BG_DARK_2, COLOR_TEXT, COLOR_BORDER,
+    TITLE_STYLE, BASE_BUTTON_STYLE, DARK_BUTTON_STYLE,
+    DELETE_BUTTON_STYLE, TOOL_BUTTON_STYLE,
+    BASE_INPUT_STYLE, BASE_SPINBOX_STYLE, MAIN_FRAME_STYLE,
+    BASE_COMBOBOX_STYLE, BASE_TABLE_STYLE
 )
 from src.utils.resources import Resources
 
 
-def create_title_label(text: str, font_size: int = 16) -> QLabel:
-    """Создает заголовок с оранжевым текстом и жирным шрифтом"""
+def create_label(text, style=None, font_size=None, bold=False, color=None):
+    """
+    Создает метку с заданным стилем.
+    """
     label = QLabel(text)
-    label.setStyleSheet(f"color: #FFA500; font-size: {font_size}px; font-weight: bold;")
+
+    if style:
+        label.setStyleSheet(style)
+    elif font_size or bold or color:
+        style_parts = []
+
+        if color:
+            style_parts.append(f"color: {color};")
+
+        if font_size:
+            style_parts.append(f"font-size: {font_size}px;")
+
+        if bold:
+            style_parts.append("font-weight: bold;")
+
+        label.setStyleSheet(" ".join(style_parts))
+
     return label
 
 
-def create_accent_button(text: str, icon_path: str = None) -> QPushButton:
+def create_title_label(text, font_size=16):
+    """Создает заголовок с акцентным стилем"""
+    return create_label(text, TITLE_STYLE, font_size=font_size, bold=True, color=COLOR_PRIMARY)
+
+
+def create_button(text, style=None, icon_path=None, callback=None, tooltip=None):
     """
-    Создает кнопку с акцентным стилем (оранжевый фон).
-
-    Args:
-        text: Текст кнопки
-        icon_path: Путь к иконке (опционально)
-
-    Returns:
-        QPushButton: Стилизованная кнопка
+    Создает кнопку с заданным стилем.
     """
-    from src.utils.style_constants import ACCENT_BUTTON_STYLE
-    from PyQt6.QtGui import QIcon
-
     button = QPushButton(text)
-    button.setStyleSheet(ACCENT_BUTTON_STYLE)
 
-    if icon_path:
-        button.setIcon(QIcon(icon_path))
-
-    return button
-
-
-def create_delete_button(text: str = "Удалить") -> QPushButton:
-    """Создает красную кнопку удаления"""
-    button = QPushButton(text)
-    button.setStyleSheet(DELETE_BUTTON_STYLE)
-    return button
-
-
-def create_main_frame() -> QFrame:
-    """Создает основной фрейм с темным фоном и рамкой"""
-    frame = QFrame()
-    frame.setStyleSheet(MAIN_FRAME_STYLE)
-    return frame
-
-
-def create_input_field(placeholder: str = "", default_text: str = "") -> QLineEdit:
-    """
-    Создает поле ввода с темным фоном, плейсхолдером и дефолтным текстом.
-
-    Args:
-        placeholder: Текст-подсказка
-        default_text: Начальный текст
-
-    Returns:
-        QLineEdit: Стилизованное поле ввода
-    """
-    field = QLineEdit()
-    field.setStyleSheet("""
-        background-color: #2A2A2A; 
-        color: white; 
-        padding: 4px;
-        border: 1px solid #444;
-        border-radius: 3px;
-        min-height: 22px;
-        max-height: 22px;
-    """)
-
-    if placeholder:
-        field.setPlaceholderText(placeholder)
-    if default_text:
-        field.setText(default_text)
-
-    return field
-
-
-def create_group_box(title: str, style: str = None) -> QGroupBox:
-    """
-    Создает группировочный бокс с заголовком и стилем.
-
-    Args:
-        title: Заголовок группы
-        style: Дополнительный CSS-стиль (если None, используется FORM_GROUP_STYLE)
-
-    Returns:
-        QGroupBox: Стилизованный объект QGroupBox
-    """
-    from src.utils.style_constants import FORM_GROUP_STYLE
-
-    group = QGroupBox(title)
     if style:
-        group.setStyleSheet(style)
-    else:
-        group.setStyleSheet(FORM_GROUP_STYLE)
-    return group
-
-
-# Создайте функцию-обертку для создания спиннеров без кнопок в src/utils/ui_factory.py
-def create_spinbox_without_buttons(min_val: int = 0, max_val: int = 100, default: int = 0, suffix: str = None) -> QSpinBox:
-    """Создает числовой спиннер без кнопок +/-"""
-    spinner = QSpinBox()
-    spinner.setRange(min_val, max_val)
-    spinner.setValue(default)
-    if suffix:
-        spinner.setSuffix(suffix)
-    spinner.setStyleSheet("""
-        background-color: #2C2C2C; 
-        color: white; 
-        padding: 5px;
-        border: 1px solid #444;
-        border-radius: 4px;
-    """)
-    # Отключаем кнопки программно
-    spinner.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
-    return spinner
-
-def create_double_spinbox_without_buttons(min_val: float = 0.0, max_val: float = 100.0,
-                                        default: float = 0.0, decimals: int = 1,
-                                        suffix: str = None) -> QDoubleSpinBox:
-    """Создает числовой спиннер с плавающей точкой без кнопок +/-"""
-    spinner = QDoubleSpinBox()
-    spinner.setRange(min_val, max_val)
-    spinner.setValue(default)
-    spinner.setDecimals(decimals)
-    if suffix:
-        spinner.setSuffix(suffix)
-    spinner.setStyleSheet("""
-        background-color: #2C2C2C; 
-        color: white; 
-        padding: 5px;
-        border: 1px solid #444;
-        border-radius: 4px;
-    """)
-    # Отключаем кнопки программно
-    spinner.setButtonSymbols(QDoubleSpinBox.ButtonSymbols.NoButtons)
-    return spinner
-
-
-def create_tool_button(text, tooltip, callback=None, icon_path=None):
-    """
-    Создает компактную кнопку инструмента с текстом и подсказкой.
-
-    Args:
-        text: Текст кнопки
-        tooltip: Подсказка при наведении мыши
-        callback: Функция обратного вызова (опционально)
-        icon_path: Путь к иконке (опционально)
-
-    Returns:
-        QToolButton: Стилизованная кнопка инструмента
-    """
-    from PyQt6.QtWidgets import QToolButton
-    from PyQt6.QtGui import QIcon
-    from src.utils.style_constants import TOOL_BUTTON_STYLE
-
-    button = QToolButton()
-    button.setText(text)
-    button.setToolTip(tooltip)
+        button.setStyleSheet(style)
 
     if icon_path:
-        button.setIcon(QIcon(icon_path))
+        if isinstance(icon_path, str):
+            button.setIcon(QIcon(icon_path))
+        else:
+            button.setIcon(icon_path)  # Если передан уже QIcon
+
+    if callback:
+        button.clicked.connect(callback)
+
+    if tooltip:
+        button.setToolTip(tooltip)
+
+    return button
+
+
+def create_accent_button(text, icon_path=None, callback=None, tooltip=None):
+    """Создает кнопку с акцентным стилем (оранжевый фон)"""
+    return create_button(text, BASE_BUTTON_STYLE, icon_path, callback, tooltip)
+
+
+def create_dark_button(text, icon_path=None, callback=None, tooltip=None):
+    """Создает темную кнопку с белой рамкой"""
+    return create_button(text, DARK_BUTTON_STYLE, icon_path, callback, tooltip)
+
+
+def create_delete_button(text="Удалить", callback=None, tooltip="Удалить элемент"):
+    """Создает красную кнопку удаления"""
+    return create_button(text, DELETE_BUTTON_STYLE, callback=callback, tooltip=tooltip)
+
+
+def create_tool_button(text="", tooltip=None, callback=None, icon_path=None):
+    """
+    Создает кнопку инструмента.
+    """
+    button = QToolButton()
+
+    if text:
+        button.setText(text)
+
+    if tooltip:
+        button.setToolTip(tooltip)
+
+    if icon_path:
+        if isinstance(icon_path, str):
+            button.setIcon(QIcon(icon_path))
+        else:
+            button.setIcon(icon_path)
 
     if callback:
         button.clicked.connect(callback)
@@ -185,6 +114,166 @@ def create_tool_button(text, tooltip, callback=None, icon_path=None):
     button.setStyleSheet(TOOL_BUTTON_STYLE)
 
     return button
+
+
+def create_frame(style=None):
+    """
+    Создает фрейм с заданным стилем.
+    """
+    frame = QFrame()
+
+    if style:
+        frame.setStyleSheet(style)
+    else:
+        frame.setStyleSheet(MAIN_FRAME_STYLE)
+
+    return frame
+
+
+def create_main_frame():
+    """Создает основной фрейм с темным фоном и рамкой"""
+    return create_frame(MAIN_FRAME_STYLE)
+
+
+def create_input_field(placeholder="", default_text="", style=None):
+    """
+    Создает поле ввода с темным фоном.
+    """
+    field = QLineEdit()
+
+    if style:
+        field.setStyleSheet(style)
+    else:
+        field.setStyleSheet(BASE_INPUT_STYLE)
+
+    if placeholder:
+        field.setPlaceholderText(placeholder)
+
+    if default_text:
+        field.setText(default_text)
+
+    return field
+
+
+def create_spinbox(min_val=0, max_val=100, default=0, suffix=None, prefix=None,
+                   decimals=0, step=1, show_buttons=True, style=None):
+    """
+    Создает числовой спиннер.
+    """
+    if decimals > 0:
+        spinner = QDoubleSpinBox()
+        spinner.setDecimals(decimals)
+        spinner.setSingleStep(step if step else 0.1)
+    else:
+        spinner = QSpinBox()
+        spinner.setSingleStep(step if step else 1)
+
+    spinner.setRange(min_val, max_val)
+    spinner.setValue(default)
+
+    if suffix:
+        spinner.setSuffix(suffix)
+
+    if prefix:
+        spinner.setPrefix(prefix)
+
+    if not show_buttons:
+        spinner.setButtonSymbols(QSpinBox.ButtonSymbols.NoButtons)
+
+    if style:
+        spinner.setStyleSheet(style)
+    else:
+        spinner.setStyleSheet(BASE_SPINBOX_STYLE)
+
+    return spinner
+
+
+def create_spinbox_without_buttons(min_val=0, max_val=100, default=0, suffix=None):
+    """Создает числовой спиннер без кнопок +/-"""
+    return create_spinbox(min_val, max_val, default, suffix, show_buttons=False)
+
+
+def create_double_spinbox_without_buttons(min_val=0.0, max_val=100.0, default=0.0,
+                                          decimals=1, suffix=None):
+    """Создает числовой спиннер с плавающей точкой без кнопок +/-"""
+    return create_spinbox(min_val, max_val, default, suffix,
+                          decimals=decimals, show_buttons=False)
+
+
+def create_group_box(title, style=None):
+    """
+    Создает группировочный бокс с заголовком и стилем.
+    """
+    group = QGroupBox(title)
+
+    if style:
+        group.setStyleSheet(style)
+
+    return group
+
+
+def create_combobox(items=None, default_index=0, style=None):
+    """
+    Создает выпадающий список с заданным стилем.
+    """
+    combo = QComboBox()
+
+    if style:
+        combo.setStyleSheet(style)
+    else:
+        combo.setStyleSheet(BASE_COMBOBOX_STYLE)
+
+    if items:
+        combo.addItems(items)
+        if 0 <= default_index < len(items):
+            combo.setCurrentIndex(default_index)
+
+    return combo
+
+
+def create_table(columns=None, style=None):
+    """
+    Создает таблицу с заданным стилем.
+    """
+    if columns is None:
+        columns = []
+
+    table = QTableWidget(0, len(columns))
+
+    if columns:
+        table.setHorizontalHeaderLabels(columns)
+
+    if style:
+        table.setStyleSheet(style)
+    else:
+        table.setStyleSheet(BASE_TABLE_STYLE)
+
+    table.verticalHeader().setVisible(False)
+
+    return table
+
+
+def create_multiple_file_dialog(title="Выбрать файлы", filter="Изображения (*.png *.jpg *.jpeg)"):
+    """
+    Открывает диалог выбора нескольких файлов.
+    """
+    files, _ = QFileDialog.getOpenFileNames(None, title, "", filter)
+    return files
+
+
+def position_dialog_with_offset(dialog, parent, x_offset=50, y_offset=50):
+    """
+    Позиционирует диалог со смещением относительно родительского окна.
+    """
+    if parent:
+        parent_pos = parent.pos()
+        dialog.move(parent_pos.x() + x_offset, parent_pos.y() + y_offset)
+
+
+
+
+
+
 
 
 def create_text_label(text, style=None):
@@ -419,34 +508,3 @@ def add_script_item_buttons(item_frame, edit_callback=None, delete_callback=None
 
     return edit_btn, delete_btn, move_up_btn, move_down_btn
 
-
-def create_multiple_file_dialog(title="Выбрать файлы", filter="Изображения (*.png *.jpg *.jpeg)"):
-    """
-    Открывает диалог выбора нескольких файлов.
-
-    Args:
-        title: Заголовок диалога
-        filter: Фильтр файлов
-
-    Returns:
-        Список путей к выбранным файлам
-    """
-    from PyQt6.QtWidgets import QFileDialog
-
-    files, _ = QFileDialog.getOpenFileNames(None, title, "", filter)
-    return files
-
-
-def position_dialog_with_offset(dialog, parent, x_offset=50, y_offset=50):
-    """
-    Позиционирует диалог со смещением относительно родительского окна.
-
-    Args:
-        dialog: Диалог для позиционирования
-        parent: Родительское окно
-        x_offset: Смещение по горизонтали (пикселей)
-        y_offset: Смещение по вертикали (пикселей)
-    """
-    if parent:
-        parent_pos = parent.pos()
-        dialog.move(parent_pos.x() + x_offset, parent_pos.y() + y_offset)

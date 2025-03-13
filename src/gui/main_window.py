@@ -20,6 +20,7 @@ from src.gui.manager_page import ManagerPage
 from src.utils.resources import Resources
 from src.utils.exceptions import BotMakerError
 from src.controllers import BotManagerController
+from src.utils.style_constants import COLOR_BG_DARK
 
 
 class MainWindow(QMainWindow):
@@ -181,10 +182,10 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     # Настраиваем стиль приложения
-    app.setStyleSheet("""
-        QMainWindow {
-            background-color: #000000;
-        }
+    app.setStyleSheet(f"""
+        QMainWindow {{
+            background-color: {COLOR_BG_DARK};
+        }}
     """)
 
     # Создаем простой логгер для автономного запуска
