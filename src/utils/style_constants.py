@@ -942,6 +942,71 @@ MANAGER_NAV_PANEL_STYLE = """
     margin-top: 5px;
 """
 
+# Дополнительные стили для ModuleItem
+HEADER_LAYOUT_STYLE = """
+    QHBoxLayout {
+        margin: 0;
+        padding: 0;
+        spacing: 2px;
+    }
+"""
+
+MODULE_FRAME_STYLE = """
+    QFrame {
+        background-color: #2C2C2C;
+        border: 1px solid #555;
+        border-radius: 3px;
+        margin: 2px;
+    }
+    QFrame:hover {
+        border: 1px solid #FFA500;
+    }
+"""
+
+MODULE_NUMBER_STYLE = "color: #FFA500; font-weight: bold; min-width: 20px;"
+MODULE_TYPE_STYLE = "font-weight: bold; color: #FFA500;"
+MODULE_DESC_STYLE = "font-size: 11px; color: #CCCCCC; margin-left: 4px;"
+BUTTON_CONTAINER_STYLE = "margin: 0; padding: 0; spacing: 2px;"
+
+# Стили для BotSettingsDialog
+SETTINGS_FORM_STYLE = """
+    QFormLayout {
+        spacing: 8px;
+    }
+    QLabel {
+        color: white;
+    }
+"""
+
+SETTINGS_GROUP_STYLE = """
+    QGroupBox {
+        font-weight: bold;
+        color: #FFA500;
+        border: 1px solid #444;
+        border-radius: 4px;
+        margin-top: 12px;
+        padding-top: 14px;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 8px;
+        padding: 0 5px;
+    }
+"""
+
+SETTINGS_SEPARATOR_STYLE = "background-color: #555;"
+
+# Стили для DialogModules
+DIALOG_TITLE_STYLE = "color: #FFA500; font-size: 16px; font-weight: bold;"
+BUTTON_PANEL_STYLE = """
+    QFrame {
+        border-top: 1px solid #444;
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+"""
+
+
 # Стиль для заголовка модуля активности
 ACTIVITY_MODULE_TITLE_STYLE = f"color: {COLOR_PRIMARY}; font-size: 14px; {FONT_WEIGHT_BOLD} margin-bottom: 8px;"
 

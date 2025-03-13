@@ -4,19 +4,24 @@
 """
 
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QFormLayout
+    QDialog, QLabel, QVBoxLayout, QLineEdit, QPushButton,
+    QGroupBox, QHBoxLayout, QSpinBox, QDoubleSpinBox,
+    QComboBox, QCheckBox, QFormLayout
 )
-
-from typing import Dict, Any
+from PyQt6.QtCore import Qt
+from typing import Dict, Any, Optional
 
 from src.utils.style_constants import (
-    MODULE_DIALOG_STYLE, MODULE_BUTTON_STYLE
+    MODULE_DIALOG_STYLE, MODULE_BUTTON_STYLE, FORM_GROUP_STYLE,
+    BUTTON_PANEL_STYLE, DIALOG_TITLE_STYLE
 )
 from src.utils.ui_factory import (
     create_input_field, create_button, create_group_box,
-    create_spinbox_without_buttons, create_double_spinbox_without_buttons
+    create_spinbox_without_buttons, create_double_spinbox_without_buttons,
+    create_text_label
 )
-
+from src.utils.resources import Resources
+from src.utils.module_handler import ModuleHandler
 
 
 class BaseModuleDialog(QDialog):

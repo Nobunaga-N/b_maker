@@ -1,9 +1,7 @@
 from PyQt6.QtWidgets import (
-    QDialog, QLabel, QVBoxLayout, QLineEdit, QPushButton,
+    QDialog, QVBoxLayout, QLineEdit, QPushButton,
     QGroupBox, QHBoxLayout, QSpinBox, QDoubleSpinBox,
-    QComboBox, QCheckBox, QTableWidget, QHeaderView,
-    QTableWidgetItem, QFileDialog, QMessageBox, QTabWidget,
-    QWidget, QFrame, QScrollArea, QFormLayout, QToolButton
+    QComboBox, QCheckBox, QFrame,  QFormLayout,
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QIcon, QFont
@@ -14,12 +12,15 @@ from typing import Dict, List, Any, Optional
 
 from src.utils.style_constants import (
     MODULE_ITEM_STYLE, TOOL_BUTTON_STYLE, ACTIVITY_CANVAS_STYLE,
-    ACTIVITY_DIALOG_STYLE, ACTIVITY_MODULE_TITLE_STYLE, MODULE_BUTTON_STYLE
+    ACTIVITY_DIALOG_STYLE, ACTIVITY_MODULE_TITLE_STYLE, MODULE_BUTTON_STYLE,
+    HEADER_LAYOUT_STYLE, MODULE_FRAME_STYLE, MODULE_NUMBER_STYLE, MODULE_TYPE_STYLE,
+    MODULE_DESC_STYLE, BUTTON_CONTAINER_STYLE
 )
 from src.utils.ui_factory import (
     create_tool_button, create_accent_button, create_dark_button,
     create_group_box, create_double_spinbox_without_buttons,
-    create_text_label, create_spinbox_without_buttons, create_button
+    create_text_label, create_spinbox_without_buttons, create_button,
+    create_frame, create_title_label, create_input_field, create_combobox
 )
 from src.utils.resources import Resources
 from src.gui.modules.canvas_module import CanvasModule, ModuleItem
@@ -72,28 +73,27 @@ class ModuleItem(QFrame):
         top_layout = QHBoxLayout()
         top_layout.setContentsMargins(0, 0, 0, 0)
         top_layout.setSpacing(2)
+        top_layout.setStyleSheet(HEADER_LAYOUT_STYLE)
 
         # Создаем номер модуля как атрибут для обновления
-        self.number_label = QLabel(f"{self.index + 1}.")
-        self.number_label.setStyleSheet("color: #FFA500; font-weight: bold; min-width: 20px;")
+        self.number_label = create_text_label(f"{self.index + 1}.", MODULE_NUMBER_STYLE)
         top_layout.addWidget(self.number_label)
 
         # Тип модуля (жирный текст с оранжевым цветом)
-        type_label = QLabel(self.module_type)
-        type_label.setStyleSheet("font-weight: bold; color: #FFA500;")
+        type_label = create_text_label(self.module_type, MODULE_TYPE_STYLE)
         top_layout.addWidget(type_label)
 
         top_layout.addStretch(1)  # Растягиваем пространство между типом и кнопками
 
         # Кнопки управления (компактные)
         self.move_up_btn = create_tool_button("↑", "Переместить вверх",
-                                              lambda: self._move_up_requested())
+                                             lambda: self._move_up_requested())
         self.move_down_btn = create_tool_button("↓", "Переместить вниз",
-                                                lambda: self._move_down_requested())
+                                               lambda: self._move_down_requested())
         self.edit_btn = create_tool_button("🖉", "Редактировать",
-                                           lambda: self._edit_requested())
+                                          lambda: self._edit_requested())
         self.delete_btn = create_tool_button("✕", "Удалить",
-                                             lambda: self._delete_requested())
+                                            lambda: self._delete_requested())
 
         top_layout.addWidget(self.move_up_btn)
         top_layout.addWidget(self.move_down_btn)
@@ -103,9 +103,8 @@ class ModuleItem(QFrame):
         main_layout.addLayout(top_layout)
 
         # Описание модуля с меньшим шрифтом и многострочным режимом
-        desc_label = QLabel(self.description)
+        desc_label = create_text_label(self.description, MODULE_DESC_STYLE)
         desc_label.setWordWrap(True)
-        desc_label.setStyleSheet("font-size: 11px; color: #CCCCCC; margin-left: 4px;")
         desc_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         main_layout.addWidget(desc_label)
 
@@ -158,21 +157,20 @@ class ActivityCanvasModule(CanvasModule):
 
         # Группа 1: Основные команды
         basic_group = create_group_box("Основные команды")
-        basic_group.setStyleSheet(basic_group.styleSheet() + "QGroupBox { color: #FFA500; }")
         basic_layout = QHBoxLayout(basic_group)
         basic_layout.setContentsMargins(4, 16, 4, 4)  # Увеличиваем верхний отступ для заголовка
         basic_layout.setSpacing(4)
 
         # Кнопки для первой группы
         self.btn_close_game = self._create_command_button("close.game", "Закрыть игру",
-                                                          Resources.get_icon_path("stop-red"),
-                                                          self.add_close_game_module)
+                                                         Resources.get_icon_path("stop-red"),
+                                                         self.add_close_game_module)
         self.btn_restart_emulator = self._create_command_button("restart.emulator", "Перезапустить эмулятор",
-                                                                Resources.get_icon_path("activity-blue"),
-                                                                self.add_restart_emulator_module)
+                                                              Resources.get_icon_path("activity-blue"),
+                                                              self.add_restart_emulator_module)
         self.btn_start_game = self._create_command_button("start.game", "Запустить игру",
-                                                          Resources.get_icon_path("continue-green"),
-                                                          self.add_start_game_module)
+                                                       Resources.get_icon_path("continue-green"),
+                                                       self.add_start_game_module)
 
         basic_layout.addWidget(self.btn_close_game)
         basic_layout.addWidget(self.btn_restart_emulator)
@@ -181,21 +179,20 @@ class ActivityCanvasModule(CanvasModule):
 
         # Группа 2: Управление выполнением
         flow_group = create_group_box("Управление выполнением")
-        flow_group.setStyleSheet(flow_group.styleSheet() + "QGroupBox { color: #FFA500; }")
         flow_layout = QHBoxLayout(flow_group)
         flow_layout.setContentsMargins(4, 16, 4, 4)  # Увеличиваем верхний отступ для заголовка
         flow_layout.setSpacing(4)
 
         # Кнопки для второй группы
         self.btn_time_sleep = self._create_command_button("time.sleep", "Пауза",
-                                                          Resources.get_icon_path("pause-pink"),
-                                                          self.add_time_sleep_module)
+                                                        Resources.get_icon_path("pause-pink"),
+                                                        self.add_time_sleep_module)
         self.btn_restart_from = self._create_command_button("restart.from", "Перезапуск с позиции",
-                                                            Resources.get_icon_path("activity-blue"),
-                                                            self.add_restart_from_module)
+                                                         Resources.get_icon_path("activity-blue"),
+                                                         self.add_restart_from_module)
         self.btn_restart_from_last = self._create_command_button("restart.from.last", "Последняя позиция",
-                                                                 Resources.get_icon_path("activity-orange"),
-                                                                 self.add_restart_from_last_module)
+                                                              Resources.get_icon_path("activity-orange"),
+                                                              self.add_restart_from_last_module)
 
         flow_layout.addWidget(self.btn_time_sleep)
         flow_layout.addWidget(self.btn_restart_from)
@@ -204,21 +201,20 @@ class ActivityCanvasModule(CanvasModule):
 
         # Группа 3: Действия
         actions_group = create_group_box("Действия")
-        actions_group.setStyleSheet(actions_group.styleSheet() + "QGroupBox { color: #FFA500; }")
         actions_layout = QHBoxLayout(actions_group)
         actions_layout.setContentsMargins(4, 16, 4, 4)  # Увеличиваем верхний отступ для заголовка
         actions_layout.setSpacing(4)
 
         # Кнопки для третьей группы
         self.btn_click = self._create_command_button("Клик", "Клик по координатам",
-                                                     Resources.get_icon_path("click-ping"),
-                                                     self.add_click_module)
+                                                   Resources.get_icon_path("click-ping"),
+                                                   self.add_click_module)
         self.btn_swipe = self._create_command_button("Свайп", "Свайп по координатам",
-                                                     Resources.get_icon_path("swipe-blue"),
-                                                     self.add_swipe_module)
+                                                   Resources.get_icon_path("swipe-blue"),
+                                                   self.add_swipe_module)
         self.btn_image_search = self._create_command_button("Поиск", "Поиск по картинке",
-                                                            Resources.get_icon_path("search-orange"),
-                                                            self.add_image_search_module)
+                                                         Resources.get_icon_path("search-orange"),
+                                                         self.add_image_search_module)
 
         actions_layout.addWidget(self.btn_click)
         actions_layout.addWidget(self.btn_swipe)
@@ -230,16 +226,7 @@ class ActivityCanvasModule(CanvasModule):
 
     def _create_command_button(self, text, tooltip, icon_path, slot):
         """Создает компактную кнопку для панели инструментов"""
-        button = create_dark_button(text, icon_path, slot, tooltip)
-        button.setStyleSheet(button.styleSheet() + """
-            QPushButton {
-                font-size: 11px;
-                padding: 3px 6px;
-            }
-        """)
-        return button
-
-    # Удаляем дублирующиеся методы add_module, _update_module_numbers, _redraw_modules
+        return create_dark_button(text, icon_path, slot, tooltip)
 
     def add_module(self, module_type: str, description: str, data: dict = None):
         """Переопределяем метод для добавления нумерации модулей"""
@@ -304,7 +291,7 @@ class ActivityCanvasModule(CanvasModule):
 
         # Spinner for time
         input_layout = QHBoxLayout()
-        time_label = QLabel("Время задержки (сек):")
+        time_label = create_text_label("Время задержки (сек):")
         time_spinner = create_double_spinbox_without_buttons(0.1, 300.0, 1.0, 1, " сек")
 
         input_layout.addWidget(time_label)
@@ -313,12 +300,8 @@ class ActivityCanvasModule(CanvasModule):
 
         # Buttons
         buttons_layout = QHBoxLayout()
-        cancel_btn = QPushButton("Отмена")
-        ok_btn = QPushButton("ОК")
-
-        # Применяем стиль для кнопок
-        cancel_btn.setStyleSheet(MODULE_BUTTON_STYLE)
-        ok_btn.setStyleSheet(MODULE_BUTTON_STYLE)
+        cancel_btn = create_button("Отмена", MODULE_BUTTON_STYLE)
+        ok_btn = create_button("ОК", MODULE_BUTTON_STYLE)
 
         cancel_btn.clicked.connect(dialog.reject)
         ok_btn.clicked.connect(dialog.accept)
@@ -349,7 +332,7 @@ class ActivityCanvasModule(CanvasModule):
 
         # Spinner for line number
         input_layout = QHBoxLayout()
-        line_label = QLabel("Номер строки:")
+        line_label = create_text_label("Номер строки:")
         line_spinner = create_spinbox_without_buttons(1, 999, 1)
 
         input_layout.addWidget(line_label)
@@ -358,12 +341,8 @@ class ActivityCanvasModule(CanvasModule):
 
         # Buttons
         buttons_layout = QHBoxLayout()
-        cancel_btn = QPushButton("Отмена")
-        ok_btn = QPushButton("ОК")
-
-        # Применяем стиль для кнопок
-        cancel_btn.setStyleSheet(MODULE_BUTTON_STYLE)
-        ok_btn.setStyleSheet(MODULE_BUTTON_STYLE)
+        cancel_btn = create_button("Отмена", MODULE_BUTTON_STYLE)
+        ok_btn = create_button("ОК", MODULE_BUTTON_STYLE)
 
         cancel_btn.clicked.connect(dialog.reject)
         ok_btn.clicked.connect(dialog.accept)
@@ -444,7 +423,7 @@ class ActivityModuleDialog(QDialog):
         self.setStyleSheet(ACTIVITY_DIALOG_STYLE)
 
         # Заголовок
-        title_label = QLabel("Настройка проверки активности игры")
+        title_label = create_title_label("Настройка проверки активности игры", 18)
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         title_label.setStyleSheet(ACTIVITY_MODULE_TITLE_STYLE)
         layout.addWidget(title_label)
@@ -462,28 +441,12 @@ class ActivityModuleDialog(QDialog):
         launch_layout.setSpacing(6)
 
         # Игра
-        self.game_combo = QComboBox()
-        self.game_combo.setStyleSheet("""
-            QComboBox {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 3px;
-                padding: 4px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #555;
-            }
-        """)
+        self.game_combo = create_combobox()
         self.game_combo.currentIndexChanged.connect(self.update_activity_info)
         launch_layout.addRow("Игра:", self.game_combo)
 
         # Активность
-        self.activity_info = QLineEdit()
-        self.activity_info.setReadOnly(True)
-        self.activity_info.setStyleSheet("background-color: #333; color: white;")
+        self.activity_info = create_input_field("", "", read_only=True)
         launch_layout.addRow("Активность:", self.activity_info)
 
         # Задержка
@@ -515,16 +478,8 @@ class ActivityModuleDialog(QDialog):
 
         # Диапазон строк
         line_range_layout = QHBoxLayout()
-        line_range_label = QLabel("Диапазон строк:")
-        self.line_range_input = QLineEdit()
-        self.line_range_input.setPlaceholderText("Например: 1-50,60-100")
-        self.line_range_input.setStyleSheet("""
-            background-color: #2A2A2A;
-            color: white;
-            border: 1px solid #555;
-            border-radius: 3px;
-            padding: 4px;
-        """)
+        line_range_label = create_text_label("Диапазон строк:")
+        self.line_range_input = create_input_field("Например: 1-50,60-100")
         line_range_layout.addWidget(line_range_label)
         line_range_layout.addWidget(self.line_range_input, 1)
         status_layout.addLayout(line_range_layout)
@@ -539,23 +494,8 @@ class ActivityModuleDialog(QDialog):
 
         # Выбор действия
         action_combo_layout = QHBoxLayout()
-        action_label = QLabel("Действие:")
-        self.action_combo = QComboBox()
-        self.action_combo.setStyleSheet("""
-            QComboBox {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #555;
-                border-radius: 3px;
-                padding: 4px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #2A2A2A;
-                color: white;
-                border: 1px solid #555;
-            }
-        """)
-        self.action_combo.addItems([
+        action_label = create_text_label("Действие:")
+        self.action_combo = create_combobox([
             "continue_bot - Перезапустить игру и продолжить",
             "activity.running.clear(0) - Закрыть эмулятор",
             "activity.running.clear(1) - Закрыть эмулятор и запустить следующий"
@@ -590,12 +530,8 @@ class ActivityModuleDialog(QDialog):
 
         # Кнопки
         buttons_layout = QHBoxLayout()
-        self.btn_cancel = QPushButton("Отмена")
-        self.btn_confirm = QPushButton("Подтвердить")
-
-        # Применяем стиль для кнопок
-        self.btn_cancel.setStyleSheet(MODULE_BUTTON_STYLE)
-        self.btn_confirm.setStyleSheet(MODULE_BUTTON_STYLE)
+        self.btn_cancel = create_button("Отмена", MODULE_BUTTON_STYLE)
+        self.btn_confirm = create_button("Подтвердить", MODULE_BUTTON_STYLE)
 
         self.btn_cancel.clicked.connect(self.reject)
         self.btn_confirm.clicked.connect(self.accept)
@@ -648,8 +584,7 @@ class ActivityModuleDialog(QDialog):
         self.continue_canvas.setVisible(index == 0)  # Only show canvas for continue_bot (index 0)
         # Добавляем сообщение, чтобы было понятно, что выбрано
         if index != 0:
-            info_label = QLabel("Для данного действия нет дополнительных настроек")
-            info_label.setStyleSheet("color: white; background-color: #2A2A2A; padding: 10px; border-radius: 5px;")
+            info_label = create_text_label("Для данного действия нет дополнительных настроек", "color: white; background-color: #2A2A2A; padding: 10px; border-radius: 5px;")
             info_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             if not hasattr(self, 'info_label'):
                 self.info_label = info_label

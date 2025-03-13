@@ -7,18 +7,19 @@
 """
 
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QDateTimeEdit,
+    QDialog, QVBoxLayout, QHBoxLayout, QDateTimeEdit,
     QCheckBox, QGroupBox, QWidget, QFormLayout, QFrame
 )
 from PyQt6.QtCore import Qt, QDateTime
 
 from src.utils.style_constants import (
-    COLOR_PRIMARY, COLOR_BG_DARK_3, COLOR_TEXT, BASE_BUTTON_STYLE, BASE_DIALOG_STYLE, SETTINGS_CHECKBOX_STYLE,
-    SCHEDULE_CONTAINER_STYLE, DATETIME_EDIT_STYLE
+    COLOR_PRIMARY, COLOR_BG_DARK_3, COLOR_TEXT, BASE_BUTTON_STYLE, BASE_DIALOG_STYLE,
+    SETTINGS_CHECKBOX_STYLE, SCHEDULE_CONTAINER_STYLE, DATETIME_EDIT_STYLE,
+    SETTINGS_FORM_STYLE, SETTINGS_GROUP_STYLE, SETTINGS_SEPARATOR_STYLE
 )
 from src.utils.ui_factory import (
     create_input_field, create_spinbox_without_buttons,
-    create_button, create_group_box, create_label
+    create_button, create_group_box, create_label, create_text_label
 )
 
 
@@ -38,23 +39,7 @@ class BotSettingsDialog(QDialog):
         self.setup_ui()
 
         # Устанавливаем начальный стиль для чекбокса
-        self.enable_schedule.setStyleSheet(f"""
-            QCheckBox {{
-                color: {COLOR_TEXT};
-                spacing: 5px;
-            }}
-            QCheckBox::indicator {{
-                width: 16px;
-                height: 16px;
-                border: 1px solid #888;
-                border-radius: 3px;
-                background-color: {COLOR_BG_DARK_3};
-            }}
-            QCheckBox::indicator:unchecked {{
-                background-color: {COLOR_BG_DARK_3};
-                border: 1px solid {COLOR_PRIMARY};
-            }}
-        """)
+        self.enable_schedule.setStyleSheet(SETTINGS_CHECKBOX_STYLE)
 
     def setup_ui(self):
         """Настраивает интерфейс диалога"""
@@ -64,9 +49,11 @@ class BotSettingsDialog(QDialog):
         # Создаем форму для полей ввода
         form_layout = QFormLayout()
         form_layout.setVerticalSpacing(10)
+        form_layout.setStyleSheet(SETTINGS_FORM_STYLE)
 
         # Группа планирования запуска с улучшенным стилем
         schedule_group = create_group_box("Планирование запуска")
+        schedule_group.setStyleSheet(SETTINGS_GROUP_STYLE)
         schedule_layout = QVBoxLayout(schedule_group)
 
         # Добавляем небольшую верхнюю прокладку для чекбокса
@@ -76,7 +63,6 @@ class BotSettingsDialog(QDialog):
         # Включение/выключение планирования с улучшенной видимостью
         self.enable_schedule = QCheckBox("Использовать отложенный запуск")
         self.enable_schedule.setChecked(False)
-        # Стиль устанавливается в __init__ и toggle_schedule
         self.enable_schedule.toggled.connect(self.toggle_schedule)
         schedule_layout.addWidget(self.enable_schedule)
 
@@ -111,6 +97,7 @@ class BotSettingsDialog(QDialog):
 
         # Группа выполнения
         execution_group = create_group_box("Параметры выполнения")
+        execution_group.setStyleSheet(SETTINGS_GROUP_STYLE)
         execution_layout = QFormLayout(execution_group)
 
         # Количество циклов
@@ -128,6 +115,7 @@ class BotSettingsDialog(QDialog):
 
         # Группа эмуляторов
         emulators_group = create_group_box("Настройки эмуляторов")
+        emulators_group.setStyleSheet(SETTINGS_GROUP_STYLE)
         emulators_layout = QFormLayout(emulators_group)
 
         # Количество потоков
@@ -144,11 +132,11 @@ class BotSettingsDialog(QDialog):
         layout.addWidget(emulators_group)
 
         # Добавляем информационную подсказку по формату
-        info_label = create_label(
+        info_label = create_text_label(
             "Формат списка эмуляторов: одиночные ID через запятую (например: 0,1,2), "
             "диапазоны через двоеточие (например: 0:3 для 0,1,2,3), "
             "или их комбинации (например: 0:2,5,7:9).",
-            style="color: #aaaaaa; font-size: 10px;"
+            "color: #aaaaaa; font-size: 10px;"
         )
         info_label.setWordWrap(True)
         layout.addWidget(info_label)
@@ -157,7 +145,7 @@ class BotSettingsDialog(QDialog):
         separator = QFrame()
         separator.setFrameShape(QFrame.Shape.HLine)
         separator.setFrameShadow(QFrame.Shadow.Sunken)
-        separator.setStyleSheet(f"background-color: #555;")
+        separator.setStyleSheet(SETTINGS_SEPARATOR_STYLE)
         layout.addWidget(separator)
 
         # Кнопки OK и Cancel
@@ -180,28 +168,7 @@ class BotSettingsDialog(QDialog):
 
         # Обеспечиваем видимость чекбокса - изменяем его стилизацию
         # Это решает проблему, когда чекбокс становится невидимым на черном фоне
-        if enabled:
-            # Стиль для включенного состояния
-            self.enable_schedule.setStyleSheet(SETTINGS_CHECKBOX_STYLE)
-        else:
-            # Стиль для выключенного состояния - с более заметным индикатором
-            self.enable_schedule.setStyleSheet(f"""
-                QCheckBox {{
-                    color: {COLOR_TEXT};
-                    spacing: 5px;
-                }}
-                QCheckBox::indicator {{
-                    width: 16px;
-                    height: 16px;
-                    border: 1px solid #888;
-                    border-radius: 3px;
-                    background-color: {COLOR_BG_DARK_3};
-                }}
-                QCheckBox::indicator:unchecked {{
-                    background-color: {COLOR_BG_DARK_3};
-                    border: 1px solid {COLOR_PRIMARY};
-                }}
-            """)
+        self.enable_schedule.setStyleSheet(SETTINGS_CHECKBOX_STYLE)
 
         # Если панель стала видимой, обновляем время на текущее + 1 час
         if enabled:
