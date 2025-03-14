@@ -1,0 +1,691 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Автоматически сгенерированный скрипт для бота "{{ bot_name }}".
+Дата генерации: {{ now() }}
+Игра: {{ game }}
+"""
+
+import os
+import sys
+import time
+import logging
+import argparse
+import threading
+import traceback
+import cv2
+import numpy as np
+from datetime import datetime
+
+# Настраиваем логирование
+def setup_logging(log_file=None, console_level=logging.INFO, file_level=logging.DEBUG):
+    """Настраивает систему логирования."""
+    logger = logging.getLogger("BotLogger")
+    logger.setLevel(logging.DEBUG)
+
+    # Форматтер для логов
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+    # Обработчик для вывода в консоль
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(console_level)
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    # Обработчик для записи в файл, если указан
+    if log_file:
+        file_handler = logging.FileHandler(log_file, encoding='utf-8')
+        file_handler.setLevel(file_level)
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    return logger
+
+# Класс для взаимодействия с ADB
+class ADBInterface:
+    """Класс для взаимодействия с эмулятором через ADB."""
+
+    def __init__(self, device_id, logger):
+        """
+        Инициализирует интерфейс ADB.
+
+        Args:
+            device_id: ID устройства для взаимодействия.
+            logger: Объект логгера.
+        """
+        self.device_id = device_id
+        self.logger = logger
+        self.adb_path = "adb"  # Путь к ADB
+
+        # Проверяем доступность устройства
+        self._check_device()
+
+    def _check_device(self):
+        """Проверяет доступность устройства."""
+        try:
+            result = self.execute_command(["devices"])
+            if self.device_id not in result:
+                self.logger.error(f"Устройство {self.device_id} не найдено")
+                raise RuntimeError(f"Устройство {self.device_id} не найдено")
+            self.logger.info(f"Устройство {self.device_id} доступно")
+        except Exception as e:
+            self.logger.error(f"Ошибка при проверке устройства: {str(e)}")
+            raise
+
+    def execute_command(self, command, timeout=30):
+        """
+        Выполняет команду ADB.
+
+        Args:
+            command: Список с аргументами команды.
+            timeout: Таймаут выполнения в секундах.
+
+        Returns:
+            Строка с выводом команды.
+        """
+        import subprocess
+
+        cmd = [self.adb_path, "-s", self.device_id] + command
+        self.logger.debug(f"Выполнение команды: {' '.join(cmd)}")
+
+        try:
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = process.communicate(timeout=timeout)
+
+            if process.returncode != 0:
+                self.logger.error(f"Ошибка выполнения команды: {stderr}")
+                raise RuntimeError(f"Ошибка выполнения команды: {stderr}")
+
+            return stdout.strip()
+        except subprocess.TimeoutExpired:
+            process.kill()
+            self.logger.error(f"Таймаут выполнения команды: {' '.join(cmd)}")
+            raise TimeoutError(f"Таймаут выполнения команды: {' '.join(cmd)}")
+
+    def get_screenshot(self):
+        """
+        Получает скриншот экрана устройства.
+
+        Returns:
+            Изображение в формате numpy array (BGR).
+        """
+        import tempfile
+
+        try:
+            # Создаем временный файл
+            with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as temp_file:
+                temp_path = temp_file.name
+
+            # Получаем скриншот
+            self.execute_command(["shell", "screencap", "-p", "/sdcard/screenshot.png"])
+            self.execute_command(["pull", "/sdcard/screenshot.png", temp_path])
+            self.execute_command(["shell", "rm", "/sdcard/screenshot.png"])
+
+            # Читаем изображение
+            image = cv2.imread(temp_path)
+
+            # Удаляем временный файл
+            os.unlink(temp_path)
+
+            if image is None:
+                self.logger.error("Не удалось получить скриншот")
+                raise RuntimeError("Не удалось получить скриншот")
+
+            self.logger.debug(f"Получен скриншот размером {image.shape}")
+            return image
+        except Exception as e:
+            self.logger.error(f"Ошибка при получении скриншота: {str(e)}")
+            raise
+
+    def tap(self, x, y):
+        """
+        Выполняет клик по указанным координатам.
+
+        Args:
+            x: X-координата.
+            y: Y-координата.
+        """
+        try:
+            self.execute_command(["shell", "input", "tap", str(x), str(y)])
+            self.logger.debug(f"Выполнен тап по координатам ({x}, {y})")
+        except Exception as e:
+            self.logger.error(f"Ошибка при выполнении тапа: {str(e)}")
+            raise
+
+    def swipe(self, x1, y1, x2, y2, duration_ms=500):
+        """
+        Выполняет свайп от одной точки к другой.
+
+        Args:
+            x1: Начальная X-координата.
+            y1: Начальная Y-координата.
+            x2: Конечная X-координата.
+            y2: Конечная Y-координата.
+            duration_ms: Длительность свайпа в миллисекундах.
+        """
+        try:
+            self.execute_command(["shell", "input", "swipe", str(x1), str(y1), str(x2), str(y2), str(duration_ms)])
+            self.logger.debug(f"Выполнен свайп от ({x1}, {y1}) до ({x2}, {y2}) с длительностью {duration_ms}мс")
+        except Exception as e:
+            self.logger.error(f"Ошибка при выполнении свайпа: {str(e)}")
+            raise
+
+    def is_activity_running(self, package_name):
+        """
+        Проверяет, запущено ли приложение.
+
+        Args:
+            package_name: Имя пакета приложения.
+
+        Returns:
+            True, если приложение запущено, иначе False.
+        """
+        try:
+            result = self.execute_command(["shell", "dumpsys", "activity", "activities"])
+            return package_name in result
+        except Exception as e:
+            self.logger.error(f"Ошибка при проверке активности: {str(e)}")
+            return False
+
+    def start_activity(self, package_name, activity_name=None):
+        """
+        Запускает приложение.
+
+        Args:
+            package_name: Имя пакета приложения.
+            activity_name: Имя активности (опционально).
+
+        Returns:
+            True в случае успеха, иначе False.
+        """
+        try:
+            if activity_name:
+                # Если активность не начинается с пакета, добавляем имя пакета
+                if not activity_name.startswith(package_name) and activity_name.startswith("."):
+                    activity_name = package_name + activity_name
+
+                result = self.execute_command(["shell", "am", "start", "-n", f"{package_name}/{activity_name}"])
+            else:
+                result = self.execute_command(["shell", "monkey", "-p", package_name, "-c", "android.intent.category.LAUNCHER", "1"])
+
+            self.logger.info(f"Приложение {package_name} запущено")
+            return True
+        except Exception as e:
+            self.logger.error(f"Ошибка при запуске приложения: {str(e)}")
+            return False
+
+    def stop_activity(self, package_name):
+        """
+        Останавливает приложение.
+
+        Args:
+            package_name: Имя пакета приложения.
+
+        Returns:
+            True в случае успеха, иначе False.
+        """
+        try:
+            self.execute_command(["shell", "am", "force-stop", package_name])
+            self.logger.info(f"Приложение {package_name} остановлено")
+            return True
+        except Exception as e:
+            self.logger.error(f"Ошибка при остановке приложения: {str(e)}")
+            return False
+
+# Класс для работы с изображениями
+class ImageMatcher:
+    """Класс для поиска изображений на скриншоте."""
+
+    def __init__(self, bot_name, logger, threshold=0.8):
+        """
+        Инициализирует искатель изображений.
+
+        Args:
+            bot_name: Имя бота (для поиска директории с изображениями).
+            logger: Объект логгера.
+            threshold: Порог совпадения (0.0 - 1.0).
+        """
+        self.bot_name = bot_name
+        self.logger = logger
+        self.threshold = threshold
+        self.templates_cache = {}  # Кэш шаблонов {template_path: template_image}
+
+        # Базовый путь к изображениям бота
+        self.images_dir = os.path.join("bots", bot_name, "images")
+        if not os.path.exists(self.images_dir):
+            self.logger.warning(f"Директория с изображениями не найдена: {self.images_dir}")
+
+    def find_template(self, screenshot, template_name, threshold=None):
+        """
+        Ищет шаблон на скриншоте.
+
+        Args:
+            screenshot: Скриншот в формате numpy array.
+            template_name: Имя файла шаблона.
+            threshold: Порог совпадения (0.0 - 1.0). Если None, используется порог по умолчанию.
+
+        Returns:
+            Кортеж (найдено, координаты, достоверность).
+            Если шаблон не найден, координаты будут None.
+        """
+        if threshold is None:
+            threshold = self.threshold
+
+        try:
+            # Формируем путь к шаблону
+            template_path = os.path.join(self.images_dir, template_name)
+
+            # Загружаем шаблон
+            if template_path in self.templates_cache:
+                template = self.templates_cache[template_path]
+            else:
+                template = cv2.imread(template_path)
+                if template is None:
+                    self.logger.error(f"Не удалось загрузить шаблон: {template_path}")
+                    return False, None, 0.0
+
+                # Добавляем в кэш
+                self.templates_cache[template_path] = template
+
+            # Выполняем сопоставление шаблонов
+            result = cv2.matchTemplate(screenshot, template, cv2.TM_CCOEFF_NORMED)
+
+            # Находим максимальное значение и его позицию
+            min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)
+
+            # Проверяем, превышает ли максимальное значение порог
+            if max_val >= threshold:
+                # Вычисляем центр найденного шаблона
+                h, w = template.shape[:2]
+                center_x = max_loc[0] + w // 2
+                center_y = max_loc[1] + h // 2
+
+                self.logger.debug(f"Шаблон {template_name} найден с достоверностью {max_val:.2f} в позиции ({center_x}, {center_y})")
+                return True, (center_x, center_y), max_val
+            else:
+                self.logger.debug(f"Шаблон {template_name} не найден (max_val={max_val:.2f} < threshold={threshold:.2f})")
+                return False, None, max_val
+
+        except Exception as e:
+            self.logger.error(f"Ошибка при поиске шаблона {template_name}: {str(e)}")
+            return False, None, 0.0
+
+    def find_multiple_templates(self, screenshot, template_names, threshold=None):
+        """
+        Ищет несколько шаблонов на скриншоте.
+
+        Args:
+            screenshot: Скриншот в формате numpy array.
+            template_names: Список имен файлов шаблонов.
+            threshold: Порог совпадения (0.0 - 1.0). Если None, используется порог по умолчанию.
+
+        Returns:
+            Словарь {template_name: (найдено, координаты, достоверность)}.
+        """
+        results = {}
+
+        for template_name in template_names:
+            results[template_name] = self.find_template(screenshot, template_name, threshold)
+
+        return results
+
+# Класс для мониторинга активности
+class ActivityMonitor:
+    """Класс для мониторинга активности приложения."""
+
+    def __init__(self, adb_interface, package_name, logger, check_interval=5):
+        """
+        Инициализирует монитор активности.
+
+        Args:
+            adb_interface: Интерфейс ADB.
+            package_name: Имя пакета приложения для мониторинга.
+            logger: Объект логгера.
+            check_interval: Интервал проверки в секундах.
+        """
+        self.adb = adb_interface
+        self.package_name = package_name
+        self.logger = logger
+        self.check_interval = check_interval
+
+        self.enabled = False
+        self.monitoring_thread = None
+        self.check_lines = []  # Диапазоны строк для проверки
+        self.action = "continue_bot"  # Действие при вылете
+        self.callback = None  # Функция обратного вызова для действий при вылете
+
+    def parse_line_ranges(self, line_ranges_str):
+        """
+        Разбирает строку с диапазонами строк.
+
+        Args:
+            line_ranges_str: Строка вида "1-50,60-100".
+
+        Returns:
+            Список диапазонов [(1, 50), (60, 100)].
+        """
+        if not line_ranges_str:
+            return []
+
+        ranges = []
+        parts = line_ranges_str.split(",")
+
+        for part in parts:
+            if "-" in part:
+                start, end = part.split("-")
+                try:
+                    start_i = int(start.strip())
+                    end_i = int(end.strip())
+                    if start_i <= end_i:
+                        ranges.append((start_i, end_i))
+                except ValueError:
+                    self.logger.warning(f"Некорректный диапазон: {part}")
+            else:
+                try:
+                    line = int(part.strip())
+                    ranges.append((line, line))
+                except ValueError:
+                    self.logger.warning(f"Некорректная строка: {part}")
+
+        return ranges
+
+    def should_check_line(self, line_number):
+        """
+        Проверяет, нужно ли проверять активность для данной строки.
+
+        Args:
+            line_number: Номер строки.
+
+        Returns:
+            True, если нужно проверять, иначе False.
+        """
+        if not self.check_lines:
+            return True
+
+        for start, end in self.check_lines:
+            if start <= line_number <= end:
+                return True
+
+        return False
+
+    def start_monitoring(self, line_ranges_str="", action="continue_bot", callback=None):
+        """
+        Запускает мониторинг активности.
+
+        Args:
+            line_ranges_str: Строка с диапазонами строк для проверки.
+            action: Действие при вылете ("continue_bot", "activity.running.clear(0)", "activity.running.clear(1)").
+            callback: Функция обратного вызова для действий при вылете.
+        """
+        if self.enabled:
+            self.logger.warning("Мониторинг уже запущен")
+            return
+
+        self.enabled = True
+        self.check_lines = self.parse_line_ranges(line_ranges_str)
+        self.action = action
+        self.callback = callback
+
+        # Запускаем поток мониторинга
+        self.monitoring_thread = threading.Thread(target=self._monitoring_loop, daemon=True)
+        self.monitoring_thread.start()
+
+        self.logger.info(f"Мониторинг активности {self.package_name} запущен")
+
+    def stop_monitoring(self):
+        """Останавливает мониторинг активности."""
+        if not self.enabled:
+            return
+
+        self.enabled = False
+
+        # Ждем завершения потока
+        if self.monitoring_thread:
+            self.monitoring_thread.join(timeout=10)
+            self.monitoring_thread = None
+
+        self.logger.info(f"Мониторинг активности {self.package_name} остановлен")
+
+    def _monitoring_loop(self):
+        """Основной цикл мониторинга активности."""
+        last_check_time = time.time()
+
+        while self.enabled:
+            try:
+                # Проверяем активность с заданным интервалом
+                if time.time() - last_check_time >= self.check_interval:
+                    last_check_time = time.time()
+
+                    # Проверяем, запущено ли приложение
+                    if not self.adb.is_activity_running(self.package_name):
+                        self.logger.warning(f"Обнаружен вылет приложения {self.package_name}")
+
+                        # Выполняем действие при вылете
+                        if self.action == "continue_bot" and self.callback:
+                            # Вызываем callback для продолжения работы
+                            threading.Thread(target=self.callback).start()
+                        elif self.action == "activity.running.clear(0)":
+                            # Останавливаем выполнение бота
+                            self.logger.info("Выполнение бота остановлено из-за вылета приложения")
+                            self.enabled = False
+                            # Глобальная переменная для остановки бота
+                            global running
+                            running.clear()
+                        elif self.action == "activity.running.clear(1)":
+                            # Останавливаем выполнение бота и запускаем следующий
+                            self.logger.info("Выполнение бота остановлено, запуск следующего")
+                            self.enabled = False
+                            global running
+                            running.clear()
+                            # Устанавливаем код выхода для запуска следующего бота
+                            # Это должно обрабатываться внешним скриптом
+                            sys.exit(42)
+
+            except Exception as e:
+                self.logger.error(f"Ошибка в цикле мониторинга: {str(e)}")
+
+            # Ждем перед следующей проверкой
+            time.sleep(1)
+
+# Основной класс бота
+class Bot:
+    """Основной класс бота для игры."""
+
+    def __init__(self, device_id, args, logger):
+        """
+        Инициализирует бота.
+
+        Args:
+            device_id: ID устройства для взаимодействия.
+            args: Аргументы командной строки.
+            logger: Объект логгера.
+        """
+        self.device_id = device_id
+        self.args = args
+        self.logger = logger
+
+        # Получаем имя бота из имени модуля
+        self.bot_name = os.path.basename(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+        # Инициализируем интерфейс ADB
+        self.adb = ADBInterface(device_id, logger)
+
+        # Инициализируем искатель изображений
+        self.image_matcher = ImageMatcher(self.bot_name, logger)
+
+        # Инициализируем монитор активности
+        # Игра для этого бота: {{ game }}
+        {% if game %}
+        self.package_name = "{{ game }}"
+        {% else %}
+        self.package_name = ""  # Будет установлено в модуле Activity
+        {% endif %}
+        self.activity_monitor = ActivityMonitor(self.adb, self.package_name, logger)
+
+        # Счетчики циклов и времени
+        self.start_time = datetime.now()
+        self.cycle_count = 0
+        self.max_cycles = args.cycles
+        self.max_work_time = args.max_work_time
+
+        # Флаг для контроля выполнения
+        self.running = True
+
+    def run(self):
+        """
+        Основной метод запуска бота.
+        Выполняет циклы до достижения ограничений.
+        """
+        try:
+            # Выводим информацию о запуске
+            self.logger.info(f"Бот {self.bot_name} запущен на устройстве {self.device_id}")
+            self.logger.info(f"Настройки: циклы={self.max_cycles}, время_работы={self.max_work_time} мин")
+
+            # Основной цикл выполнения
+            while self.running:
+                # Проверяем ограничения
+                if self.max_cycles > 0 and self.cycle_count >= self.max_cycles:
+                    self.logger.info(f"Достигнуто максимальное количество циклов ({self.max_cycles})")
+                    break
+
+                if self.max_work_time > 0:
+                    elapsed_time = (datetime.now() - self.start_time).total_seconds() / 60
+                    if elapsed_time >= self.max_work_time:
+                        self.logger.info(f"Достигнуто максимальное время работы ({self.max_work_time} мин)")
+                        break
+
+                # Увеличиваем счетчик циклов
+                self.cycle_count += 1
+                self.logger.info(f"Начало цикла #{self.cycle_count}")
+
+                # Выполняем модули
+                self.execute_modules()
+
+                # Выводим информацию о прогрессе
+                elapsed_time = (datetime.now() - self.start_time).total_seconds() / 60
+                self.logger.info(f"Завершен цикл #{self.cycle_count}. "
+                              f"Прошло времени: {elapsed_time:.2f} мин")
+
+            self.logger.info(f"Бот {self.bot_name} завершил работу")
+
+        except Exception as e:
+            self.logger.error(f"Ошибка при выполнении бота: {str(e)}")
+            self.logger.error(traceback.format_exc())
+            return False
+
+        return True
+
+    def execute_modules(self):
+        """
+        Выполняет все модули бота.
+        Генерируется автоматически на основе настроек.
+        """
+        try:
+            # Выполняем модули последовательно
+            {% for block in module_code_blocks %}
+            # Модуль {{ loop.index }}
+            {{ block }}
+
+            {% endfor %}
+
+        except Exception as e:
+            self.logger.error(f"Ошибка при выполнении модулей: {str(e)}")
+            self.logger.error(traceback.format_exc())
+
+    def restart_game(self):
+        """
+        Перезапускает игру после вылета.
+        Используется в качестве callback для монитора активности.
+        """
+        self.logger.info(f"Перезапуск игры {self.package_name}")
+
+        try:
+            # Останавливаем игру, если она еще запущена
+            self.adb.stop_activity(self.package_name)
+
+            # Ждем немного
+            time.sleep(2)
+
+            # Запускаем игру
+            self.adb.start_activity(self.package_name)
+
+            # Ждем запуска игры
+            time.sleep(5)
+
+            self.logger.info("Игра успешно перезапущена")
+
+            # Выполняем дополнительные действия при перезапуске
+            # Это код из модуля Activity (если он настроен)
+            {% if 'activity_actions' in vars() %}
+            self.logger.info("Выполнение действий после перезапуска")
+            {{ activity_actions }}
+            {% endif %}
+
+        except Exception as e:
+            self.logger.error(f"Ошибка при перезапуске игры: {str(e)}")
+
+# Парсинг аргументов командной строки
+def parse_arguments():
+    """
+    Разбирает аргументы командной строки.
+
+    Returns:
+        Объект с аргументами.
+    """
+    parser = argparse.ArgumentParser(description='Скрипт бота для игры')
+
+    parser.add_argument('--emulator', type=str, required=True,
+                        help='ID эмулятора (например, emulator-5554)')
+
+    parser.add_argument('--cycles', type=int, default=0,
+                        help='Количество циклов выполнения (0 = бесконечно)')
+
+    parser.add_argument('--max-work-time', type=int, default=0,
+                        help='Максимальное время работы в минутах (0 = неограниченно)')
+
+    parser.add_argument('--log-file', type=str,
+                        help='Путь к файлу для записи логов')
+
+    return parser.parse_args()
+
+# Глобальная переменная для контроля выполнения
+class RunningFlag:
+    """Класс для контроля выполнения бота."""
+
+    def __init__(self):
+        self._running = True
+
+    def clear(self):
+        """Останавливает выполнение."""
+        self._running = False
+
+    def __bool__(self):
+        """Возвращает текущее состояние."""
+        return self._running
+
+# Основная функция
+def main():
+    """Основная функция запуска бота."""
+    args = parse_arguments()
+
+    # Настраиваем логирование
+    log_file = args.log_file or f"logs/bot_{os.path.basename(sys.argv[0])}.log"
+    os.makedirs(os.path.dirname(log_file), exist_ok=True)
+    logger = setup_logging(log_file)
+
+    # Создаем глобальную переменную для контроля выполнения
+    global running
+    running = RunningFlag()
+
+    # Создаем и запускаем бота
+    bot = Bot(args.emulator, args, logger)
+
+    # Запускаем выполнение
+    result = bot.run()
+
+    # Возвращаем статус выполнения
+    return 0 if result else 1
+
+# Точка входа
+if __name__ == "__main__":
+    sys.exit(main())
