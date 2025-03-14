@@ -46,10 +46,16 @@ class BotSettingsDialog(QDialog):
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
 
-        # Создаем форму для полей ввода
-        form_layout = QFormLayout()
+        # Создаем контейнер для формы
+        form_container = QWidget()
+        form_container.setStyleSheet(SETTINGS_FORM_STYLE)
+
+        # Создаем форму внутри контейнера
+        form_layout = QFormLayout(form_container)
         form_layout.setVerticalSpacing(10)
-        form_layout.setStyleSheet(SETTINGS_FORM_STYLE)
+
+        # Добавляем контейнер в основной макет
+        layout.addWidget(form_container)
 
         # Группа планирования запуска с улучшенным стилем
         schedule_group = create_group_box("Планирование запуска")
