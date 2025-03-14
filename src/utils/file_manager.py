@@ -385,3 +385,54 @@ def get_bot_images(bot_name: str) -> List[str]:
     except Exception as e:
         print(f"Ошибка при получении списка изображений бота: {e}")
         return []
+
+
+# Дополнение к src/utils/file_manager.py
+
+def validate_imported_bot(zip_path: str) -> Tuple[bool, str]:
+    """
+    Проверяет архив с ботом на корректность перед импортом.
+
+    Args:
+        zip_path: Путь к ZIP-архиву
+
+    Returns:
+        Кортеж (результат, сообщение)
+    """
+    try:
+        if not os.path.exists(zip_path) or not zipfile.is_zipfile(zip_path):
+            return False, "Указанный файл не является ZIP-архивом."
+
+        with zipfile.ZipFile(zip_path, 'r') as zipf:
+            # Проверяем наличие config.json
+            config_files = [f for f in zipf.namelist() if f.endswith('config.json')]
+            if not config_files:
+                return False, "В архиве отсутствует файл конфигурации бота."
+
+            # Проверяем содержимое config.json
+            with zipf.open(config_files[0]) as config_file:
+                try:
+                    config = json.load(config_file)
+                    if not config.get("name"):
+                        return False, "В конфигурации бота отсутствует имя."
+                    if not config.get("modules"):
+                        return False, "В конфигурации бота отсутствуют модули."
+                except json.JSONDecodeError:
+                    return False, "Файл конфигурации бота содержит некорректный JSON."
+
+            # Проверяем наличие используемых изображений
+            if 'images' in zipf.namelist():
+                image_files = [f for f in zipf.namelist() if f.startswith('images/')]
+
+                # Проверяем модули поиска изображений
+                for module in config.get("modules", []):
+                    if module.get("type") == "image_search":
+                        for image in module.get("images", []):
+                            image_path = os.path.join('images', image)
+                            if image_path not in zipf.namelist():
+                                return False, f"В архиве отсутствует изображение {image}, используемое в модуле поиска."
+
+        return True, "Архив прошел проверку."
+
+    except Exception as e:
+        return False, f"Ошибка при проверке архива: {str(e)}"
