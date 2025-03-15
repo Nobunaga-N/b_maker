@@ -21,6 +21,7 @@ from src.utils.resources import Resources
 from src.utils.exceptions import BotMakerError
 from src.controllers import BotManagerController
 from src.utils.style_constants import COLOR_BG_DARK
+from src.bot_generator.service import BotMakerService
 
 
 class MainWindow(QMainWindow):
@@ -40,6 +41,9 @@ class MainWindow(QMainWindow):
         # Создаем контроллер для управления бизнес-логикой
         self.bot_manager_controller = BotManagerController(logger)
 
+        # Создаем общий сервисный слой для всего приложения
+        self.service = BotMakerService(templates_dir="templates", logger=logger)
+
         # --- Центральный виджет и горизонтальный лейаут ---
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -47,7 +51,7 @@ class MainWindow(QMainWindow):
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
 
-        # === Боковая панель (новая реализация) ===
+        # === Боковая панель ===
         self.sidebar = SideBar()
         main_layout.addWidget(self.sidebar)
 
@@ -56,13 +60,13 @@ class MainWindow(QMainWindow):
         main_layout.addWidget(self.page_container, stretch=1)
 
         # === Создаем страницы ===
-        # 1. Страница менеджера ботов (используем новый класс)
-        self.manager_page = ManagerPage(self, self.logger)
+        # 1. Страница менеджера ботов - передаем сервис
+        self.manager_page = ManagerPage(self, self.logger, self.service)
         self.manager_page.createBotRequested.connect(self.on_create_bot_requested)
         self.manager_page.editBotRequested.connect(self.on_edit_bot_requested)
 
-        # 2. Страница создания бота
-        self.create_page = CreateBotPage()
+        # 2. Страница создания бота - передаем сервис
+        self.create_page = CreateBotPage(service=self.service)
         self.create_page.botCreated.connect(self.on_bot_created)
 
         # 3. Страница настроек
@@ -82,6 +86,16 @@ class MainWindow(QMainWindow):
         # Логируем начало работы
         if self.logger:
             self.logger.info("Главное окно инициализировано")
+
+    def closeEvent(self, event):
+        """Перехватывает событие закрытия окна для корректного завершения работы"""
+        if self.logger:
+            self.logger.info("Приложение завершает работу")
+
+        # Корректно останавливаем сервис перед закрытием приложения
+        self.service.shutdown()
+
+        event.accept()
 
     def _set_application_icon(self):
         """Устанавливает иконку приложения"""

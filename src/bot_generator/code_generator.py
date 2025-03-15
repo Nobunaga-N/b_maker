@@ -1,7 +1,10 @@
+# src/bot_generator/code_generator.py - добавление функции vars()
+
 from typing import List, Dict, Any, Optional
 import jinja2
 import os
 import json
+from datetime import datetime
 
 
 class BotCodeGenerator:
@@ -23,6 +26,24 @@ class BotCodeGenerator:
             lstrip_blocks=True
         )
 
+        # Добавляем функцию now() в глобальный контекст Jinja2
+        self.env.globals['now'] = self.get_current_datetime
+
+        # Добавляем функцию vars() для проверки существования переменных
+        self.env.globals['vars'] = lambda: self.template_vars
+
+        # Словарь для хранения переменных шаблона
+        self.template_vars = {}
+
+    def get_current_datetime(self):
+        """
+        Возвращает текущую дату и время в форматированном виде.
+
+        Returns:
+            Форматированная строка с текущей датой и временем.
+        """
+        return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
     def generate_bot_code(self, bot_config: Dict[str, Any]) -> str:
         """
         Генерирует код бота на основе конфигурации.
@@ -41,16 +62,29 @@ class BotCodeGenerator:
         # Преобразуем модули в код
         module_code_blocks = self._generate_module_blocks(modules)
 
+        # Обновляем переменные шаблона
+        self.template_vars = {
+            'bot_name': bot_name,
+            'game': game,
+            'modules': modules,
+            'module_code_blocks': module_code_blocks
+        }
+
+        # Проверим, есть ли activity_actions
+        activity_module = None
+        for module in modules:
+            if module.get("type") == "activity" and module.get("continue_options"):
+                activity_module = module
+                break
+
+        if activity_module:
+            self.template_vars['activity_actions'] = "self.activity_continue_actions(self)"
+
         # Загружаем основной шаблон
         template = self.env.get_template("bot_template.py.jinja")
 
         # Генерируем код
-        code = template.render(
-            bot_name=bot_name,
-            game=game,
-            modules=modules,
-            module_code_blocks=module_code_blocks
-        )
+        code = template.render(self.template_vars)
 
         return code
 

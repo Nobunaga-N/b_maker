@@ -32,11 +32,12 @@ class CreateBotPage(QWidget):
     # Сигнал, который будет испускаться при создании или сохранении бота
     botCreated = pyqtSignal(str, str)  # имя_бота, игра
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, service=None):
         super().__init__(parent)
         self.setObjectName("createBotPage")
         self.modules_data = []  # List for storing module data
         self.current_bot_path = None  # Path to the currently edited bot
+        self.service = service  # Сервис для работы с бизнес-логикой
         self.setup_ui()
         self.setup_connections()
         self.load_games()
@@ -628,7 +629,7 @@ class CreateBotPage(QWidget):
             self.renumber_rows()
 
     def save_bot(self):
-        """Сохраняет бота"""
+        """Сохраняет бота и генерирует Python-скрипт"""
         bot_name = self.bot_name_input.text().strip()
         game_index = self.game_combo.currentIndex()
 
@@ -668,7 +669,17 @@ class CreateBotPage(QWidget):
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump(bot_config, f, ensure_ascii=False, indent=4)
 
-            QMessageBox.information(self, "Успех", f"Бот '{bot_name}' успешно сохранен!")
+            # Генерируем код бота, если сервис доступен
+            if self.service:
+                try:
+                    script_path = self.service.generate_and_save_bot_code(bot_name, bot_config)
+                    QMessageBox.information(self, "Успех",
+                                            f"Бот '{bot_name}' успешно сохранен и код сгенерирован!\nПуть к скрипту: {script_path}")
+                except Exception as e:
+                    QMessageBox.warning(self, "Предупреждение",
+                                        f"Бот сохранен, но не удалось сгенерировать код: {str(e)}")
+            else:
+                QMessageBox.information(self, "Успех", f"Бот '{bot_name}' успешно сохранен!")
 
             # Испускаем сигнал о создании бота
             self.botCreated.emit(bot_name, game_name)
