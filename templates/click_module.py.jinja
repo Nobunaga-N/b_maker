@@ -1,0 +1,22 @@
+# Файл click_module.py.jinja (исправление logger)
+
+# Выполняем клик по координатам
+x = {{ module.get("x", 0) }}
+y = {{ module.get("y", 0) }}
+description = "{{ module.get("description", "") }}"
+console_description = "{{ module.get("console_description", "") }}"
+sleep_time = {{ module.get("sleep", 0) }}
+
+# Логирование перед нажатием
+if console_description:
+    self.logger.info(f"{console_description}")
+else:
+    self.logger.info(f"Выполняем клик по координатам ({x}, {y})")
+
+# Выполняем нажатие
+self.adb.tap(x, y)
+
+# Если задана задержка, выполняем паузу
+if sleep_time > 0:
+    self.logger.debug(f"Ожидание после клика: {sleep_time} сек")
+    time.sleep(sleep_time)

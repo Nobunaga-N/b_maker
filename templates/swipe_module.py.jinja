@@ -1,0 +1,24 @@
+# Файл swipe_module.py.jinja (исправление logger)
+
+# Выполняем свайп
+x1 = {{ module.get("x1", 0) }}
+y1 = {{ module.get("y1", 0) }}
+x2 = {{ module.get("x2", 0) }}
+y2 = {{ module.get("y2", 0) }}
+description = "{{ module.get("description", "") }}"
+console_description = "{{ module.get("console_description", "") }}"
+sleep_time = {{ module.get("sleep", 0) }}
+
+# Логирование перед действием
+if console_description:
+    self.logger.info(f"{console_description}")
+else:
+    self.logger.info(f"Выполняем свайп от ({x1}, {y1}) до ({x2}, {y2})")
+
+# Выполняем свайп
+self.adb.swipe(x1, y1, x2, y2)
+
+# Если задана задержка, выполняем паузу
+if sleep_time > 0:
+    self.logger.debug(f"Ожидание после свайпа: {sleep_time} сек")
+    time.sleep(sleep_time)

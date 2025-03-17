@@ -103,19 +103,24 @@ class BotCodeGenerator:
         for i, module in enumerate(modules):
             module_type = module.get("type")
 
-            # Определяем метод генерации на основе типа модуля
-            if module_type == "activity":
-                blocks.append(self._generate_activity_module(module, i))
-            elif module_type == "click":
-                blocks.append(self._generate_click_module(module, i))
-            elif module_type == "swipe":
-                blocks.append(self._generate_swipe_module(module, i))
-            elif module_type == "image_search":
-                blocks.append(self._generate_image_search_module(module, i))
-            elif module_type == "time_sleep":
-                blocks.append(self._generate_time_sleep_module(module, i))
-            else:
-                blocks.append(f"# Неподдерживаемый тип модуля: {module_type}")
+            try:
+                # Определяем метод генерации на основе типа модуля
+                if module_type == "activity":
+                    blocks.append(self._generate_activity_module(module, i))
+                elif module_type == "click":
+                    blocks.append(self._generate_click_module(module, i))
+                elif module_type == "swipe":
+                    blocks.append(self._generate_swipe_module(module, i))
+                elif module_type == "image_search":
+                    blocks.append(self._generate_image_search_module(module, i))
+                elif module_type == "time_sleep":
+                    blocks.append(self._generate_time_sleep_module(module, i))
+                else:
+                    blocks.append(f"# Неподдерживаемый тип модуля: {module_type}")
+            except Exception as e:
+                print(f"Ошибка при генерации модуля {module_type}: {str(e)}")
+                # Добавляем строку с ошибкой, чтобы не нарушать порядок блоков
+                blocks.append(f"# Ошибка при генерации модуля {module_type}: {str(e)}")
 
         return blocks
 

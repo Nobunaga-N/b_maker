@@ -1,9 +1,7 @@
-# Шаблон для модуля Activity (activity_module.py.jinja)
-"""
-Настройка мониторинга активности.
-{{ "Модуль проверки Activity " + module.get("game", "") }}
-"""
+# Файл activity_module.py.jinja (исправление logger)
+
 # Настройка мониторинга активности
+# Модуль проверки Activity {{ module.get("game", "") }}
 
 # Получаем данные модуля
 enabled = {{ module.get("enabled", True) }}
@@ -14,7 +12,7 @@ startup_delay = {{ module.get("startup_delay", 1.0) }}
 action = "{{ module.get("action", "continue_bot") }}"
 
 if enabled:
-    logger.info(f"Настройка мониторинга активности для игры: {game}")
+    self.logger.info(f"Настройка мониторинга активности для игры: {game}")
 
     # Устанавливаем имя пакета, если оно определено
     if game:
@@ -22,7 +20,7 @@ if enabled:
 
     # Если установлена задержка перед запуском, ждем
     if startup_delay > 0:
-        logger.info(f"Ожидание {startup_delay} сек перед запуском")
+        self.logger.info(f"Ожидание {startup_delay} сек перед запуском")
         time.sleep(startup_delay)
 
     # Запускаем мониторинг активности
@@ -32,15 +30,15 @@ if enabled:
         callback=self.restart_game
     )
 
-    logger.info(f"Мониторинг активности настроен: enabled={enabled}, action={action}, line_range={line_range}")
+    self.logger.info(f"Мониторинг активности настроен: enabled={enabled}, action={action}, line_range={line_range}")
 else:
-    logger.info("Мониторинг активности отключен")
+    self.logger.info("Мониторинг активности отключен")
 
 # Действия при вылете игры (для функции restart_game)
 {% if module.get("continue_options") %}
 def execute_continue_actions(self):
     """Выполняет действия после перезапуска игры."""
-    logger.info("Выполнение действий после перезапуска игры")
+    self.logger.info("Выполнение действий после перезапуска игры")
 
     try:
         {% for action in module.get("continue_options", []) %}
@@ -48,7 +46,7 @@ def execute_continue_actions(self):
         {% if action.get("type") == "click" %}
         # Клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})
         self.adb.tap({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})
-        logger.info("Выполнен клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})")
+        self.logger.info("Выполнен клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})")
         {% if action.get("data", {}).get("sleep", 0) > 0 %}
         time.sleep({{ action.get("data", {}).get("sleep", 0) }})
         {% endif %}
@@ -61,7 +59,7 @@ def execute_continue_actions(self):
             {{ action.get("data", {}).get("x2", 0) }},
             {{ action.get("data", {}).get("y2", 0) }}
         )
-        logger.info("Выполнен свайп от ({{ action.get("data", {}).get("x1", 0) }}, {{ action.get("data", {}).get("y1", 0) }}) до ({{ action.get("data", {}).get("x2", 0) }}, {{ action.get("data", {}).get("y2", 0) }})")
+        self.logger.info("Выполнен свайп от ({{ action.get("data", {}).get("x1", 0) }}, {{ action.get("data", {}).get("y1", 0) }}) до ({{ action.get("data", {}).get("x2", 0) }}, {{ action.get("data", {}).get("y2", 0) }})")
         {% if action.get("data", {}).get("sleep", 0) > 0 %}
         time.sleep({{ action.get("data", {}).get("sleep", 0) }})
         {% endif %}
@@ -69,25 +67,29 @@ def execute_continue_actions(self):
         {% elif action.get("type") == "time_sleep" %}
         # Пауза {{ action.get("data", {}).get("time", 1.0) }} сек
         time.sleep({{ action.get("data", {}).get("time", 1.0) }})
-        logger.info("Выполнена пауза {{ action.get("data", {}).get("time", 1.0) }} сек")
+        self.logger.info("Выполнена пауза {{ action.get("data", {}).get("time", 1.0) }} сек")
 
         {% elif action.get("type") == "get_coords" %}
-        # Get coords - клик по найденному изображению (не применимо здесь)
-        logger.warning("Действие get_coords не может быть выполнено в обработчике перезапуска")
-
+        # Клик по найденным координатам
+        if found_coords:
+            self.adb.tap(found_coords[0], found_coords[1])
+            self.logger.info(f"Выполнен клик по найденным координатам {found_coords}")
+        else:
+            self.logger.warning("Не удалось выполнить клик: координаты не определены")
+            
         {% elif action.get("type") == "running_clear" %}
         # Остановка выполнения бота
-        logger.info("Остановка выполнения бота")
+        self.logger.info("Остановка выполнения бота")
         self.running = False
-
+        
         {% elif action.get("type") == "continue" %}
         # Продолжение выполнения
-        logger.info("Продолжение выполнения")
-
+        self.logger.info("Продолжение выполнения")
+        
         {% endif %}
         {% endfor %}
     except Exception as e:
-        logger.error(f"Ошибка при выполнении действий после перезапуска: {str(e)}")
+        self.logger.error(f"Ошибка при выполнении действий после перезапуска: {str(e)}")
 
 # Присваиваем функцию для использования в restart_game
 self.activity_continue_actions = execute_continue_actions

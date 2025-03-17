@@ -1,7 +1,4 @@
-# templates/image_search_module.py.jinja
-"""
-Шаблон для модуля поиска изображений (image_search_module.py.jinja)
-"""
+# Файл image_search_module.py.jinja (исправление logger)
 
 # Настройка поиска изображений
 images = {{ module.get("images", []) }}
@@ -10,9 +7,9 @@ script_items = {{ module.get("script_items", []) }}
 
 # Выводим сообщение о поиске изображений
 if images:
-    logger.info(f"Поиск изображений: {', '.join(images)}")
+    self.logger.info(f"Поиск изображений: {', '.join(images)}")
 else:
-    logger.warning("Список изображений для поиска пуст")
+    self.logger.warning("Список изображений для поиска пуст")
     
 # Функция для выполнения поиска изображений
 def search_images(self, image_names):
@@ -42,11 +39,11 @@ def search_images(self, image_names):
             found, coords, confidence = self.image_matcher.find_template(screenshot, img_path)
             results[img_name] = (found, coords, confidence)
             if found:
-                logger.info(f"Изображение {img_name} найдено с достоверностью {confidence:.2f} в координатах {coords}")
+                self.logger.info(f"Изображение {img_name} найдено с достоверностью {confidence:.2f} в координатах {coords}")
             else:
-                logger.info(f"Изображение {img_name} не найдено (достоверность: {confidence:.2f})")
+                self.logger.info(f"Изображение {img_name} не найдено (достоверность: {confidence:.2f})")
         except Exception as e:
-            logger.error(f"Ошибка при поиске изображения {img_name}: {str(e)}")
+            self.logger.error(f"Ошибка при поиске изображения {img_name}: {str(e)}")
             results[img_name] = (False, None, 0.0)
             
     return results
@@ -71,7 +68,7 @@ while time.time() - start_time < timeout and self.running:
             
     # Если нашли изображение, выходим из цикла
     if found_any:
-        logger.info(f"Найдено изображение {found_image} в координатах {found_coords}")
+        self.logger.info(f"Найдено изображение {found_image} в координатах {found_coords}")
         break
         
     # Ждем перед следующей попыткой
@@ -80,7 +77,7 @@ while time.time() - start_time < timeout and self.running:
     # Выводим сообщение каждые 10 секунд
     elapsed = time.time() - start_time
     if elapsed % 10 < 1:
-        logger.info(f"Поиск изображений продолжается... Прошло {int(elapsed)} сек из {timeout}")
+        self.logger.info(f"Поиск изображений продолжается... Прошло {int(elapsed)} сек из {timeout}")
         
 # Проверяем результат поиска и выполняем соответствующие блоки
 if found_any:
@@ -89,7 +86,7 @@ if found_any:
     {% if item.get("type") == "if_result" %}
     # Блок IF Result
     if {% if item.get("data", {}).get("image") %}found_image == "{{ item.get("data", {}).get("image") }}"{% else %}True{% endif %}:
-        logger.info("{{ item.get("data", {}).get("log_event", "Изображение найдено!") }}")
+        self.logger.info("{{ item.get("data", {}).get("log_event", "Изображение найдено!") }}")
         
         {% if item.get("data", {}).get("actions") %}
         # Выполняем действия IF Result
@@ -97,7 +94,7 @@ if found_any:
         {% if action.get("type") == "click" %}
         # Клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})
         self.adb.tap({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})
-        logger.info("Выполнен клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})")
+        self.logger.info("Выполнен клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})")
         {% if action.get("data", {}).get("sleep", 0) > 0 %}
         time.sleep({{ action.get("data", {}).get("sleep", 0) }})
         {% endif %}
@@ -110,7 +107,7 @@ if found_any:
             {{ action.get("data", {}).get("x2", 0) }},
             {{ action.get("data", {}).get("y2", 0) }}
         )
-        logger.info("Выполнен свайп от ({{ action.get("data", {}).get("x1", 0) }}, {{ action.get("data", {}).get("y1", 0) }}) до ({{ action.get("data", {}).get("x2", 0) }}, {{ action.get("data", {}).get("y2", 0) }})")
+        self.logger.info("Выполнен свайп от ({{ action.get("data", {}).get("x1", 0) }}, {{ action.get("data", {}).get("y1", 0) }}) до ({{ action.get("data", {}).get("x2", 0) }}, {{ action.get("data", {}).get("y2", 0) }})")
         {% if action.get("data", {}).get("sleep", 0) > 0 %}
         time.sleep({{ action.get("data", {}).get("sleep", 0) }})
         {% endif %}
@@ -118,24 +115,24 @@ if found_any:
         {% elif action.get("type") == "time_sleep" %}
         # Пауза {{ action.get("data", {}).get("time", 1.0) }} сек
         time.sleep({{ action.get("data", {}).get("time", 1.0) }})
-        logger.info("Выполнена пауза {{ action.get("data", {}).get("time", 1.0) }} сек")
+        self.logger.info("Выполнена пауза {{ action.get("data", {}).get("time", 1.0) }} сек")
         
         {% elif action.get("type") == "get_coords" %}
         # Клик по найденным координатам
         if found_coords:
             self.adb.tap(found_coords[0], found_coords[1])
-            logger.info(f"Выполнен клик по найденным координатам {found_coords}")
+            self.logger.info(f"Выполнен клик по найденным координатам {found_coords}")
         else:
-            logger.warning("Не удалось выполнить клик: координаты не определены")
+            self.logger.warning("Не удалось выполнить клик: координаты не определены")
             
         {% elif action.get("type") == "running_clear" %}
         # Остановка выполнения бота
-        logger.info("Остановка выполнения бота")
+        self.logger.info("Остановка выполнения бота")
         self.running = False
         
         {% elif action.get("type") == "continue" %}
         # Продолжение выполнения
-        logger.info("Продолжение выполнения")
+        self.logger.info("Продолжение выполнения")
         
         {% endif %}
         {% endfor %}
@@ -144,7 +141,7 @@ if found_any:
     {% elif item.get("type") == "elif" %}
     # Блок ELIF
     elif found_image == "{{ item.get("data", {}).get("image", "") }}":
-        logger.info("{{ item.get("data", {}).get("log_event", "Найдено другое изображение!") }}")
+        self.logger.info("{{ item.get("data", {}).get("log_event", "Найдено другое изображение!") }}")
         
         {% if item.get("data", {}).get("actions") %}
         # Выполняем действия ELIF
@@ -152,7 +149,7 @@ if found_any:
         {% if action.get("type") == "click" %}
         # Клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})
         self.adb.tap({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})
-        logger.info("Выполнен клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})")
+        self.logger.info("Выполнен клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})")
         {% if action.get("data", {}).get("sleep", 0) > 0 %}
         time.sleep({{ action.get("data", {}).get("sleep", 0) }})
         {% endif %}
@@ -165,7 +162,7 @@ if found_any:
             {{ action.get("data", {}).get("x2", 0) }},
             {{ action.get("data", {}).get("y2", 0) }}
         )
-        logger.info("Выполнен свайп от ({{ action.get("data", {}).get("x1", 0) }}, {{ action.get("data", {}).get("y1", 0) }}) до ({{ action.get("data", {}).get("x2", 0) }}, {{ action.get("data", {}).get("y2", 0) }})")
+        self.logger.info("Выполнен свайп от ({{ action.get("data", {}).get("x1", 0) }}, {{ action.get("data", {}).get("y1", 0) }}) до ({{ action.get("data", {}).get("x2", 0) }}, {{ action.get("data", {}).get("y2", 0) }})")
         {% if action.get("data", {}).get("sleep", 0) > 0 %}
         time.sleep({{ action.get("data", {}).get("sleep", 0) }})
         {% endif %}
@@ -173,24 +170,24 @@ if found_any:
         {% elif action.get("type") == "time_sleep" %}
         # Пауза {{ action.get("data", {}).get("time", 1.0) }} сек
         time.sleep({{ action.get("data", {}).get("time", 1.0) }})
-        logger.info("Выполнена пауза {{ action.get("data", {}).get("time", 1.0) }} сек")
+        self.logger.info("Выполнена пауза {{ action.get("data", {}).get("time", 1.0) }} сек")
         
         {% elif action.get("type") == "get_coords" %}
         # Клик по найденным координатам
         if found_coords:
             self.adb.tap(found_coords[0], found_coords[1])
-            logger.info(f"Выполнен клик по найденным координатам {found_coords}")
+            self.logger.info(f"Выполнен клик по найденным координатам {found_coords}")
         else:
-            logger.warning("Не удалось выполнить клик: координаты не определены")
+            self.logger.warning("Не удалось выполнить клик: координаты не определены")
             
         {% elif action.get("type") == "running_clear" %}
         # Остановка выполнения бота
-        logger.info("Остановка выполнения бота")
+        self.logger.info("Остановка выполнения бота")
         self.running = False
         
         {% elif action.get("type") == "continue" %}
         # Продолжение выполнения
-        logger.info("Продолжение выполнения")
+        self.logger.info("Продолжение выполнения")
         
         {% endif %}
         {% endfor %}
@@ -199,11 +196,11 @@ if found_any:
     {% endfor %}
 else:
     # Изображение не найдено - выполняем блок IF Not Result
-    logger.warning(f"Ни одно из изображений не найдено за {timeout} сек")
+    self.logger.warning(f"Ни одно из изображений не найдено за {timeout} сек")
     {% for item in module.get("script_items", []) %}
     {% if item.get("type") == "if_not_result" %}
     # Блок IF Not Result
-    logger.info("{{ item.get("data", {}).get("log_event", "Изображение не найдено!") }}")
+    self.logger.info("{{ item.get("data", {}).get("log_event", "Изображение не найдено!") }}")
     
     {% if item.get("data", {}).get("actions") %}
     # Выполняем действия IF Not Result
@@ -211,7 +208,7 @@ else:
     {% if action.get("type") == "click" %}
     # Клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})
     self.adb.tap({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})
-    logger.info("Выполнен клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})")
+    self.logger.info("Выполнен клик по координатам ({{ action.get("data", {}).get("x", 0) }}, {{ action.get("data", {}).get("y", 0) }})")
     {% if action.get("data", {}).get("sleep", 0) > 0 %}
     time.sleep({{ action.get("data", {}).get("sleep", 0) }})
     {% endif %}
@@ -224,7 +221,7 @@ else:
         {{ action.get("data", {}).get("x2", 0) }},
         {{ action.get("data", {}).get("y2", 0) }}
     )
-    logger.info("Выполнен свайп от ({{ action.get("data", {}).get("x1", 0) }}, {{ action.get("data", {}).get("y1", 0) }}) до ({{ action.get("data", {}).get("x2", 0) }}, {{ action.get("data", {}).get("y2", 0) }})")
+    self.logger.info("Выполнен свайп от ({{ action.get("data", {}).get("x1", 0) }}, {{ action.get("data", {}).get("y1", 0) }}) до ({{ action.get("data", {}).get("x2", 0) }}, {{ action.get("data", {}).get("y2", 0) }})")
     {% if action.get("data", {}).get("sleep", 0) > 0 %}
     time.sleep({{ action.get("data", {}).get("sleep", 0) }})
     {% endif %}
@@ -232,16 +229,16 @@ else:
     {% elif action.get("type") == "time_sleep" %}
     # Пауза {{ action.get("data", {}).get("time", 1.0) }} сек
     time.sleep({{ action.get("data", {}).get("time", 1.0) }})
-    logger.info("Выполнена пауза {{ action.get("data", {}).get("time", 1.0) }} сек")
+    self.logger.info("Выполнена пауза {{ action.get("data", {}).get("time", 1.0) }} сек")
     
     {% elif action.get("type") == "running_clear" %}
     # Остановка выполнения бота
-    logger.info("Остановка выполнения бота")
+    self.logger.info("Остановка выполнения бота")
     self.running = False
     
     {% elif action.get("type") == "continue" %}
     # Продолжение выполнения
-    logger.info("Продолжение выполнения")
+    self.logger.info("Продолжение выполнения")
     
     {% endif %}
     {% endfor %}

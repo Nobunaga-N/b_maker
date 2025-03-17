@@ -1,0 +1,14 @@
+# Файл time_sleep_module.py.jinja (исправление logger)
+
+# Выполняем паузу
+delay = {{ module.get("delay", 1.0) }}
+description = "{{ module.get("description", "") }}"
+
+# Логирование
+if description:
+    self.logger.info(f"Пауза: {description} ({delay} сек)")
+else:
+    self.logger.info(f"Пауза {delay} сек")
+
+# Выполняем паузу
+time.sleep(delay)
