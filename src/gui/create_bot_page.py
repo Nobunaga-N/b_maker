@@ -339,6 +339,8 @@ class CreateBotPage(QWidget):
 
     def add_activity_module(self):
         """Adds or configures the Activity module"""
+        import copy  # Добавляем импорт для глубокого копирования
+
         dialog = ActivityModuleDialog(self)
 
         # If there is an existing Activity module, load its data
@@ -346,23 +348,37 @@ class CreateBotPage(QWidget):
         for i, module in enumerate(self.modules_data):
             if module.module_type == "Activity":
                 activity_index = i
-                # Fill dialog with existing data
-                data = module.data
+                # Fill dialog with existing data - используем глубокое копирование
+                data = copy.deepcopy(module.data)
                 self.load_activity_dialog(dialog, data)
                 break
 
         if dialog.exec():
-            data = dialog.get_data()
+            # Получаем данные и делаем их копию для безопасности
+            data = copy.deepcopy(dialog.get_data())
+
+            # Логируем полученные данные для отладки
+            print(f"Activity dialog returned data: {data}")
+
+            # Форматируем описание
             description = ModuleHandler.format_module_description("Activity", data)
 
             if activity_index >= 0:
+                # Добавляем отладочный вывод
+                print(f"Updating existing Activity module at index {activity_index}")
+                print(f"Original data: {self.modules_data[activity_index].data}")
+                print(f"New data: {data}")
+
                 # Update existing Activity module
                 # Update data in table
                 self.modules_table.item(activity_index, 1).setText("Activity")
                 self.modules_table.item(activity_index, 2).setText(description)
 
-                # Update data in module list
+                # Создаем полностью новый ModuleListItem вместо обновления существующего
                 self.modules_data[activity_index] = ModuleListItem("Activity", description, data)
+
+                # Добавляем отладочный вывод после обновления
+                print(f"Updated data: {self.modules_data[activity_index].data}")
             else:
                 # Always add at the beginning
                 self.modules_table.insertRow(0)
@@ -375,7 +391,7 @@ class CreateBotPage(QWidget):
                 # Add action buttons
                 self.add_action_buttons_to_row(0, "Activity")
 
-                # Add to data list
+                # Add to data list - используем новые данные вместо ссылки
                 self.modules_data.insert(0, ModuleListItem("Activity", description, data))
 
                 # Renumber rows
@@ -383,7 +399,18 @@ class CreateBotPage(QWidget):
 
     def load_activity_dialog(self, dialog, data):
         """Заполняет диалог активности данными из модуля"""
-        # Fill dialog fields with existing data
+        # Сначала установим правильный индекс действия - это критично
+        action = data.get("action", "continue_bot")
+        index = 0  # По умолчанию "continue_bot"
+        if action == "activity.running.clear(0)":
+            index = 1
+        elif action == "activity.running.clear(1)":
+            index = 2
+
+        # Устанавливаем индекс действия
+        dialog.action_combo.setCurrentIndex(index)
+
+        # Затем загружаем остальные данные
         if "enabled" in data:
             dialog.enable_check.setChecked(bool(data["enabled"]))
 
@@ -401,23 +428,24 @@ class CreateBotPage(QWidget):
         if "startup_delay" in data:
             dialog.time_sleep_input.setValue(float(data["startup_delay"]))
 
-        # Set action combobox
-        action = data.get("action", "continue_bot")
-        index = 0
-        if action == "activity.running.clear(0)":
-            index = 1
-        elif action == "activity.running.clear(1)":
-            index = 2
-        dialog.action_combo.setCurrentIndex(index)
-
-        # Load continue_bot options if they exist
-        if "continue_options" in data and data["action"] == "continue_bot":
+        # Очищаем холст ПОСЛЕ установки индекса действия
+        # и только если он видим (индекс = 0)
+        if index == 0:
             dialog.continue_canvas.clear()
-            for module_item in data["continue_options"]:
-                module_type = module_item.get("type", "")
-                description = module_item.get("description", "")
-                module_data = module_item.get("data", {})
-                dialog.continue_canvas.add_module(module_type, description, module_data)
+
+            # Загружаем данные continue_options если они есть
+            if "continue_options" in data:
+                for module_item in data["continue_options"]:
+                    module_type = module_item.get("type", "")
+                    description = module_item.get("description", "")
+                    module_data = module_item.get("data", {})
+
+                    # Добавляем в холст только если действие continue_bot
+                    if action == "continue_bot":
+                        dialog.continue_canvas.add_module(module_type, description, module_data)
+
+        # Принудительно обновляем UI в соответствии с типом действия
+        dialog.update_ui_based_on_action(index)
 
     def add_module_to_table(self, module_type: str, description: str, data: Dict[str, Any]):
         """Adds a module to the table on the canvas"""
@@ -453,6 +481,8 @@ class CreateBotPage(QWidget):
 
     def edit_module(self, index: int):
         """Универсальный метод редактирования модуля на основе его типа"""
+        import copy  # Добавляем импорт для глубокого копирования
+
         try:
             # Проверка валидности индекса
             if index < 0 or index >= len(self.modules_data):
@@ -461,7 +491,8 @@ class CreateBotPage(QWidget):
 
             module = self.modules_data[index]
             module_type = module.module_type
-            module_data = module.data
+            # Используем глубокое копирование данных
+            module_data = copy.deepcopy(module.data)
 
             # Словарь соответствия типов модулей и классов диалогов
             dialog_classes = {
@@ -473,22 +504,31 @@ class CreateBotPage(QWidget):
             }
 
             if module_type in dialog_classes:
-                def callback(new_type, description, data):
-                    # Обновляем данные модуля
-                    module.data = data
-                    module.display_text = description
+                # Создаем диалог нужного типа
+                dialog_class = dialog_classes[module_type]
+                dialog = dialog_class(self)
 
-                    # Обновляем отображение
-                    item = self.modules_table.item(index, 2)
-                    if item:
-                        item.setText(description)
+                # Загружаем данные в диалог с учетом специфики Activity
+                if module_type == "Activity":
+                    self.load_activity_dialog(dialog, module_data)
+                elif hasattr(dialog, "load_data"):
+                    dialog.load_data(module_data)
 
-                ModuleHandler.edit_module_with_dialog(
-                    dialog_classes[module_type],
-                    module_data,
-                    parent=self,
-                    callback=callback
-                )
+                # Показываем диалог
+                if dialog.exec():
+                    # Получаем новые данные и делаем их копию
+                    new_data = copy.deepcopy(dialog.get_data())
+
+                    # Формируем описание с помощью ModuleHandler
+                    description = ModuleHandler.format_module_description(module_type, new_data)
+
+                    # Создаем новый объект ModuleListItem вместо обновления
+                    self.modules_data[index] = ModuleListItem(module_type, description, new_data)
+
+                    # Обновляем отображение в таблице
+                    self.modules_table.item(index, 2).setText(description)
+
+
             else:
                 QMessageBox.warning(self, "Ошибка", f"Неизвестный тип модуля: {module_type}")
 
