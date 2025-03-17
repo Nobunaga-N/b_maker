@@ -580,12 +580,9 @@ class Bot:
             # Выполняем модули последовательно
             {% for block in module_code_blocks %}
             # Модуль {{ loop.index }}
-            {% filter indent(width=8) %}
-    {{ block }}
-            {% endfilter %}
+    {{ block | indent(8) }}
 
             {% endfor %}
-
         except Exception as e:
             self.logger.error(f"Ошибка при выполнении модулей: {str(e)}")
             self.logger.error(traceback.format_exc())
