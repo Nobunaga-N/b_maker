@@ -6,6 +6,7 @@
 
 import os
 import logging
+import threading
 from typing import List, Dict, Any, Optional, Tuple
 
 from PyQt6.QtWidgets import (
@@ -38,6 +39,9 @@ class ManagerPage(QWidget):
     # Сигналы для оповещения о смене страницы
     createBotRequested = pyqtSignal(str)  # Запрос на создание бота
     editBotRequested = pyqtSignal(str)  # Запрос на редактирование бота (имя бота)
+
+    # Добавляем сигнал для обновления статусов
+    botStatusesUpdated = pyqtSignal(list)  # Список обновлений статусов
 
     def __init__(self, parent=None, logger=None, service=None):
         super().__init__(parent)
@@ -298,6 +302,9 @@ class ManagerPage(QWidget):
         self.queue_tree.emulatorStopRequested.connect(self.on_emulator_stop_requested)
         self.queue_tree.emulatorRestartRequested.connect(self.on_emulator_restart_requested)
 
+        # Подключаем сигнал обновления статусов
+        self.botStatusesUpdated.connect(self._apply_status_updates)
+
     def move_selected_item_up(self):
         """Перемещает выбранный элемент вверх в очереди"""
         item = self.queue_tree.currentItem()
@@ -410,33 +417,41 @@ class ManagerPage(QWidget):
         # Формируем путь к скрипту бота
         bot_script_path = os.path.join("bots", bot_name, "generated", f"{bot_name}.py")
 
+        # Проверяем существование скрипта в основном потоке
         if not os.path.exists(bot_script_path):
             QMessageBox.warning(self, "Ошибка",
                                 f"Скрипт для бота {bot_name} не найден. Пересохраните бота в редакторе.")
             return
 
-        # Запускаем бота на всех указанных эмуляторах
-        success_count = 0
-        for emulator_id in emulator_ids:
-            try:
-                task_id = self.service.add_bot_to_queue(
-                    bot_name=bot_name,
-                    bot_path=bot_script_path,
-                    emulator_id=emulator_id,
-                    scheduled_time=None,  # Запускаем сразу
-                    cycles=cycles,
-                    max_work_time=work_time
-                )
-                success_count += 1
-                self.logger.info(f"Бот {bot_name} на эмуляторе {emulator_id} добавлен в очередь с ID {task_id}")
-            except Exception as e:
-                self.logger.error(f"Ошибка при запуске бота на эмуляторе {emulator_id}: {str(e)}")
+        # Показываем индикатор процесса запуска
+        QMessageBox.information(self, "Запуск бота",
+                                f"Бот {bot_name} добавляется в очередь на выполнение...\n"
+                                "Интерфейс останется доступным.")
 
-        if success_count > 0:
-            QMessageBox.information(self, "Успех",
-                                    f"Бот {bot_name} запущен на {success_count} из {len(emulator_ids)} эмуляторов")
-        else:
-            QMessageBox.warning(self, "Ошибка", f"Не удалось запустить бота {bot_name} ни на одном эмуляторе")
+        # Запускаем бота в отдельном потоке
+        def launch_bot_thread():
+            success_count = 0
+            try:
+                for emulator_id in emulator_ids:
+                    try:
+                        task_id = self.service.add_bot_to_queue(
+                            bot_name=bot_name,
+                            bot_path=bot_script_path,
+                            emulator_id=emulator_id,
+                            scheduled_time=None,  # Запускаем сразу
+                            cycles=cycles,
+                            max_work_time=work_time
+                        )
+                        success_count += 1
+                        self.logger.info(f"Бот {bot_name} на эмуляторе {emulator_id} добавлен в очередь с ID {task_id}")
+                    except Exception as e:
+                        self.logger.error(f"Ошибка при запуске бота на эмуляторе {emulator_id}: {str(e)}")
+
+            except Exception as e:
+                self.logger.error(f"Ошибка при запуске бота {bot_name}: {str(e)}")
+
+        # Запускаем поток
+        threading.Thread(target=launch_bot_thread, daemon=True).start()
 
     def on_bot_stop_requested(self, bot_name):
         """Обрабатывает запрос на остановку бота"""
@@ -444,24 +459,35 @@ class ManagerPage(QWidget):
             QMessageBox.warning(self, "Ошибка", "Сервис запуска ботов недоступен")
             return
 
-        try:
-            # Получаем список всех запущенных ботов
-            running_bots = self.service.get_running_bots()
+        # Показываем индикатор процесса остановки
+        QMessageBox.information(self, "Остановка бота",
+                                f"Бот {bot_name} останавливается...\n"
+                                "Интерфейс останется доступным.")
 
-            # Ищем ботов с указанным именем
-            stopped_count = 0
-            for bot_id, status in running_bots.items():
-                if bot_name in bot_id:
-                    if self.service.stop_bot(bot_id):
-                        stopped_count += 1
+        # Запускаем остановку бота в отдельном потоке
+        def stop_bot_thread():
+            try:
+                # Получаем список всех запущенных ботов
+                running_bots = self.service.get_running_bots()
 
-            if stopped_count > 0:
-                QMessageBox.information(self, "Успех", f"Остановлено {stopped_count} экземпляров бота {bot_name}")
-            else:
-                QMessageBox.warning(self, "Внимание", f"Не найдено запущенных экземпляров бота {bot_name}")
-        except Exception as e:
-            self.logger.error(f"Ошибка при остановке бота {bot_name}: {str(e)}")
-            QMessageBox.warning(self, "Ошибка", f"Не удалось остановить бота: {str(e)}")
+                # Ищем ботов с указанным именем
+                stopped_count = 0
+                for bot_id, status in running_bots.items():
+                    if bot_name in bot_id:
+                        if self.service.stop_bot(bot_id):
+                            stopped_count += 1
+
+                # Запись в лог о результате
+                if stopped_count > 0:
+                    self.logger.info(f"Остановлено {stopped_count} экземпляров бота {bot_name}")
+                else:
+                    self.logger.warning(f"Не найдено запущенных экземпляров бота {bot_name}")
+
+            except Exception as e:
+                self.logger.error(f"Ошибка при остановке бота {bot_name}: {str(e)}")
+
+        # Запускаем поток
+        threading.Thread(target=stop_bot_thread, daemon=True).start()
 
     def on_bot_duplicate_requested(self, bot_name):
         """Обрабатывает запрос на дублирование бота"""
@@ -599,64 +625,83 @@ class ManagerPage(QWidget):
                 QMessageBox.warning(self, "Ошибка", "Сервис запуска ботов недоступен")
                 return
 
-            # Добавляем всех ботов в очередь сервиса
-            for i in range(total_bots):
-                bot_item = self.queue_tree.topLevelItem(i)
-                bot_name = bot_item.text(1)
-                emulator_ids = []
+            # Показываем индикатор процесса запуска
+            QMessageBox.information(self, "Запуск очереди",
+                                    f"Очередь из {total_bots} ботов добавляется на выполнение...\n"
+                                    "Интерфейс останется доступным.")
 
-                # Собираем ID эмуляторов из дочерних элементов
-                for j in range(bot_item.childCount()):
-                    emu_item = bot_item.child(j)
-                    emu_id = emu_item.data(0, Qt.ItemDataRole.UserRole)
-                    if emu_id:
-                        emulator_ids.append(str(emu_id))
+            # Запускаем бота в отдельном потоке
+            def launch_queue_thread():
+                bots_info = []
 
-                # Если нет эмуляторов, пропускаем бота
-                if not emulator_ids:
-                    self.logger.warning(f"Нет эмуляторов для бота {bot_name}")
-                    continue
+                # Собираем информацию обо всех ботах
+                for i in range(total_bots):
+                    bot_item = self.queue_tree.topLevelItem(i)
+                    bot_name = bot_item.text(1)
+                    emulator_ids = []
 
-                # Получаем параметры из UI
-                cycles = int(bot_item.text(5)) if bot_item.text(5).isdigit() else 0
-                work_time = int(bot_item.text(6)) if bot_item.text(6).isdigit() else 0
+                    # Собираем ID эмуляторов из дочерних элементов
+                    for j in range(bot_item.childCount()):
+                        emu_item = bot_item.child(j)
+                        emu_id = emu_item.data(0, Qt.ItemDataRole.UserRole)
+                        if emu_id:
+                            emulator_ids.append(str(emu_id))
 
-                # Получаем запланированное время
-                scheduled_str = bot_item.text(4)
-                scheduled_time = None
-                try:
-                    if scheduled_str:
-                        scheduled_time = datetime.strptime(scheduled_str, "%d.%m.%Y %H:%M")
-                except ValueError:
-                    self.logger.error(f"Некорректный формат времени: {scheduled_str}")
+                    # Если нет эмуляторов, пропускаем бота
+                    if not emulator_ids:
+                        self.logger.warning(f"Нет эмуляторов для бота {bot_name}")
+                        continue
 
-                # Для каждого эмулятора добавляем задание в очередь
-                for emulator_id in emulator_ids:
+                    # Получаем параметры из UI
+                    cycles = int(bot_item.text(5)) if bot_item.text(5).isdigit() else 0
+                    work_time = int(bot_item.text(6)) if bot_item.text(6).isdigit() else 0
+
+                    # Получаем запланированное время
+                    scheduled_str = bot_item.text(4)
+                    scheduled_time = None
+                    try:
+                        if scheduled_str:
+                            scheduled_time = datetime.strptime(scheduled_str, "%d.%m.%Y %H:%M")
+                    except ValueError:
+                        self.logger.error(f"Некорректный формат времени: {scheduled_str}")
+
                     # Формируем путь к скрипту бота
                     bot_script_path = os.path.join("bots", bot_name, "generated", f"{bot_name}.py")
 
+                    # Проверяем существование скрипта
                     if not os.path.exists(bot_script_path):
                         self.logger.error(f"Скрипт бота не найден: {bot_script_path}")
-                        QMessageBox.warning(self, "Ошибка",
-                                            f"Скрипт для бота {bot_name} не найден. Пересохраните бота в редакторе.")
                         continue
 
-                    # Добавляем в очередь
-                    try:
-                        task_id = self.service.add_bot_to_queue(
-                            bot_name=bot_name,
-                            bot_path=bot_script_path,
-                            emulator_id=emulator_id,
-                            scheduled_time=scheduled_time,
-                            cycles=cycles,
-                            max_work_time=work_time
-                        )
-                        self.logger.info(f"Бот {bot_name} на эмуляторе {emulator_id} добавлен в очередь с ID {task_id}")
-                    except Exception as e:
-                        self.logger.error(f"Ошибка при добавлении бота в очередь: {str(e)}")
-                        QMessageBox.warning(self, "Ошибка", f"Не удалось добавить бота в очередь: {str(e)}")
+                    # Сохраняем информацию о боте
+                    bots_info.append({
+                        "bot_name": bot_name,
+                        "emulator_ids": emulator_ids,
+                        "bot_script_path": bot_script_path,
+                        "scheduled_time": scheduled_time,
+                        "cycles": cycles,
+                        "work_time": work_time
+                    })
 
-            QMessageBox.information(self, "Успех", f"Боты добавлены в очередь на выполнение")
+                # Запускаем ботов
+                for bot_info in bots_info:
+                    for emulator_id in bot_info["emulator_ids"]:
+                        try:
+                            task_id = self.service.add_bot_to_queue(
+                                bot_name=bot_info["bot_name"],
+                                bot_path=bot_info["bot_script_path"],
+                                emulator_id=emulator_id,
+                                scheduled_time=bot_info["scheduled_time"],
+                                cycles=bot_info["cycles"],
+                                max_work_time=bot_info["work_time"]
+                            )
+                            self.logger.info(
+                                f"Бот {bot_info['bot_name']} на эмуляторе {emulator_id} добавлен в очередь с ID {task_id}")
+                        except Exception as e:
+                            self.logger.error(f"Ошибка при добавлении бота в очередь: {str(e)}")
+
+            # Запускаем поток
+            threading.Thread(target=launch_queue_thread, daemon=True).start()
 
     def clear_queue(self):
         """Очищает очередь ботов"""
@@ -778,42 +823,87 @@ class ManagerPage(QWidget):
         if not self.service:
             return
 
+        # Запускаем обновление статусов в отдельном потоке
+        def update_status_thread():
+            try:
+                # Получаем информацию о всех запущенных ботах
+                running_bots = self.service.get_running_bots()
+
+                # Подготавливаем обновления для UI, которые будем выполнять в основном потоке
+                ui_updates = []
+
+                # Собираем данные для обновления
+                for i in range(self.queue_tree.topLevelItemCount()):
+                    bot_item = self.queue_tree.topLevelItem(i)
+                    bot_name = bot_item.text(1)
+
+                    # Ищем информацию о боте среди запущенных
+                    bot_status = None
+                    for bot_id, status in running_bots.items():
+                        if bot_name in bot_id:
+                            bot_status = status
+                            break
+
+                    # Если бот запущен, сохраняем информацию для обновления UI
+                    if bot_status:
+                        # Время работы
+                        elapsed_time = bot_status.get("elapsed_time", {}).get("formatted", "")
+
+                        # Находим активный эмулятор
+                        active_emulator_id = bot_status.get("emulator_id")
+
+                        # Добавляем в список обновлений
+                        ui_updates.append({
+                            "bot_index": i,
+                            "bot_name": bot_name,
+                            "elapsed_time": elapsed_time,
+                            "active_emulator_id": active_emulator_id
+                        })
+
+                # Применяем обновления в основном потоке через сигнал
+                self.botStatusesUpdated.emit(ui_updates)
+
+            except Exception as e:
+                self.logger.error(f"Ошибка при обновлении статусов ботов: {str(e)}")
+
+        # Запускаем поток без блокировки UI
+        threading.Thread(target=update_status_thread, daemon=True).start()
+
+    def _apply_status_updates(self, ui_updates):
+        """
+        Применяет обновления статусов ботов в UI.
+        Этот метод выполняется в основном потоке.
+        """
         try:
-            # Получаем информацию о всех запущенных ботах
-            running_bots = self.service.get_running_bots()
+            for update in ui_updates:
+                bot_index = update["bot_index"]
+                elapsed_time = update["elapsed_time"]
+                active_emulator_id = update["active_emulator_id"]
 
-            # Обновляем отображение в дереве
-            for i in range(self.queue_tree.topLevelItemCount()):
-                bot_item = self.queue_tree.topLevelItem(i)
-                bot_name = bot_item.text(1)
+                # Получаем элемент бота
+                bot_item = self.queue_tree.topLevelItem(bot_index)
+                if not bot_item:
+                    continue
 
-                # Ищем информацию о боте среди запущенных
-                bot_status = None
-                for bot_id, status in running_bots.items():
-                    if bot_name in bot_id:
-                        bot_status = status
-                        break
+                # Обновляем время работы
+                if elapsed_time:
+                    bot_item.setText(6, elapsed_time)
 
-                # Если бот запущен, обновляем его статус
-                if bot_status:
-                    # Обновляем отображение времени работы
-                    elapsed_time = bot_status.get("elapsed_time", {}).get("formatted", "")
-                    if elapsed_time:
-                        bot_item.setText(6, elapsed_time)
+                # Обновляем стиль элемента для индикации запущенного бота
+                for col in range(bot_item.columnCount()):
+                    bot_item.setBackground(col, QBrush(QColor("#406050")))  # Зеленоватый фон для запущенных ботов
 
-                    # Обновляем стиль элемента для индикации запущенного бота
-                    for col in range(bot_item.columnCount()):
-                        bot_item.setBackground(col, QBrush(QColor("#406050")))  # Зеленоватый фон для запущенных ботов
-
-                    # Обновляем статусы эмуляторов
+                # Обновляем статусы эмуляторов
+                if active_emulator_id:
                     for j in range(bot_item.childCount()):
                         emu_item = bot_item.child(j)
                         emu_id = emu_item.data(0, Qt.ItemDataRole.UserRole)
 
-                        # Если это эмулятор для текущего бота, обновляем его статус
-                        if str(emu_id) == bot_status.get("emulator_id"):
+                        # Если это активный эмулятор, обновляем его статус
+                        if str(emu_id) == active_emulator_id:
                             emu_item.setText(2, "работает")
                             emu_item.setForeground(2, QBrush(QColor("#50FF50")))  # Зеленый цвет для активного эмулятора
         except Exception as e:
-            self.logger.error(f"Ошибка при обновлении статусов ботов: {str(e)}")
+            if self.logger:
+                self.logger.error(f"Ошибка при применении обновлений статусов: {str(e)}")
 
